@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prompt-sentinel
+  labels:
+    name: prompt-sentinel
+    project: prompt-sentinel
+    purpose: security

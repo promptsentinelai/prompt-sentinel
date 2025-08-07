@@ -1,0 +1,165 @@
+# Custom PII Detection Rules Configuration
+# This file defines additional PII patterns to detect beyond the built-in types
+# Rules are loaded at startup and merged with default detection patterns
+
+version: "1.0"
+metadata:
+  description: "Custom PII detection rules for organization-specific data types"
+  last_updated: "2025-08-11"
+  author: "PromptSentinel Admin"
+
+# Custom PII detection rules
+custom_pii_rules:
+  # Example: Employee ID numbers
+  - name: "employee_id"
+    description: "Company employee identification number"
+    enabled: true
+    severity: "high"
+    patterns:
+      - regex: "EMP[0-9]{6}"
+        confidence: 0.95
+        description: "Standard employee ID format"
+      - regex: "(?i)employee[\\s_-]?id[:\\s]+([0-9]{6,8})"
+        confidence: 0.85
+        description: "Employee ID with label"
+    redaction:
+      mask_format: "EMP-****"
+      hash_prefix: "EMP_"
+
+  # Example: Internal API keys
+  - name: "internal_api_key"
+    description: "Internal service API keys"
+    enabled: true
+    severity: "critical"
+    patterns:
+      - regex: "INT_API_[A-Za-z0-9]{32}"
+        confidence: 0.9
+        description: "Internal API key format"
+      - regex: "(?i)internal[\\s_-]?key[:\\s]+([A-Za-z0-9]{24,40})"
+        confidence: 0.8
+        description: "Internal key with label"
+    redaction:
+      mask_format: "[INTERNAL_KEY]"
+      hash_prefix: "IKEY_"
+
+  # Example: Project codes
+  - name: "project_code"
+    description: "Internal project identification codes"
+    enabled: true
+    severity: "medium"
+    patterns:
+      - regex: "PROJ-[0-9]{4}-[A-Z]{2,4}"
+        confidence: 0.85
+        description: "Standard project code format"
+    redaction:
+      mask_format: "PROJ-****-**"
+      hash_prefix: "PROJ_"
+
+  # Example: Customer account numbers
+  - name: "customer_account"
+    description: "Customer account identifiers"
+    enabled: true
+    severity: "high"
+    patterns:
+      - regex: "CUST[0-9]{8,12}"
+        confidence: 0.9
+        description: "Customer account number"
+      - regex: "(?i)account[\\s#:]+([0-9]{8,12})"
+        confidence: 0.75
+        description: "Account number with label"
+    redaction:
+      mask_format: "CUST********"
+      hash_prefix: "CUST_"
+
+  # Example: License keys
+  - name: "license_key"
+    description: "Software license keys"
+    enabled: true
+    severity: "high"
+    patterns:
+      - regex: "[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}"
+        confidence: 0.7
+        description: "Standard license key format"
+      - regex: "(?i)license[\\s_-]?key[:\\s]+([A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})"
+        confidence: 0.9
+        description: "License key with label"
+    redaction:
+      mask_format: "****-****-****-****"
+      hash_prefix: "LIC_"
+
+  # Example: Medical Record Numbers (MRN)
+  - name: "medical_record_number"
+    description: "Medical record identifiers (HIPAA sensitive)"
+    enabled: true
+    severity: "critical"
+    patterns:
+      - regex: "MRN[0-9]{7,10}"
+        confidence: 0.95
+        description: "Medical record number"
+      - regex: "(?i)medical[\\s_-]?record[\\s_-]?(number|#|no\\.?)[:\\s]+([0-9]{7,10})"
+        confidence: 0.85
+        description: "MRN with label"
+    redaction:
+      mask_format: "MRN*******"
+      hash_prefix: "MRN_"
+
+  # Example: Vehicle identification
+  - name: "vehicle_vin"
+    description: "Vehicle Identification Numbers"
+    enabled: true
+    severity: "medium"
+    patterns:
+      - regex: "[A-HJ-NPR-Z0-9]{17}"
+        confidence: 0.6
+        description: "VIN format (17 characters, no I, O, Q)"
+      - regex: "(?i)vin[:\\s]+([A-HJ-NPR-Z0-9]{17})"
+        confidence: 0.9
+        description: "VIN with label"
+    redaction:
+      mask_format: "*****************"
+      hash_prefix: "VIN_"
+
+# Configuration for custom rule behavior
+settings:
+  # Whether to merge with built-in rules or replace them
+  merge_with_builtin: true
+
+  # Minimum confidence threshold to trigger detection
+  min_confidence_threshold: 0.5
+
+  # Maximum regex complexity (to prevent ReDoS attacks)
+  max_regex_complexity: 100
+
+  # Enable regex pattern caching for performance
+  cache_compiled_patterns: true
+
+  # Log detected custom PII (for audit purposes)
+  log_custom_detections: false
+
+# Testing patterns (used for validation)
+test_samples:
+  employee_id:
+    - text: "My employee ID is EMP123456"
+      should_detect: true
+      expected_type: "employee_id"
+    - text: "Employee ID: 234567"
+      should_detect: true
+      expected_type: "employee_id"
+    - text: "EMP12345"  # Too short
+      should_detect: false
+
+  internal_api_key:
+    - text: "Use this key: INT_API_abc123def456ghi789jkl012mno345pq"
+      should_detect: true
+      expected_type: "internal_api_key"
+    - text: "Internal key: abcdef123456789012345678"
+      should_detect: true
+      expected_type: "internal_api_key"
+
+  medical_record_number:
+    - text: "Patient MRN1234567 needs attention"
+      should_detect: true
+      expected_type: "medical_record_number"
+    - text: "Medical record number: 9876543"
+      should_detect: true
+      expected_type: "medical_record_number"

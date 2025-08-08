@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "prompt-sentinel.fullname" . }}
+  labels:
+    {{- include "prompt-sentinel.labels" . | nindent 4 }}
+data:
+  # API Configuration
+  API_ENV: {{ .Values.config.apiEnv | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  LOG_FORMAT: {{ .Values.config.logFormat | quote }}
+  DEBUG: {{ .Values.config.debug | quote }}
+  
+  # Detection Configuration
+  DETECTION_MODE: {{ .Values.config.detectionMode | quote }}
+  CONFIDENCE_THRESHOLD: {{ .Values.config.confidenceThreshold | quote }}
+  MAX_PROMPT_LENGTH: {{ .Values.config.maxPromptLength | quote }}
+  
+  # Feature Flags
+  HEURISTIC_ENABLED: {{ .Values.config.heuristicEnabled | quote }}
+  LLM_CLASSIFICATION_ENABLED: {{ .Values.config.llmClassificationEnabled | quote }}
+  PII_DETECTION_ENABLED: {{ .Values.config.piiDetectionEnabled | quote }}
+  
+  # PII Configuration
+  PII_REDACTION_MODE: {{ .Values.config.piiRedactionMode | quote }}
+  PII_TYPES_TO_DETECT: {{ .Values.config.piiTypesToDetect | quote }}
+  PII_CONFIDENCE_THRESHOLD: {{ .Values.config.piiConfidenceThreshold | quote }}
+  
+  # Cache Configuration
+  {{- if .Values.redis.enabled }}
+  REDIS_ENABLED: "true"
+  REDIS_HOST: {{ include "prompt-sentinel.fullname" . }}-redis-master
+  REDIS_PORT: "6379"
+  CACHE_TTL_LLM: {{ .Values.config.cacheTtlLlm | quote }}
+  CACHE_TTL_DETECTION: {{ .Values.config.cacheTtlDetection | quote }}
+  CACHE_TTL_PII: {{ .Values.config.cacheTtlPii | quote }}
+  {{- else }}
+  REDIS_ENABLED: "false"
+  {{- end }}
+  
+  # Provider Configuration
+  LLM_PROVIDER_ORDER: {{ .Values.config.llmProviderOrder | quote }}
+  ANTHROPIC_MODEL: {{ .Values.config.anthropicModel | quote }}
+  OPENAI_MODEL: {{ .Values.config.openaiModel | quote }}
+  GEMINI_MODEL: {{ .Values.config.geminiModel | quote }}
+  
+  # OpenTelemetry Configuration
+  {{- if .Values.opentelemetry.enabled }}
+  ENABLE_TRACING: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.opentelemetry.endpoint | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.opentelemetry.serviceName | quote }}
+  {{- else }}
+  ENABLE_TRACING: "false"
+  {{- end }}

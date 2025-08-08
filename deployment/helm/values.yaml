@@ -1,0 +1,240 @@
+# Default values for prompt-sentinel.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 3
+
+image:
+  repository: promptsentinel/prompt-sentinel
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api.promptsentinel.ai
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: prompt-sentinel-tls
+      hosts:
+        - api.promptsentinel.ai
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - prompt-sentinel
+        topologyKey: kubernetes.io/hostname
+
+# Application Configuration
+config:
+  # API Configuration
+  apiEnv: production
+  logLevel: INFO
+  logFormat: json
+  debug: false
+  
+  # Detection Configuration
+  detectionMode: strict  # strict, moderate, permissive
+  confidenceThreshold: 0.7
+  maxPromptLength: 10000
+  
+  # Feature Flags
+  heuristicEnabled: true
+  llmClassificationEnabled: true
+  piiDetectionEnabled: true
+  
+  # PII Configuration
+  piiRedactionMode: mask  # mask, remove, hash, reject
+  piiTypesToDetect: all
+  piiConfidenceThreshold: 0.7
+  
+  # Cache Configuration
+  cacheTtlLlm: 3600
+  cacheTtlDetection: 600
+  cacheTtlPii: 300
+  
+  # Provider Configuration
+  llmProviderOrder: "anthropic,openai,gemini"
+  anthropicModel: "claude-3-haiku-20240307"
+  openaiModel: "gpt-4-turbo-preview"
+  geminiModel: "gemini-1.5-flash"
+
+# Secrets (should be provided via sealed-secrets or external-secrets in production)
+secrets:
+  anthropicApiKey: ""
+  openaiApiKey: ""
+  geminiApiKey: ""
+  redisPassword: ""
+
+# Redis Configuration
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: true
+    password: "changeme-in-production"
+  master:
+    persistence:
+      enabled: false  # Ephemeral cache only
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "250m"
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+  dashboards:
+    enabled: true
+    labels:
+      grafana_dashboard: "1"
+
+# OpenTelemetry
+opentelemetry:
+  enabled: false
+  endpoint: "http://otel-collector:4318"
+  serviceName: "prompt-sentinel"
+  
+# Network Policies
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      - podSelector:
+          matchLabels:
+            app: prompt-sentinel
+  egress:
+    - to:
+      - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443  # HTTPS for LLM APIs
+        - protocol: TCP
+          port: 6379  # Redis
+        - protocol: TCP
+          port: 53   # DNS
+        - protocol: UDP
+          port: 53   # DNS
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Health Checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30
+  successThreshold: 1

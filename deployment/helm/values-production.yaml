@@ -1,0 +1,94 @@
+# Production values for prompt-sentinel
+# Override default values for production deployment
+
+replicaCount: 5
+
+image:
+  repository: promptsentinel/prompt-sentinel
+  tag: "v0.1.0"
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 5
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 60
+  targetMemoryUtilizationPercentage: 70
+
+config:
+  apiEnv: production
+  logLevel: WARNING
+  logFormat: json
+  debug: false
+  detectionMode: strict
+  confidenceThreshold: 0.8
+  
+  # Cache TTLs for production
+  cacheTtlLlm: 7200      # 2 hours
+  cacheTtlDetection: 1800 # 30 minutes
+  cacheTtlPii: 600       # 10 minutes
+
+# Production Redis with persistence
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    enabled: true
+    password: "CHANGE_THIS_IN_PRODUCTION"
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+  sentinel:
+    enabled: true
+    quorum: 2
+
+# Production monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+    scrapeTimeout: 10s
+
+# OpenTelemetry for production
+opentelemetry:
+  enabled: true
+  endpoint: "http://otel-collector.monitoring:4318"
+  serviceName: "prompt-sentinel-prod"
+
+# Strict network policies
+networkPolicy:
+  enabled: true
+
+# Pod disruption budget for high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 3

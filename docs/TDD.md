@@ -46,13 +46,13 @@ PromptSentinel is a **containerized microservice** that preprocesses user prompt
 | FR7 | Support API and file-based usage (batch testing / audit analysis) | ✅ Implemented |
 | FR8 | Maintain prompt context across sessions (multi-turn defense) | ✅ Implemented |
 | FR9 | Detect and redact PII (credit cards, SSN, emails, API keys, etc.) | ✅ Implemented |
-| FR10 | Intelligent routing based on prompt complexity | 🔄 Planned |
+| FR10 | Intelligent routing based on prompt complexity | ✅ Implemented |
 | FR11 | Redis caching layer for repeated patterns | ✅ Implemented |
-| FR12 | API usage monitoring and budget controls | 🔄 Planned |
-| FR13 | Automated attack pattern discovery using ML clustering | 🔄 Planned |
-| FR14 | A/B testing framework for detection strategies | 🔄 Planned |
+| FR12 | API usage monitoring and budget controls | ✅ Implemented |
+| FR13 | Automated attack pattern discovery using ML clustering | ✅ Implemented |
+| FR14 | A/B testing framework for detection strategies | ✅ Implemented |
 | FR15 | Batch prompt analysis API | ✅ Implemented |
-| FR16 | Prompt complexity metrics endpoint | 🔄 Planned |
+| FR16 | Prompt complexity metrics endpoint | ✅ Implemented |
 | FR17 | LLM provider health checks and automatic failover | ✅ Implemented |
 
 ### 2.2 User Stories & Implementation
@@ -561,8 +561,8 @@ jobs:
 ## 🚧 8. Future Enhancements
 
 ### Near-term (Q1 2025)
-- [ ] Intelligent routing based on prompt complexity (FR10)
-- [ ] Prompt complexity metrics endpoint (FR16)
+- [x] Intelligent routing based on prompt complexity (FR10) ✅
+- [x] Prompt complexity metrics endpoint (FR16) ✅
 - [ ] Enhanced batch processing capabilities
 
 ### Medium-term (Q2 2025)
@@ -571,7 +571,7 @@ jobs:
 - [ ] WebSocket support for streaming detection
 
 ### Long-term (Q3-Q4 2025)
-- [ ] Automated attack pattern discovery using ML (FR13)
+- [x] Automated attack pattern discovery using ML (FR13) ✅ Implemented
 - [ ] Multi-language support (non-English prompts)
 - [ ] Custom detection rule builder UI
 - [ ] Integration with popular LLM frameworks (LangChain, LlamaIndex)

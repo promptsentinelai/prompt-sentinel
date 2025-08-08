@@ -155,6 +155,19 @@ class UnifiedDetectionRequest(BaseModel):
         default=None,
         description="Optional detection configuration overrides"
     )
+    # User context for A/B testing experiments
+    user_id: Optional[str] = Field(
+        default=None,
+        description="User identifier for experiment assignment"
+    )
+    session_id: Optional[str] = Field(
+        default=None,
+        description="Session identifier for context tracking"
+    )
+    user_context: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Additional user attributes for targeting"
+    )
     
     def to_messages(self) -> List[Message]:
         """Convert input to standardized message format."""
@@ -244,6 +257,9 @@ class HealthResponse(BaseModel):
     uptime_seconds: float
     providers_status: Dict[str, str]
     redis_connected: bool
+    redis_latency_ms: Optional[float] = None
+    cache_stats: Optional[Dict[str, Any]] = None
+    system_metrics: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 

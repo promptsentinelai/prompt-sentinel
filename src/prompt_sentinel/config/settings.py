@@ -96,6 +96,19 @@ class Settings(BaseSettings):
     llm_classification_enabled: bool = Field(default=True, env="LLM_CLASSIFICATION_ENABLED")
     confidence_threshold: float = Field(default=0.7, env="CONFIDENCE_THRESHOLD")
     
+    # Authentication Configuration
+    auth_mode: Literal["none", "optional", "required"] = Field(
+        default="optional", env="AUTH_MODE"
+    )
+    auth_enforce_https: bool = Field(default=False, env="AUTH_ENFORCE_HTTPS")
+    auth_bypass_networks: str = Field(default="", env="AUTH_BYPASS_NETWORKS")
+    auth_bypass_headers: str = Field(default="", env="AUTH_BYPASS_HEADERS")
+    auth_allow_localhost: bool = Field(default=True, env="AUTH_ALLOW_LOCALHOST")
+    auth_unauthenticated_rpm: int = Field(default=10, env="AUTH_UNAUTHENTICATED_RPM")
+    auth_unauthenticated_tpm: int = Field(default=1000, env="AUTH_UNAUTHENTICATED_TPM")
+    api_key_prefix: str = Field(default="psk_", env="API_KEY_PREFIX")
+    api_key_length: int = Field(default=32, env="API_KEY_LENGTH")
+    
     # Security Configuration
     max_prompt_length: int = Field(default=50000, env="MAX_PROMPT_LENGTH")
     rate_limit_per_ip: int = Field(default=1000, env="RATE_LIMIT_PER_IP")
@@ -135,6 +148,25 @@ class Settings(BaseSettings):
     def allowed_charset_list(self) -> List[str]:
         """Get list of allowed charsets from comma-separated string."""
         return [c.strip() for c in self.allowed_charsets.split(",") if c.strip()]
+    
+    @property
+    def auth_bypass_networks_list(self) -> List[str]:
+        """Get list of bypass networks from comma-separated string."""
+        if not self.auth_bypass_networks:
+            return []
+        return [n.strip() for n in self.auth_bypass_networks.split(",") if n.strip()]
+    
+    @property
+    def auth_bypass_headers_dict(self) -> dict:
+        """Get bypass headers as dictionary from key:value,key:value format."""
+        if not self.auth_bypass_headers:
+            return {}
+        result = {}
+        for pair in self.auth_bypass_headers.split(","):
+            if ":" in pair:
+                key, value = pair.split(":", 1)
+                result[key.strip()] = value.strip()
+        return result
     
     @property
     def corpus_sources_list(self) -> List[str]:

@@ -1,8 +1,12 @@
-"""LLM-based classification with multi-provider support."""
+"""LLM-based classification with multi-provider support and optional caching."""
 
 import asyncio
+import hashlib
+import json
+import logging
 from typing import Dict, List, Optional, Tuple
 from prompt_sentinel.config.settings import settings
+from prompt_sentinel.cache.cache_manager import cache_manager
 from prompt_sentinel.providers.base import LLMProvider
 from prompt_sentinel.providers.anthropic_provider import AnthropicProvider
 from prompt_sentinel.providers.openai_provider import OpenAIProvider
@@ -13,6 +17,8 @@ from prompt_sentinel.models.schemas import (
     DetectionReason,
     Verdict
 )
+
+logger = logging.getLogger(__name__)
 
 
 class LLMClassifierManager:
@@ -51,17 +57,20 @@ class LLMClassifierManager:
     async def classify(
         self,
         messages: List[Message],
-        use_all_providers: bool = False
+        use_all_providers: bool = False,
+        use_cache: bool = True
     ) -> Tuple[Verdict, List[DetectionReason], float]:
-        """Classify messages using LLM providers for semantic analysis.
+        """Classify messages using LLM providers with optional caching.
         
         Sends messages to LLM providers for injection detection analysis.
+        Results are cached to reduce API calls and improve performance.
         Can either use the first available provider or aggregate results
         from all providers for higher confidence.
         
         Args:
             messages: List of messages to analyze for injection attempts
             use_all_providers: If True, query all providers and combine results
+            use_cache: Whether to use caching (default: True)
             
         Returns:
             Tuple containing:
@@ -77,8 +86,31 @@ class LLMClassifierManager:
         """
         if not self.providers:
             # No providers available, return benign
+            logger.warning("No LLM providers available for classification")
             return (Verdict.ALLOW, [], 0.0)
         
+        # If caching is enabled and not using all providers, try cache
+        if use_cache and not use_all_providers and cache_manager.enabled:
+            cache_key = self._generate_cache_key(messages)
+            
+            # Use cache manager's get_or_compute for automatic fallback
+            result = await cache_manager.get_or_compute(
+                key=cache_key,
+                compute_func=lambda: self._classify_with_failover(messages),
+                ttl=settings.cache_ttl_llm,
+                cache_on_error=True  # Return stale cache if all LLMs fail
+            )
+            
+            # Log cache hit if applicable
+            if isinstance(result, tuple) and len(result) == 3:
+                if hasattr(result[1], '__iter__') and any(
+                    getattr(r, '_cache_hit', False) for r in result[1] if hasattr(r, '_cache_hit')
+                ):
+                    logger.debug("LLM classification cache hit")
+            
+            return result
+        
+        # No caching or using all providers
         if use_all_providers:
             return await self._classify_with_all_providers(messages)
         else:
@@ -290,3 +322,32 @@ class LLMClassifierManager:
                 health_status[provider_name] = False
         
         return health_status
+    
+    def _generate_cache_key(self, messages: List[Message]) -> str:
+        """Generate a cache key from messages for LLM classification.
+        
+        Creates a deterministic cache key based on message content and roles.
+        Truncates long content to avoid excessively long keys while maintaining
+        uniqueness for different prompts.
+        
+        Args:
+            messages: List of messages to generate key from
+            
+        Returns:
+            Cache key string with format "llm_classify:{hash}"
+        """
+        # Create a deterministic string representation
+        content_parts = []
+        for msg in messages:
+            # Include role and truncated content for key generation
+            content_preview = msg.content[:200] if len(msg.content) > 200 else msg.content
+            content_parts.append(f"{msg.role.value}:{content_preview}")
+        
+        # Include detection mode in key for different configurations
+        content_parts.append(f"mode:{settings.detection_mode}")
+        
+        # Create hash of the combined content
+        combined = "|".join(content_parts)
+        content_hash = hashlib.sha256(combined.encode()).hexdigest()
+        
+        return f"llm_classify:{content_hash[:16]}"

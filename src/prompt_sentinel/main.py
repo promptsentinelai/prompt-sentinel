@@ -28,6 +28,7 @@ from fastapi.responses import JSONResponse
 import structlog
 from prompt_sentinel import __version__
 from prompt_sentinel.config.settings import settings
+from prompt_sentinel.cache.cache_manager import cache_manager
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.detection.prompt_processor import PromptProcessor
 from prompt_sentinel.models.schemas import (
@@ -113,6 +114,16 @@ async def lifespan(app: FastAPI):
     else:
         logger.info(f"Active detection methods: {', '.join(active_methods)}")
     
+    # Initialize cache (optional)
+    if settings.redis_enabled:
+        redis_connected = await cache_manager.connect()
+        if redis_connected:
+            logger.info("Redis cache enabled and connected")
+        else:
+            logger.warning("Redis cache enabled but not available - running without cache")
+    else:
+        logger.info("Redis cache disabled - running without cache")
+    
     # Check provider health
     if settings.llm_classification_enabled:
         health_status = await detector.llm_classifier.health_check()
@@ -122,6 +133,10 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down PromptSentinel")
+    
+    # Disconnect from cache if connected
+    if cache_manager.connected:
+        await cache_manager.disconnect()
 
 
 # Create FastAPI app
@@ -627,6 +642,101 @@ async def get_recommendations():
             "v2_analyze": "Comprehensive analysis with per-message details",
             "v2_format_assist": "Help formatting prompts correctly"
         }
+    }
+
+
+# Cache Management Endpoints
+
+@app.get("/cache/stats")
+async def get_cache_stats():
+    """Get cache statistics and status.
+    
+    Provides cache hit/miss rates, memory usage, and connection status.
+    Returns basic status info if cache is disabled.
+    
+    Returns:
+        Dictionary containing:
+        - enabled: Whether caching is configured
+        - connected: Whether Redis is connected
+        - stats: Detailed statistics if available
+        
+    Example:
+        >>> response = await client.get("/cache/stats")
+        >>> print(response.json())
+        {
+            "cache": {
+                "enabled": true,
+                "connected": true,
+                "hits": 1234,
+                "misses": 567,
+                "hit_rate": 68.5,
+                "memory_used": "12.5MB"
+            },
+            "message": "Cache is optional. System works without it."
+        }
+    """
+    stats = await cache_manager.get_stats()
+    return {
+        "cache": stats,
+        "message": "Cache is optional. System works without it."
+    }
+
+
+@app.post("/cache/clear")
+async def clear_cache(pattern: Optional[str] = "*"):
+    """Clear cache entries matching a pattern.
+    
+    Removes cached entries to force fresh computation. Useful for
+    testing or after configuration changes.
+    
+    Args:
+        pattern: Redis pattern to match (default: "*" for all)
+        
+    Returns:
+        Dictionary with number of entries cleared
+        
+    Example:
+        >>> # Clear all LLM classification cache
+        >>> response = await client.post("/cache/clear?pattern=llm_classify:*")
+        >>> print(response.json())
+        {"cleared": 42, "pattern": "llm_classify:*"}
+    """
+    if not cache_manager.enabled:
+        return {"message": "Cache not enabled", "cleared": 0}
+    
+    if not cache_manager.connected:
+        return {"message": "Cache not connected", "cleared": 0}
+    
+    count = await cache_manager.clear_pattern(pattern)
+    return {
+        "cleared": count,
+        "pattern": pattern,
+        "message": f"Cleared {count} cache entries"
+    }
+
+
+@app.get("/cache/health")
+async def cache_health_check():
+    """Check cache connection health.
+    
+    Performs a quick health check on the Redis connection.
+    
+    Returns:
+        Dictionary with health status
+    """
+    if not cache_manager.enabled:
+        return {
+            "status": "disabled",
+            "message": "Cache is disabled in configuration"
+        }
+    
+    is_healthy = await cache_manager.health_check()
+    
+    return {
+        "status": "healthy" if is_healthy else "unhealthy",
+        "enabled": cache_manager.enabled,
+        "connected": cache_manager.connected,
+        "message": "Cache is operational" if is_healthy else "Cache connection failed"
     }
 
 

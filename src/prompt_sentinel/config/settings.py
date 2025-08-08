@@ -73,13 +73,19 @@ class Settings(BaseSettings):
     gemini_max_tokens: int = Field(default=1000, env="GEMINI_MAX_TOKENS")
     gemini_temperature: float = Field(default=0.3, env="GEMINI_TEMPERATURE")
     
-    # Redis Configuration
+    # Redis Cache Configuration (Optional - system works without it)
     redis_enabled: bool = Field(default=False, env="REDIS_ENABLED")
     redis_host: str = Field(default="localhost", env="REDIS_HOST")
     redis_port: int = Field(default=6379, env="REDIS_PORT")
     redis_db: int = Field(default=0, env="REDIS_DB")
     redis_password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
-    redis_ttl: int = Field(default=3600, env="REDIS_TTL")
+    redis_ttl: int = Field(default=3600, env="REDIS_TTL")  # Default TTL
+    
+    # Cache TTLs for different types (seconds)
+    cache_ttl_llm: int = Field(default=3600, env="CACHE_TTL_LLM")  # 1 hour for LLM results
+    cache_ttl_detection: int = Field(default=600, env="CACHE_TTL_DETECTION")  # 10 min for detection
+    cache_ttl_pattern: int = Field(default=1800, env="CACHE_TTL_PATTERN")  # 30 min for patterns
+    cache_ttl_health: int = Field(default=60, env="CACHE_TTL_HEALTH")  # 1 min for health checks
     
     # Detection Configuration
     detection_mode: Literal["strict", "moderate", "permissive"] = Field(

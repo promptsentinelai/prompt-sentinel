@@ -25,9 +25,10 @@ services:
       - PII_DETECTION_ENABLED=${PII_DETECTION_ENABLED:-true}
       - PII_REDACTION_MODE=${PII_REDACTION_MODE:-mask}
       # Redis Configuration (enabled for this compose file)
-      - REDIS_ENABLED=true
+      - REDIS_ENABLED=${REDIS_ENABLED:-true}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-changeme-in-production}
     volumes:
       - ./corpus:/app/corpus:ro
       - ./logs:/app/logs
@@ -35,23 +36,46 @@ services:
       - sentinel-network
     restart: unless-stopped
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   redis:
     image: redis:7-alpine
     container_name: prompt-sentinel-redis
+    # Ephemeral Redis with security hardening
+    command: >
+      redis-server
+      --save ""
+      --appendonly no
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-changeme-in-production}
+      --rename-command FLUSHDB ""
+      --rename-command FLUSHALL ""
+      --rename-command CONFIG ""
+      --rename-command SHUTDOWN ""
     ports:
-      - "6380:6379"  # Changed from 6379 to 6380 to avoid conflict with emailmosaic-redis
-    volumes:
-      - redis-data:/data
+      # Only bind to localhost for security
+      - "127.0.0.1:6380:6379"  # Changed from 6379 to 6380 to avoid conflict
     networks:
       - sentinel-network
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    # Use tmpfs (RAM) for any data Redis tries to write
+    tmpfs:
+      - /data:size=256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "-a", "${REDIS_PASSWORD:-changeme-in-production}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 networks:
   sentinel-network:
     driver: bridge
 
-volumes:
-  redis-data:
+# NO volumes - completely ephemeral cache

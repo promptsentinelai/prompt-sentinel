@@ -1,0 +1,24 @@
+apiVersion: v2
+name: prompt-sentinel
+description: A defensive security microservice for detecting and mitigating prompt injection attacks in LLM-based systems
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - security
+  - llm
+  - prompt-injection
+  - detection
+  - ai-security
+home: https://github.com/rhoska/prompt-sentinel
+sources:
+  - https://github.com/rhoska/prompt-sentinel
+maintainers:
+  - name: PromptSentinel Team
+    email: support@promptsentinel.ai
+icon: https://raw.githubusercontent.com/rhoska/prompt-sentinel/main/docs/logo.png
+dependencies:
+  - name: redis
+    version: "18.0.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled

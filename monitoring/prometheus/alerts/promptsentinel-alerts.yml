@@ -1,0 +1,168 @@
+groups:
+  - name: promptsentinel_alerts
+    interval: 30s
+    rules:
+      # Performance Alerts
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, sum(rate(promptsentinel_request_duration_seconds_bucket[5m])) by (le)) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "High response time detected"
+          description: "P95 response time is {{ $value }}s (threshold: 0.5s)"
+
+      - alert: VeryHighResponseTime
+        expr: histogram_quantile(0.95, sum(rate(promptsentinel_request_duration_seconds_bucket[5m])) by (le)) > 2
+        for: 2m
+        labels:
+          severity: critical
+          service: promptsentinel
+        annotations:
+          summary: "Critical response time detected"
+          description: "P95 response time is {{ $value }}s (threshold: 2s)"
+
+      # Security Alerts
+      - alert: HighThreatDetectionRate
+        expr: sum(rate(promptsentinel_detections_total{verdict="block"}[5m])) / sum(rate(promptsentinel_detections_total[5m])) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "High threat detection rate"
+          description: "{{ $value | humanizePercentage }} of requests are being blocked"
+
+      - alert: CriticalThreatDetected
+        expr: increase(promptsentinel_critical_threats_total[1m]) > 0
+        labels:
+          severity: critical
+          service: promptsentinel
+        annotations:
+          summary: "Critical threat detected"
+          description: "{{ $value }} critical threats detected in the last minute"
+
+      - alert: PiiDataExposure
+        expr: rate(promptsentinel_pii_detections_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "High rate of PII detection"
+          description: "PII detection rate: {{ $value }} per second"
+
+      # Budget Alerts
+      - alert: BudgetWarning
+        expr: promptsentinel_budget_usage_hourly_usd / promptsentinel_budget_limit_hourly_usd > 0.75
+        for: 5m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "Budget usage warning"
+          description: "Hourly budget usage at {{ $value | humanizePercentage }}"
+
+      - alert: BudgetCritical
+        expr: promptsentinel_budget_usage_hourly_usd / promptsentinel_budget_limit_hourly_usd > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          service: promptsentinel
+        annotations:
+          summary: "Budget limit approaching"
+          description: "Hourly budget usage at {{ $value | humanizePercentage }} - will start blocking soon"
+
+      - alert: BudgetExceeded
+        expr: promptsentinel_budget_usage_hourly_usd >= promptsentinel_budget_limit_hourly_usd
+        labels:
+          severity: critical
+          service: promptsentinel
+        annotations:
+          summary: "Budget limit exceeded"
+          description: "Hourly budget limit exceeded - requests are being blocked"
+
+      # Rate Limiting Alerts
+      - alert: HighRateLimitRejection
+        expr: sum(rate(promptsentinel_rate_limit_rejected_total[5m])) / sum(rate(promptsentinel_rate_limit_requests_total[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "High rate limit rejection rate"
+          description: "{{ $value | humanizePercentage }} of requests are being rate limited"
+
+      # Cache Alerts
+      - alert: LowCacheHitRate
+        expr: sum(rate(promptsentinel_cache_hits_total[5m])) / (sum(rate(promptsentinel_cache_hits_total[5m])) + sum(rate(promptsentinel_cache_misses_total[5m]))) < 0.5
+        for: 15m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} (threshold: 50%)"
+
+      - alert: CacheConnectionLost
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: promptsentinel
+        annotations:
+          summary: "Redis cache connection lost"
+          description: "Cannot connect to Redis cache server"
+
+      # Provider Alerts
+      - alert: ProviderFailure
+        expr: sum(rate(promptsentinel_provider_errors_total[5m])) by (provider) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "Provider {{ $labels.provider }} experiencing failures"
+          description: "Error rate: {{ $value }} errors per second"
+
+      - alert: AllProvidersDown
+        expr: sum(up{job="promptsentinel", provider=~"anthropic|openai|gemini"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: promptsentinel
+        annotations:
+          summary: "All LLM providers are down"
+          description: "Cannot reach any LLM provider - detection degraded to heuristics only"
+
+      # System Alerts
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes > 512000000
+        for: 10m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanize1024 }}B"
+
+      - alert: HighCpuUsage
+        expr: rate(process_cpu_seconds_total[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: promptsentinel
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: ServiceDown
+        expr: up{job="promptsentinel"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: promptsentinel
+        annotations:
+          summary: "PromptSentinel service is down"
+          description: "Cannot reach PromptSentinel API"

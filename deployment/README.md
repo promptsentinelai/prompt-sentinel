@@ -9,6 +9,7 @@ deployment/
 ├── terraform/        # AWS ECS deployment using Terraform
 ├── cloudformation/   # AWS ECS deployment using CloudFormation
 ├── kubernetes/       # Kubernetes manifests for K8s/EKS/GKE/AKS
+├── helm/            # Helm chart for Kubernetes deployment
 └── scripts/         # Deployment utility scripts
 ```
 
@@ -73,7 +74,7 @@ aws cloudformation create-stack \
   --capabilities CAPABILITY_NAMED_IAM
 ```
 
-### 3. Kubernetes Deployment
+### 3. Kubernetes Deployment (Raw Manifests)
 
 The Kubernetes manifests support deployment to any K8s cluster:
 - Amazon EKS
@@ -139,6 +140,104 @@ kubectl logs -n prompt-sentinel -l app=prompt-sentinel
 # Port forward for local testing
 kubectl port-forward -n prompt-sentinel svc/prompt-sentinel 8080:80
 ```
+
+### 4. Helm Chart Deployment (Recommended for Kubernetes)
+
+The Helm chart provides a production-ready, parameterized deployment with:
+- Automatic Redis dependency management
+- Environment-specific values files
+- Built-in monitoring (Prometheus ServiceMonitor)
+- Network policies
+- Pod disruption budgets
+- OpenTelemetry support
+
+#### Prerequisites
+- Helm 3.x installed
+- Kubernetes cluster (1.20+)
+- NGINX Ingress Controller (optional)
+- cert-manager (optional, for TLS)
+
+#### Quick Start
+```bash
+cd deployment/helm
+
+# Add Bitnami repo for Redis dependency
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+
+# Install with default values
+helm install prompt-sentinel . -n prompt-sentinel --create-namespace
+
+# Install with production values
+helm install prompt-sentinel . -f values-production.yaml \
+  -n prompt-sentinel --create-namespace \
+  --set secrets.anthropicApiKey=$ANTHROPIC_API_KEY \
+  --set secrets.openaiApiKey=$OPENAI_API_KEY \
+  --set secrets.geminiApiKey=$GEMINI_API_KEY
+
+# Upgrade existing deployment
+helm upgrade prompt-sentinel . -n prompt-sentinel --reuse-values
+
+# Dry run to preview changes
+helm install prompt-sentinel . -n prompt-sentinel --dry-run --debug
+```
+
+#### Configuration Examples
+
+**Development:**
+```bash
+helm install prompt-sentinel . -n prompt-sentinel \
+  --set replicaCount=1 \
+  --set resources.requests.memory=256Mi \
+  --set resources.requests.cpu=100m \
+  --set redis.enabled=false \
+  --set config.apiEnv=development
+```
+
+**Production with external Redis:**
+```bash
+helm install prompt-sentinel . -f values-production.yaml \
+  --set redis.enabled=false \
+  --set config.redisHost=redis.example.com \
+  --set config.redisPassword=$REDIS_PASSWORD
+```
+
+**With custom domain and TLS:**
+```bash
+helm install prompt-sentinel . \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0].host=api.example.com \
+  --set ingress.tls[0].secretName=prompt-sentinel-tls \
+  --set ingress.tls[0].hosts[0]=api.example.com
+```
+
+#### Verify Helm Deployment
+```bash
+# Check release status
+helm status prompt-sentinel -n prompt-sentinel
+
+# Get all resources
+kubectl get all -n prompt-sentinel
+
+# View generated manifests
+helm get manifest prompt-sentinel -n prompt-sentinel
+
+# Check values used
+helm get values prompt-sentinel -n prompt-sentinel
+
+# View release history
+helm history prompt-sentinel -n prompt-sentinel
+```
+
+#### Helm Chart Structure
+- **Chart.yaml**: Chart metadata and dependencies
+- **values.yaml**: Default configuration values
+- **values-production.yaml**: Production-specific overrides
+- **templates/**: Kubernetes resource templates
+  - Deployment, Service, Ingress
+  - ConfigMap, Secret
+  - HPA, PDB, NetworkPolicy
+  - ServiceMonitor for Prometheus
 
 ## 🔧 Configuration
 

@@ -1,0 +1,74 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    service: 'promptsentinel'
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # PromptSentinel application metrics
+  - job_name: 'promptsentinel'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['promptsentinel:8080']
+        labels:
+          service: 'promptsentinel'
+          component: 'api'
+    
+    # Enable metric relabeling
+    metric_relabel_configs:
+      # Drop high-cardinality histogram buckets if needed
+      - source_labels: [__name__]
+        regex: '.*_bucket'
+        target_label: __tmp_bucket
+        replacement: '${1}'
+      
+      # Keep important metrics
+      - source_labels: [__name__]
+        regex: 'promptsentinel_.*|process_.*|python_.*'
+        action: keep
+
+  # Redis exporter for cache metrics
+  - job_name: 'redis'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'promptsentinel'
+          component: 'cache'
+
+  # Node exporter for system metrics
+  - job_name: 'node'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'promptsentinel'
+          component: 'system'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+# Remote write configuration (optional - for long-term storage)
+# remote_write:
+#   - url: "https://prometheus-storage.example.com/api/v1/write"
+#     basic_auth:
+#       username: 'prometheus'
+#       password_file: '/etc/prometheus/remote_write_password'

@@ -68,7 +68,9 @@ class TestCacheManager:
         compute_func = AsyncMock(return_value="new_result")
         result = await manager.get_or_compute("test_key", compute_func)
         
-        assert result == {"value": "cached_result"}
+        # Check that cache metadata was added
+        assert result["value"] == "cached_result"
+        assert result["_cache_hit"] == True
         compute_func.assert_not_called()
     
     @pytest.mark.asyncio
@@ -115,7 +117,9 @@ class TestCacheManager:
             cache_on_error=True
         )
         
-        assert result == {"value": "stale_data"}
+        # Check that stale cache metadata was added
+        assert result["value"] == "stale_data"
+        assert result["_cache_stale"] == True
     
     def test_hash_key(self):
         """Test that cache keys are properly hashed."""

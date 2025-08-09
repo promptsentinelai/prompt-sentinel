@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any
 
 import structlog
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 logger = structlog.get_logger()
 

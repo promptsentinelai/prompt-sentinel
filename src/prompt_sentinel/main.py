@@ -427,7 +427,7 @@ async def health_check():
             "cpu_percent": process.cpu_percent(),
             "num_threads": process.num_threads(),
             "open_files": len(process.open_files()),
-            "connections": len(process.connections()),
+            "connections": len(process.net_connections()),
         }
     except Exception as e:
         logger.error(f"Failed to collect system metrics: {e}")

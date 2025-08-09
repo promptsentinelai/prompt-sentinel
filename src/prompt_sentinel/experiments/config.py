@@ -263,7 +263,7 @@ class ExperimentConfig(BaseModel):
                 "confidence_level": 0.95,
                 "created_by": "data_team",
             }
-        }
+        },
     )
 
 
@@ -299,6 +299,4 @@ class ExperimentMetadata(BaseModel):
     experiment_overhead_ms: float = Field(default=0.0, description="Average experiment overhead")
     assignment_cache_hit_rate: float = Field(default=0.0, description="Assignment cache hit rate")
 
-    model_config = ConfigDict(
-        json_encoders={datetime: lambda dt: dt.isoformat()}
-    )
+    model_config = ConfigDict(json_encoders={datetime: lambda dt: dt.isoformat()})

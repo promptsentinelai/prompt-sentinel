@@ -173,4 +173,28 @@ class TestWebSocketMessageTypes:
             })
             
             # Send chunks
-            chunks = ["
+            chunks = [
+                "This is a test prompt ",
+                "that might contain ",
+                "injection attempts."
+            ]
+            
+            for i, chunk in enumerate(chunks):
+                websocket.send_json({
+                    "type": "stream_chunk",
+                    "stream_id": "stream-123",
+                    "chunk": chunk,
+                    "chunk_id": i
+                })
+            
+            # End streaming
+            websocket.send_json({
+                "type": "stream_end",
+                "stream_id": "stream-123"
+            })
+            
+            # Receive final result
+            response = websocket.receive_json()
+            assert response["type"] == "stream_result"
+            assert response["stream_id"] == "stream-123"
+            assert "verdict" in response

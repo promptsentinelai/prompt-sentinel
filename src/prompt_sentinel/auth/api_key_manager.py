@@ -388,9 +388,7 @@ class APIKeyManager:
         )
 
         # Store by key ID for management
-        await cache_manager.client.hset(
-            "api_keys:by_id", api_key.key_id, api_key.model_dump_json()
-        )
+        await cache_manager.client.hset("api_keys:by_id", api_key.key_id, api_key.model_dump_json())
 
         # Store client -> keys mapping
         await cache_manager.client.sadd(f"api_keys:client:{api_key.client_id}", api_key.key_id)

@@ -148,9 +148,7 @@ class AssignmentService:
 
         return assignment
 
-    async def get_assignment(
-        self, user_id: str, experiment_id: str
-    ) -> ExperimentAssignment | None:
+    async def get_assignment(self, user_id: str, experiment_id: str) -> ExperimentAssignment | None:
         """Get existing user assignment for experiment.
 
         Args:

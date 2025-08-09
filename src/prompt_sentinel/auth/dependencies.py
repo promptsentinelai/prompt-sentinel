@@ -138,15 +138,19 @@ async def get_current_client(
     # 3. Check API key authentication
     # Check multiple sources for API key
     api_key_to_check = api_key
-    
+
     # Also check X-API-Key header
     if not api_key_to_check and "X-API-Key" in dict(request.headers):
         api_key_to_check = request.headers.get("X-API-Key")
-    
+
     # Also check query parameters
-    if not api_key_to_check and hasattr(request, "query_params") and "api_key" in request.query_params:
+    if (
+        not api_key_to_check
+        and hasattr(request, "query_params")
+        and "api_key" in request.query_params
+    ):
         api_key_to_check = request.query_params.get("api_key")
-    
+
     if api_key_to_check:
         client = await manager.validate_api_key(api_key_to_check)
         if client:

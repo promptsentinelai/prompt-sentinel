@@ -152,7 +152,7 @@ async def submit_feedback(request: FeedbackRequest):
 
     except Exception as e:
         logger.error("Failed to submit feedback", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to submit feedback")
+        raise HTTPException(status_code=500, detail="Failed to submit feedback") from e
 
 
 @router.get(
@@ -227,7 +227,7 @@ async def discover_patterns(request: PatternDiscoveryRequest, manager=Depends(ge
         raise
     except Exception as e:
         logger.error("Pattern discovery failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Pattern discovery failed")
+        raise HTTPException(status_code=500, detail="Pattern discovery failed") from e
 
 
 @router.get("/patterns", response_model=list[PatternResponse], summary="List discovered patterns")
@@ -299,7 +299,7 @@ async def list_patterns(
 
     except Exception as e:
         logger.error("Failed to list patterns", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to list patterns")
+        raise HTTPException(status_code=500, detail="Failed to list patterns") from e
 
 
 @router.get("/patterns/{pattern_id}", response_model=PatternResponse, summary="Get pattern details")

@@ -101,7 +101,7 @@ async def create_experiment(
         }
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error("Failed to create experiment", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to create experiment") from e
@@ -209,7 +209,7 @@ async def get_experiment(
     try:
         status = await manager.get_experiment_status(experiment_id)
         if not status:
-            raise HTTPException(status_code=404, detail="Experiment not found") from e
+            raise HTTPException(status_code=404, detail="Experiment not found")
 
         return status
 
@@ -243,7 +243,7 @@ async def update_experiment(
     """
     # Note: Full implementation would require getting the existing config,
     # updating fields, validating changes, and saving back
-    raise HTTPException(status_code=501, detail="Update not implemented yet") from e
+    raise HTTPException(status_code=501, detail="Update not implemented yet")
 
 
 @router.post("/{experiment_id}/status", response_model=dict, summary="Change experiment status")
@@ -506,7 +506,7 @@ async def delete_experiment(
         # Check if experiment exists and is not running
         status = await manager.get_experiment_status(experiment_id)
         if not status:
-            raise HTTPException(status_code=404, detail="Experiment not found") from e
+            raise HTTPException(status_code=404, detail="Experiment not found")
 
         if status.get("is_active", False):
             raise HTTPException(

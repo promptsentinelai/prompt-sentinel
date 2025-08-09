@@ -12,8 +12,6 @@ from pydantic import ValidationError
 
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.models.schemas import (
-    AnalysisRequest,
-    AnalysisResponse,
     DetectionResponse,
     Message,
 )
@@ -118,11 +116,11 @@ class ConnectionManager:
 
         try:
             websocket = self.active_connections[client_id]
-            
+
             # Check if WebSocket is still connected
             if websocket.client_state != WebSocketState.CONNECTED:
                 return False
-                
+
             await websocket.send_json(data)
 
             # Update activity timestamp
@@ -248,7 +246,7 @@ class StreamingDetector:
             return {
                 "type": "detection_response",
                 "request_id": request_data.get("request_id", str(uuid.uuid4())),
-                "response": response.model_dump(mode='json'),
+                "response": response.model_dump(mode="json"),
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
@@ -323,11 +321,11 @@ class StreamingDetector:
     def _calculate_threat_level(self, response: DetectionResponse) -> str:
         """Calculate threat level from detection response."""
         from prompt_sentinel.models.schemas import Verdict
-        
+
         if response.verdict == Verdict.BLOCK:
             return "high"
         elif response.verdict == Verdict.STRIP:
-            return "medium"  
+            return "medium"
         elif response.verdict == Verdict.FLAG:
             return "low"
         else:
@@ -336,7 +334,7 @@ class StreamingDetector:
     def _get_confidence_breakdown(self, response: DetectionResponse) -> dict:
         """Get confidence breakdown by detection method."""
         breakdown = {"overall": response.confidence}
-        
+
         source_confidences = {}
         if response.reasons:
             for reason in response.reasons:
@@ -344,29 +342,31 @@ class StreamingDetector:
                 if source not in source_confidences:
                     source_confidences[source] = []
                 source_confidences[source].append(reason.confidence)
-        
+
         # Calculate average confidence per source
         for source, confidences in source_confidences.items():
             breakdown[source] = sum(confidences) / len(confidences) if confidences else 0.0
-            
+
         return breakdown
 
     def _get_mitigation_suggestions(self, response: DetectionResponse) -> list:
         """Get mitigation suggestions based on detection results."""
         from prompt_sentinel.models.schemas import DetectionCategory
-        
+
         suggestions = []
 
         # Check categories in reasons
-        reason_categories = [reason.category for reason in response.reasons] if response.reasons else []
-        
+        reason_categories = (
+            [reason.category for reason in response.reasons] if response.reasons else []
+        )
+
         if DetectionCategory.DIRECT_INJECTION in reason_categories:
             suggestions.append("Use strict role separation between system and user messages")
         if DetectionCategory.JAILBREAK in reason_categories:
             suggestions.append("Implement additional context validation")
         if DetectionCategory.PII_DETECTED in reason_categories:
             suggestions.append("Enable automatic PII redaction before processing")
-            
+
         if not suggestions:
             suggestions.append("Consider reviewing prompt content for security best practices")
 

@@ -305,9 +305,7 @@ class ExperimentManager:
 
         return assignment
 
-    async def get_variant_config(
-        self, user_id: str, experiment_id: str
-    ) -> dict[str, Any] | None:
+    async def get_variant_config(self, user_id: str, experiment_id: str) -> dict[str, Any] | None:
         """Get variant configuration for user.
 
         Args:

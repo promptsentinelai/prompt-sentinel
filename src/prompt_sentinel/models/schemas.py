@@ -19,7 +19,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Role(str, Enum):
@@ -85,7 +85,8 @@ class Message(BaseModel):
     role: Role
     content: str
 
-    @validator("content")
+    @field_validator("content")
+    @classmethod
     def validate_content_length(cls, v):
         """Validate that message content is not empty.
 
@@ -115,7 +116,8 @@ class SimplePromptRequest(BaseModel):
         default=Role.USER, description="Role of the prompt (user, system, or combined)"
     )
 
-    @validator("prompt")
+    @field_validator("prompt")
+    @classmethod
     def validate_prompt_length(cls, v):
         """Basic prompt validation."""
         if not v or not v.strip():
@@ -126,9 +128,10 @@ class SimplePromptRequest(BaseModel):
 class StructuredPromptRequest(BaseModel):
     """Structured prompt with role separation."""
 
-    messages: list[Message] = Field(..., description="List of messages with roles", min_items=1)
+    messages: list[Message] = Field(..., description="List of messages with roles", min_length=1)
 
-    @validator("messages")
+    @field_validator("messages")
+    @classmethod
     def validate_message_structure(cls, v):
         """Validate message structure."""
         if not v:

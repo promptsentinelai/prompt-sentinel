@@ -42,93 +42,93 @@ class Settings(BaseSettings):
     )
 
     # API Configuration
-    api_host: str = Field(default="0.0.0.0", env="API_HOST")
-    api_port: int = Field(default=8080, env="API_PORT")
+    api_host: str = Field(default="0.0.0.0")
+    api_port: int = Field(default=8080)
     api_env: Literal["development", "staging", "production"] = Field(
-        default="development", env="API_ENV"
+        default="development"
     )
-    debug: bool = Field(default=False, env="DEBUG")
+    debug: bool = Field(default=False)
 
     # LLM Provider Configuration
     llm_provider_order: str = Field(default="anthropic,openai,gemini")
 
     # Anthropic Configuration
-    anthropic_api_key: str | None = Field(default=None, env="ANTHROPIC_API_KEY")
-    anthropic_model: str = Field(default="claude-3-haiku-20240307", env="ANTHROPIC_MODEL")
-    anthropic_max_tokens: int = Field(default=1000, env="ANTHROPIC_MAX_TOKENS")
-    anthropic_temperature: float = Field(default=0.3, env="ANTHROPIC_TEMPERATURE")
+    anthropic_api_key: str | None = Field(default=None)
+    anthropic_model: str = Field(default="claude-3-haiku-20240307")
+    anthropic_max_tokens: int = Field(default=1000)
+    anthropic_temperature: float = Field(default=0.3)
 
     # OpenAI Configuration
-    openai_api_key: str | None = Field(default=None, env="OPENAI_API_KEY")
-    openai_model: str = Field(default="gpt-4-turbo-preview", env="OPENAI_MODEL")
-    openai_max_tokens: int = Field(default=1000, env="OPENAI_MAX_TOKENS")
-    openai_temperature: float = Field(default=0.3, env="OPENAI_TEMPERATURE")
+    openai_api_key: str | None = Field(default=None)
+    openai_model: str = Field(default="gpt-4-turbo-preview")
+    openai_max_tokens: int = Field(default=1000)
+    openai_temperature: float = Field(default=0.3)
 
     # Gemini Configuration
-    gemini_api_key: str | None = Field(default=None, env="GEMINI_API_KEY")
-    gemini_model: str = Field(default="gemini-1.5-flash", env="GEMINI_MODEL")
-    gemini_max_tokens: int = Field(default=1000, env="GEMINI_MAX_TOKENS")
-    gemini_temperature: float = Field(default=0.3, env="GEMINI_TEMPERATURE")
+    gemini_api_key: str | None = Field(default=None)
+    gemini_model: str = Field(default="gemini-1.5-flash")
+    gemini_max_tokens: int = Field(default=1000)
+    gemini_temperature: float = Field(default=0.3)
 
     # Redis Cache Configuration (Optional - system works without it)
-    redis_enabled: bool = Field(default=False, env="REDIS_ENABLED")
-    redis_host: str = Field(default="localhost", env="REDIS_HOST")
-    redis_port: int = Field(default=6379, env="REDIS_PORT")
-    redis_db: int = Field(default=0, env="REDIS_DB")
-    redis_password: str | None = Field(default=None, env="REDIS_PASSWORD")
-    redis_ttl: int = Field(default=3600, env="REDIS_TTL")  # Default TTL
+    redis_enabled: bool = Field(default=False)
+    redis_host: str = Field(default="localhost")
+    redis_port: int = Field(default=6379)
+    redis_db: int = Field(default=0)
+    redis_password: str | None = Field(default=None)
+    redis_ttl: int = Field(default=3600)  # Default TTL
 
     # Cache TTLs for different types (seconds)
-    cache_ttl_llm: int = Field(default=3600, env="CACHE_TTL_LLM")  # 1 hour for LLM results
-    cache_ttl_detection: int = Field(default=600, env="CACHE_TTL_DETECTION")  # 10 min for detection
-    cache_ttl_pattern: int = Field(default=1800, env="CACHE_TTL_PATTERN")  # 30 min for patterns
-    cache_ttl_health: int = Field(default=60, env="CACHE_TTL_HEALTH")  # 1 min for health checks
+    cache_ttl_llm: int = Field(default=3600)  # 1 hour for LLM results
+    cache_ttl_detection: int = Field(default=600)  # 10 min for detection
+    cache_ttl_pattern: int = Field(default=1800)  # 30 min for patterns
+    cache_ttl_health: int = Field(default=60)  # 1 min for health checks
 
     # Detection Configuration
     detection_mode: Literal["strict", "moderate", "permissive"] = Field(
-        default="strict", env="DETECTION_MODE"
+        default="strict"
     )
-    detection_timeout: float = Field(default=10.0, env="DETECTION_TIMEOUT")
-    heuristic_enabled: bool = Field(default=True, env="HEURISTIC_ENABLED")
-    llm_classification_enabled: bool = Field(default=True, env="LLM_CLASSIFICATION_ENABLED")
-    confidence_threshold: float = Field(default=0.7, env="CONFIDENCE_THRESHOLD")
+    detection_timeout: float = Field(default=10.0)
+    heuristic_enabled: bool = Field(default=True)
+    llm_classification_enabled: bool = Field(default=True)
+    confidence_threshold: float = Field(default=0.7)
 
     # Authentication Configuration
-    auth_mode: Literal["none", "optional", "required"] = Field(default="optional", env="AUTH_MODE")
-    auth_enforce_https: bool = Field(default=False, env="AUTH_ENFORCE_HTTPS")
-    auth_bypass_networks: str = Field(default="", env="AUTH_BYPASS_NETWORKS")
-    auth_bypass_headers: str = Field(default="", env="AUTH_BYPASS_HEADERS")
-    auth_allow_localhost: bool = Field(default=True, env="AUTH_ALLOW_LOCALHOST")
-    auth_unauthenticated_rpm: int = Field(default=10, env="AUTH_UNAUTHENTICATED_RPM")
-    auth_unauthenticated_tpm: int = Field(default=1000, env="AUTH_UNAUTHENTICATED_TPM")
-    api_key_prefix: str = Field(default="psk_", env="API_KEY_PREFIX")
-    api_key_length: int = Field(default=32, env="API_KEY_LENGTH")
+    auth_mode: Literal["none", "optional", "required"] = Field(default="optional")
+    auth_enforce_https: bool = Field(default=False)
+    auth_bypass_networks: str = Field(default="")
+    auth_bypass_headers: str = Field(default="")
+    auth_allow_localhost: bool = Field(default=True)
+    auth_unauthenticated_rpm: int = Field(default=10)
+    auth_unauthenticated_tpm: int = Field(default=1000)
+    api_key_prefix: str = Field(default="psk_")
+    api_key_length: int = Field(default=32)
 
     # Security Configuration
-    max_prompt_length: int = Field(default=50000, env="MAX_PROMPT_LENGTH")
-    rate_limit_per_ip: int = Field(default=1000, env="RATE_LIMIT_PER_IP")
-    rate_limit_per_key: int = Field(default=10000, env="RATE_LIMIT_PER_KEY")
+    max_prompt_length: int = Field(default=50000)
+    rate_limit_per_ip: int = Field(default=1000)
+    rate_limit_per_key: int = Field(default=10000)
     allowed_charsets: str = Field(default="utf-8,ascii")
 
     # Logging Configuration
-    log_level: str = Field(default="INFO", env="LOG_LEVEL")
-    log_format: Literal["json", "text"] = Field(default="json", env="LOG_FORMAT")
-    enable_metrics: bool = Field(default=True, env="ENABLE_METRICS")
-    enable_tracing: bool = Field(default=False, env="ENABLE_TRACING")
+    log_level: str = Field(default="INFO")
+    log_format: Literal["json", "text"] = Field(default="json")
+    enable_metrics: bool = Field(default=True)
+    enable_tracing: bool = Field(default=False)
 
     # Corpus Management
-    corpus_auto_update: bool = Field(default=False, env="CORPUS_AUTO_UPDATE")
-    corpus_update_interval: int = Field(default=86400, env="CORPUS_UPDATE_INTERVAL")
+    corpus_auto_update: bool = Field(default=False)
+    corpus_update_interval: int = Field(default=86400)
     corpus_sources: str = Field(default="")
 
     # PII Detection Configuration
-    pii_detection_enabled: bool = Field(default=True, env="PII_DETECTION_ENABLED")
+    pii_detection_enabled: bool = Field(default=True)
     pii_redaction_mode: Literal["mask", "remove", "hash", "reject", "pass-silent", "pass-alert"] = (
-        Field(default="mask", env="PII_REDACTION_MODE")
+        Field(default="mask")
     )
     pii_types_to_detect: str = Field(default="all")
-    pii_log_detected: bool = Field(default=False, env="PII_LOG_DETECTED")
-    pii_confidence_threshold: float = Field(default=0.7, env="PII_CONFIDENCE_THRESHOLD")
+    pii_log_detected: bool = Field(default=False)
+    pii_confidence_threshold: float = Field(default=0.7)
 
     @property
     def llm_providers(self) -> list[str]:

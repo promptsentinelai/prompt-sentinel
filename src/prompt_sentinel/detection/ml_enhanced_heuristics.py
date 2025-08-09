@@ -96,7 +96,7 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
                             category=self._map_pattern_category(pattern.category),
                             description=f"ML Pattern: {pattern.description}",
                             confidence=pattern.confidence,
-                            source="ml_pattern",
+                            source="heuristic",  # ML patterns are considered heuristic
                             patterns_matched=[pattern.pattern_id[:8]],
                         )
                         reasons.append(reason)
@@ -126,19 +126,28 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
             Mapped detection category
         """
         category_mapping = {
-            "instruction_override": DetectionCategory.INSTRUCTION_OVERRIDE,
+            "instruction_override": DetectionCategory.DIRECT_INJECTION,
+            "injection": DetectionCategory.DIRECT_INJECTION,
             "role_manipulation": DetectionCategory.ROLE_MANIPULATION,
+            "role": DetectionCategory.ROLE_MANIPULATION,
             "jailbreak": DetectionCategory.JAILBREAK,
-            "extraction": DetectionCategory.EXTRACTION,
-            "encoding": DetectionCategory.ENCODING,
+            "extraction": DetectionCategory.PROMPT_LEAK,
+            "data_extraction": DetectionCategory.PROMPT_LEAK,
+            "prompt_leak": DetectionCategory.PROMPT_LEAK,
+            "encoding": DetectionCategory.ENCODING_ATTACK,
             "context_switching": DetectionCategory.CONTEXT_SWITCHING,
-            "common_substring": DetectionCategory.PATTERN_MATCH,
-            "ngram": DetectionCategory.PATTERN_MATCH,
-            "differential": DetectionCategory.PATTERN_MATCH,
-            "template": DetectionCategory.PATTERN_MATCH,
+            "context": DetectionCategory.CONTEXT_SWITCHING,
+            "common_substring": DetectionCategory.DIRECT_INJECTION,
+            "ngram": DetectionCategory.DIRECT_INJECTION,
+            "differential": DetectionCategory.DIRECT_INJECTION,
+            "template": DetectionCategory.DIRECT_INJECTION,
+            "pii": DetectionCategory.PII_DETECTED,
+            "evasion": DetectionCategory.CONTEXT_SWITCHING,
+            "manipulation": DetectionCategory.CONTEXT_SWITCHING,
+            "code": DetectionCategory.ENCODING_ATTACK,
         }
 
-        return category_mapping.get(ml_category, DetectionCategory.SUSPICIOUS)
+        return category_mapping.get(ml_category, DetectionCategory.DIRECT_INJECTION)
 
     def add_custom_pattern(
         self,

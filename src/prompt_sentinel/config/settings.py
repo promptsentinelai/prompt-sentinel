@@ -24,22 +24,22 @@ from pydantic import Field, field_validator
 
 class Settings(BaseSettings):
     """Application settings with environment variable support.
-    
+
     Manages all configuration for the PromptSentinel service.
     Values are loaded from environment variables or .env file,
     with validation and type conversion handled by Pydantic.
-    
+
     All fields can be overridden via environment variables using
     the field name in uppercase (e.g., api_host -> API_HOST).
     """
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         env_nested_delimiter="__",
     )
-    
+
     # API Configuration
     api_host: str = Field(default="0.0.0.0", env="API_HOST")
     api_port: int = Field(default=8080, env="API_PORT")
@@ -47,32 +47,28 @@ class Settings(BaseSettings):
         default="development", env="API_ENV"
     )
     debug: bool = Field(default=False, env="DEBUG")
-    
-    # LLM Provider Configuration  
-    llm_provider_order: str = Field(
-        default="anthropic,openai,gemini"
-    )
-    
+
+    # LLM Provider Configuration
+    llm_provider_order: str = Field(default="anthropic,openai,gemini")
+
     # Anthropic Configuration
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
-    anthropic_model: str = Field(
-        default="claude-3-haiku-20240307", env="ANTHROPIC_MODEL"
-    )
+    anthropic_model: str = Field(default="claude-3-haiku-20240307", env="ANTHROPIC_MODEL")
     anthropic_max_tokens: int = Field(default=1000, env="ANTHROPIC_MAX_TOKENS")
     anthropic_temperature: float = Field(default=0.3, env="ANTHROPIC_TEMPERATURE")
-    
+
     # OpenAI Configuration
     openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4-turbo-preview", env="OPENAI_MODEL")
     openai_max_tokens: int = Field(default=1000, env="OPENAI_MAX_TOKENS")
     openai_temperature: float = Field(default=0.3, env="OPENAI_TEMPERATURE")
-    
+
     # Gemini Configuration
     gemini_api_key: Optional[str] = Field(default=None, env="GEMINI_API_KEY")
     gemini_model: str = Field(default="gemini-1.5-flash", env="GEMINI_MODEL")
     gemini_max_tokens: int = Field(default=1000, env="GEMINI_MAX_TOKENS")
     gemini_temperature: float = Field(default=0.3, env="GEMINI_TEMPERATURE")
-    
+
     # Redis Cache Configuration (Optional - system works without it)
     redis_enabled: bool = Field(default=False, env="REDIS_ENABLED")
     redis_host: str = Field(default="localhost", env="REDIS_HOST")
@@ -80,13 +76,13 @@ class Settings(BaseSettings):
     redis_db: int = Field(default=0, env="REDIS_DB")
     redis_password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
     redis_ttl: int = Field(default=3600, env="REDIS_TTL")  # Default TTL
-    
+
     # Cache TTLs for different types (seconds)
     cache_ttl_llm: int = Field(default=3600, env="CACHE_TTL_LLM")  # 1 hour for LLM results
     cache_ttl_detection: int = Field(default=600, env="CACHE_TTL_DETECTION")  # 10 min for detection
     cache_ttl_pattern: int = Field(default=1800, env="CACHE_TTL_PATTERN")  # 30 min for patterns
     cache_ttl_health: int = Field(default=60, env="CACHE_TTL_HEALTH")  # 1 min for health checks
-    
+
     # Detection Configuration
     detection_mode: Literal["strict", "moderate", "permissive"] = Field(
         default="strict", env="DETECTION_MODE"
@@ -95,11 +91,9 @@ class Settings(BaseSettings):
     heuristic_enabled: bool = Field(default=True, env="HEURISTIC_ENABLED")
     llm_classification_enabled: bool = Field(default=True, env="LLM_CLASSIFICATION_ENABLED")
     confidence_threshold: float = Field(default=0.7, env="CONFIDENCE_THRESHOLD")
-    
+
     # Authentication Configuration
-    auth_mode: Literal["none", "optional", "required"] = Field(
-        default="optional", env="AUTH_MODE"
-    )
+    auth_mode: Literal["none", "optional", "required"] = Field(default="optional", env="AUTH_MODE")
     auth_enforce_https: bool = Field(default=False, env="AUTH_ENFORCE_HTTPS")
     auth_bypass_networks: str = Field(default="", env="AUTH_BYPASS_NETWORKS")
     auth_bypass_headers: str = Field(default="", env="AUTH_BYPASS_HEADERS")
@@ -108,54 +102,50 @@ class Settings(BaseSettings):
     auth_unauthenticated_tpm: int = Field(default=1000, env="AUTH_UNAUTHENTICATED_TPM")
     api_key_prefix: str = Field(default="psk_", env="API_KEY_PREFIX")
     api_key_length: int = Field(default=32, env="API_KEY_LENGTH")
-    
+
     # Security Configuration
     max_prompt_length: int = Field(default=50000, env="MAX_PROMPT_LENGTH")
     rate_limit_per_ip: int = Field(default=1000, env="RATE_LIMIT_PER_IP")
     rate_limit_per_key: int = Field(default=10000, env="RATE_LIMIT_PER_KEY")
-    allowed_charsets: str = Field(
-        default="utf-8,ascii"
-    )
-    
+    allowed_charsets: str = Field(default="utf-8,ascii")
+
     # Logging Configuration
     log_level: str = Field(default="INFO", env="LOG_LEVEL")
     log_format: Literal["json", "text"] = Field(default="json", env="LOG_FORMAT")
     enable_metrics: bool = Field(default=True, env="ENABLE_METRICS")
     enable_tracing: bool = Field(default=False, env="ENABLE_TRACING")
-    
+
     # Corpus Management
     corpus_auto_update: bool = Field(default=False, env="CORPUS_AUTO_UPDATE")
     corpus_update_interval: int = Field(default=86400, env="CORPUS_UPDATE_INTERVAL")
     corpus_sources: str = Field(default="")
-    
+
     # PII Detection Configuration
     pii_detection_enabled: bool = Field(default=True, env="PII_DETECTION_ENABLED")
-    pii_redaction_mode: Literal["mask", "remove", "hash", "reject", "pass-silent", "pass-alert"] = Field(
-        default="mask", env="PII_REDACTION_MODE"
+    pii_redaction_mode: Literal["mask", "remove", "hash", "reject", "pass-silent", "pass-alert"] = (
+        Field(default="mask", env="PII_REDACTION_MODE")
     )
-    pii_types_to_detect: str = Field(
-        default="all"
-    )
+    pii_types_to_detect: str = Field(default="all")
     pii_log_detected: bool = Field(default=False, env="PII_LOG_DETECTED")
     pii_confidence_threshold: float = Field(default=0.7, env="PII_CONFIDENCE_THRESHOLD")
-    
+
     @property
     def llm_providers(self) -> List[str]:
         """Get list of LLM providers from comma-separated string."""
         return [p.strip() for p in self.llm_provider_order.split(",") if p.strip()]
-    
+
     @property
     def allowed_charset_list(self) -> List[str]:
         """Get list of allowed charsets from comma-separated string."""
         return [c.strip() for c in self.allowed_charsets.split(",") if c.strip()]
-    
+
     @property
     def auth_bypass_networks_list(self) -> List[str]:
         """Get list of bypass networks from comma-separated string."""
         if not self.auth_bypass_networks:
             return []
         return [n.strip() for n in self.auth_bypass_networks.split(",") if n.strip()]
-    
+
     @property
     def auth_bypass_headers_dict(self) -> dict:
         """Get bypass headers as dictionary from key:value,key:value format."""
@@ -167,38 +157,38 @@ class Settings(BaseSettings):
                 key, value = pair.split(":", 1)
                 result[key.strip()] = value.strip()
         return result
-    
+
     @property
     def corpus_sources_list(self) -> List[str]:
         """Get list of corpus sources from comma-separated string."""
         if not self.corpus_sources:
             return []
         return [s.strip() for s in self.corpus_sources.split(",") if s.strip()]
-    
+
     @property
     def pii_types_list(self) -> List[str]:
         """Get list of PII types from comma-separated string."""
         if self.pii_types_to_detect.lower() == "all":
             return ["all"]
         return [t.strip() for t in self.pii_types_to_detect.split(",") if t.strip()]
-    
+
     @property
     def redis_url(self) -> str:
         """Build Redis connection URL from components.
-        
+
         Returns:
             Redis URL in format redis://[password@]host:port/db
         """
         if self.redis_password:
             return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/{self.redis_db}"
         return f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}"
-    
+
     def get_provider_config(self, provider: str) -> dict:
         """Get configuration for a specific LLM provider.
-        
+
         Args:
             provider: Provider name (anthropic, openai, or gemini)
-            
+
         Returns:
             Dictionary with provider-specific configuration including
             api_key, model, max_tokens, and temperature

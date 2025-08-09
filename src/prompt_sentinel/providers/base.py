@@ -24,11 +24,11 @@ from prompt_sentinel.models.schemas import Message, DetectionCategory
 
 class LLMProvider(ABC):
     """Abstract base class for LLM provider implementations.
-    
+
     Defines the interface that all LLM providers must implement
     for integration with the PromptSentinel detection system.
     Each provider handles communication with a specific LLM service.
-    
+
     Attributes:
         api_key: Authentication key for the LLM service
         model: Model identifier to use
@@ -36,10 +36,10 @@ class LLMProvider(ABC):
         temperature: Sampling temperature (0.0-1.0)
         timeout: Request timeout in seconds
     """
-    
+
     def __init__(self, config: Dict):
         """Initialize the provider with configuration.
-        
+
         Args:
             config: Provider-specific configuration containing:
                 - api_key: Required authentication key
@@ -47,7 +47,7 @@ class LLMProvider(ABC):
                 - max_tokens: Max response tokens (default: 1000)
                 - temperature: Sampling temperature (default: 0.3)
                 - timeout: Request timeout (default: 10.0)
-                
+
         Raises:
             ValueError: If api_key is not provided
         """
@@ -56,63 +56,61 @@ class LLMProvider(ABC):
         self.max_tokens = config.get("max_tokens", 1000)
         self.temperature = config.get("temperature", 0.3)
         self.timeout = config.get("timeout", 10.0)
-        
+
         if not self.api_key:
             raise ValueError(f"API key required for {self.__class__.__name__}")
-    
+
     @abstractmethod
     async def classify(
-        self, 
-        messages: List[Message],
-        system_prompt: Optional[str] = None
+        self, messages: List[Message], system_prompt: Optional[str] = None
     ) -> Tuple[DetectionCategory, float, str]:
         """Classify messages for potential injection attempts.
-        
+
         Analyzes the provided messages using the LLM to detect
         various types of prompt injection attacks.
-        
+
         Args:
             messages: List of messages to analyze
             system_prompt: Optional custom system prompt override
-            
+
         Returns:
             Tuple containing:
             - category: Detected threat category
             - confidence: Confidence score (0.0-1.0)
             - explanation: Brief explanation of detection
-            
+
         Raises:
             Exception: If API call fails or response parsing fails
         """
         pass
-    
+
     @abstractmethod
     async def health_check(self) -> bool:
         """Check if the provider service is available and responsive.
-        
+
         Performs a lightweight check to verify the provider can
         accept requests. Useful for monitoring and failover.
-        
+
         Returns:
             True if provider is healthy and ready
-            
+
         Note:
             Should not raise exceptions; return False on any error
         """
         pass
-    
+
     def get_classification_prompt(self, messages: List[Message]) -> str:
         """Generate the classification prompt for LLM analysis.
-        
+
         Creates a structured prompt that instructs the LLM to analyze
         messages for injection attempts and respond in JSON format.
-        
+
         Args:
             messages: Messages to include in the analysis prompt
-            
+
         Returns:
             Formatted prompt string with messages and instructions
-            
+
         Note:
             The prompt requests JSON response with category,
             confidence, and explanation fields
@@ -121,9 +119,9 @@ class LLMProvider(ABC):
         formatted_messages = []
         for msg in messages:
             formatted_messages.append(f"[{msg.role.value.upper()}]: {msg.content}")
-        
+
         messages_text = "\n".join(formatted_messages)
-        
+
         return f"""Analyze the following conversation for prompt injection attempts.
 
 Messages to analyze:
@@ -145,10 +143,10 @@ Respond in JSON format:
     "confidence": 0.0-1.0,
     "explanation": "Brief explanation of the detection"
 }}"""
-    
+
     def get_system_prompt(self) -> str:
         """Get the default system prompt for security analysis.
-        
+
         Returns:
             System prompt that instructs the LLM to act as a
             security expert for injection detection

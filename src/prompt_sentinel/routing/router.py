@@ -15,11 +15,11 @@ from enum import Enum
 import structlog
 
 from prompt_sentinel.models.schemas import (
-    Message, 
-    DetectionResponse, 
+    Message,
+    DetectionResponse,
     DetectionReason,
     Verdict,
-    DetectionCategory
+    DetectionCategory,
 )
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.cache.cache_manager import cache_manager
@@ -36,16 +36,18 @@ logger = structlog.get_logger()
 
 class DetectionStrategy(Enum):
     """Detection strategies with different performance/accuracy tradeoffs."""
-    HEURISTIC_ONLY = "heuristic_only"              # Fastest, pattern matching only
-    HEURISTIC_CACHED = "heuristic_cached"          # Fast with cache lookup
+
+    HEURISTIC_ONLY = "heuristic_only"  # Fastest, pattern matching only
+    HEURISTIC_CACHED = "heuristic_cached"  # Fast with cache lookup
     HEURISTIC_LLM_CACHED = "heuristic_llm_cached"  # Balanced with cache
-    HEURISTIC_LLM_PII = "heuristic_llm_pii"       # Comprehensive
-    FULL_ANALYSIS = "full_analysis"                # Complete analysis, all methods
+    HEURISTIC_LLM_PII = "heuristic_llm_pii"  # Comprehensive
+    FULL_ANALYSIS = "full_analysis"  # Complete analysis, all methods
 
 
 @dataclass
 class RoutingDecision:
     """Routing decision with strategy and reasoning."""
+
     strategy: DetectionStrategy
     complexity_score: ComplexityScore
     estimated_latency_ms: float
@@ -59,12 +61,13 @@ class RoutingDecision:
 @dataclass
 class RoutingMetrics:
     """Metrics for routing performance monitoring."""
+
     total_requests: int = 0
     strategy_counts: Dict[str, int] = None
     avg_complexity_score: float = 0.0
     cache_hit_rate: float = 0.0
     avg_latency_by_strategy: Dict[str, float] = None
-    
+
     def __post_init__(self):
         if self.strategy_counts is None:
             self.strategy_counts = {}
@@ -74,7 +77,7 @@ class RoutingMetrics:
 
 class IntelligentRouter:
     """Routes detection requests based on complexity analysis.
-    
+
     The router analyzes prompt complexity and selects the optimal
     detection strategy, considering:
     - Prompt complexity and risk indicators
@@ -83,14 +86,14 @@ class IntelligentRouter:
     - Performance requirements
     - Security policy
     """
-    
+
     def __init__(
-        self, 
+        self,
         detector: Optional[PromptDetector] = None,
-        experiment_manager: Optional[ExperimentManager] = None
+        experiment_manager: Optional[ExperimentManager] = None,
     ):
         """Initialize the intelligent router.
-        
+
         Args:
             detector: Optional PromptDetector instance (creates new if not provided)
             experiment_manager: Optional ExperimentManager for A/B testing
@@ -99,19 +102,19 @@ class IntelligentRouter:
         self.analyzer = ComplexityAnalyzer()
         self.metrics = RoutingMetrics()
         self.experiment_manager = experiment_manager
-        
+
         # Strategy configuration
         self.strategy_config = self._load_strategy_config()
-        
+
         # Performance targets (milliseconds)
         self.latency_targets = {
             DetectionStrategy.HEURISTIC_ONLY: 10,
             DetectionStrategy.HEURISTIC_CACHED: 15,
             DetectionStrategy.HEURISTIC_LLM_CACHED: 50,
             DetectionStrategy.HEURISTIC_LLM_PII: 500,
-            DetectionStrategy.FULL_ANALYSIS: 2000
+            DetectionStrategy.FULL_ANALYSIS: 2000,
         }
-    
+
     async def route_detection(
         self,
         messages: List[Message],
@@ -119,10 +122,10 @@ class IntelligentRouter:
         session_id: Optional[str] = None,
         user_context: Optional[Dict[str, Any]] = None,
         override_strategy: Optional[DetectionStrategy] = None,
-        performance_mode: bool = False
+        performance_mode: bool = False,
     ) -> Tuple[DetectionResponse, RoutingDecision]:
         """Route detection request through optimal strategy.
-        
+
         Args:
             messages: Messages to analyze
             user_id: User identifier for experiment assignment
@@ -130,20 +133,20 @@ class IntelligentRouter:
             user_context: Additional user attributes for targeting
             override_strategy: Optional strategy override for testing
             performance_mode: Prioritize performance over security
-            
+
         Returns:
             Tuple of (detection response, routing decision)
         """
         start_time = time.time()
-        
+
         # Analyze complexity
         complexity_score = self.analyzer.analyze(messages)
-        
+
         # Check for active experiments
         experiment_id = None
         variant_id = None
         experiment_override = False
-        
+
         if self.experiment_manager and user_id:
             experiment_strategy = await self._check_experiments(
                 user_id, session_id, user_context, messages, complexity_score
@@ -158,8 +161,7 @@ class IntelligentRouter:
                     reasoning = f"Strategy overridden to {override_strategy.value}"
                 else:
                     strategy, reasoning = self._determine_strategy(
-                        complexity_score, 
-                        performance_mode
+                        complexity_score, performance_mode
                     )
         else:
             # No experiments or user_id - use standard routing
@@ -167,14 +169,11 @@ class IntelligentRouter:
                 strategy = override_strategy
                 reasoning = f"Strategy overridden to {override_strategy.value}"
             else:
-                strategy, reasoning = self._determine_strategy(
-                    complexity_score, 
-                    performance_mode
-                )
-        
+                strategy, reasoning = self._determine_strategy(complexity_score, performance_mode)
+
         # Check cache eligibility
         cache_eligible = self._is_cache_eligible(strategy, complexity_score)
-        
+
         # Create routing decision
         decision = RoutingDecision(
             strategy=strategy,
@@ -184,9 +183,9 @@ class IntelligentRouter:
             reasoning=reasoning,
             experiment_id=experiment_id,
             variant_id=variant_id,
-            experiment_override=experiment_override
+            experiment_override=experiment_override,
         )
-        
+
         # Log routing decision
         logger.info(
             "Routing decision made",
@@ -197,22 +196,27 @@ class IntelligentRouter:
             cache_eligible=cache_eligible,
             experiment_id=experiment_id,
             variant_id=variant_id,
-            experiment_override=experiment_override
+            experiment_override=experiment_override,
         )
-        
+
         # Execute detection with selected strategy
         response = await self._execute_strategy(messages, strategy, cache_eligible)
-        
+
         # Update metrics
         self._update_metrics(strategy, complexity_score, time.time() - start_time)
-        
+
         # Record experiment metrics if applicable
         if experiment_id and variant_id and user_id:
             await self._record_experiment_metrics(
-                experiment_id, variant_id, user_id, response, 
-                complexity_score, strategy, time.time() - start_time
+                experiment_id,
+                variant_id,
+                user_id,
+                response,
+                complexity_score,
+                strategy,
+                time.time() - start_time,
             )
-        
+
         # Add routing metadata to response
         response.metadata = response.metadata or {}
         routing_metadata = {
@@ -220,31 +224,31 @@ class IntelligentRouter:
             "complexity_level": complexity_score.level.value,
             "complexity_score": round(complexity_score.score, 2),
             "cache_eligible": cache_eligible,
-            "routing_latency_ms": round((time.time() - start_time) * 1000, 2)
+            "routing_latency_ms": round((time.time() - start_time) * 1000, 2),
         }
-        
+
         if experiment_id:
-            routing_metadata.update({
-                "experiment_id": experiment_id,
-                "variant_id": variant_id,
-                "experiment_override": experiment_override
-            })
-        
+            routing_metadata.update(
+                {
+                    "experiment_id": experiment_id,
+                    "variant_id": variant_id,
+                    "experiment_override": experiment_override,
+                }
+            )
+
         response.metadata["routing"] = routing_metadata
-        
+
         return response, decision
-    
+
     def _determine_strategy(
-        self,
-        complexity_score: ComplexityScore,
-        performance_mode: bool
+        self, complexity_score: ComplexityScore, performance_mode: bool
     ) -> Tuple[DetectionStrategy, str]:
         """Determine optimal detection strategy.
-        
+
         Args:
             complexity_score: Complexity analysis results
             performance_mode: Whether to prioritize performance
-            
+
         Returns:
             Tuple of (strategy, reasoning)
         """
@@ -255,98 +259,103 @@ class IntelligentRouter:
             elif complexity_score.level == ComplexityLevel.SIMPLE:
                 return DetectionStrategy.HEURISTIC_CACHED, "Performance mode: simple complexity"
             elif complexity_score.level == ComplexityLevel.MODERATE:
-                return DetectionStrategy.HEURISTIC_LLM_CACHED, "Performance mode: moderate complexity"
+                return (
+                    DetectionStrategy.HEURISTIC_LLM_CACHED,
+                    "Performance mode: moderate complexity",
+                )
             else:
                 # Even in performance mode, high-risk prompts need thorough analysis
-                return DetectionStrategy.HEURISTIC_LLM_PII, "Performance mode: high complexity requires analysis"
-        
+                return (
+                    DetectionStrategy.HEURISTIC_LLM_PII,
+                    "Performance mode: high complexity requires analysis",
+                )
+
         # Standard mode: map complexity to strategy
         strategy_map = {
             ComplexityLevel.TRIVIAL: DetectionStrategy.HEURISTIC_CACHED,
             ComplexityLevel.SIMPLE: DetectionStrategy.HEURISTIC_CACHED,
             ComplexityLevel.MODERATE: DetectionStrategy.HEURISTIC_LLM_CACHED,
             ComplexityLevel.COMPLEX: DetectionStrategy.HEURISTIC_LLM_PII,
-            ComplexityLevel.CRITICAL: DetectionStrategy.FULL_ANALYSIS
+            ComplexityLevel.CRITICAL: DetectionStrategy.FULL_ANALYSIS,
         }
-        
+
         strategy = strategy_map[complexity_score.level]
-        
+
         # Override based on risk indicators
         from .complexity_analyzer import RiskIndicator
-        
+
         critical_risks = [
             RiskIndicator.INSTRUCTION_OVERRIDE,
             RiskIndicator.CODE_INJECTION,
-            RiskIndicator.ROLE_MANIPULATION
+            RiskIndicator.ROLE_MANIPULATION,
         ]
-        
+
         if any(risk in critical_risks for risk in complexity_score.risk_indicators):
             if strategy.value < DetectionStrategy.HEURISTIC_LLM_PII.value:
                 strategy = DetectionStrategy.HEURISTIC_LLM_PII
                 return strategy, f"Elevated to {strategy.value} due to critical risk indicators"
-        
+
         # Check if features are enabled
         if not settings.llm_classification_enabled and strategy in [
             DetectionStrategy.HEURISTIC_LLM_CACHED,
             DetectionStrategy.HEURISTIC_LLM_PII,
-            DetectionStrategy.FULL_ANALYSIS
+            DetectionStrategy.FULL_ANALYSIS,
         ]:
             strategy = DetectionStrategy.HEURISTIC_ONLY
             return strategy, "LLM classification disabled, using heuristic only"
-        
+
         if not settings.pii_detection_enabled and strategy == DetectionStrategy.HEURISTIC_LLM_PII:
             strategy = DetectionStrategy.HEURISTIC_LLM_CACHED
             return strategy, "PII detection disabled, using cached LLM strategy"
-        
-        return strategy, f"Standard routing: {complexity_score.level.value} complexity → {strategy.value}"
-    
+
+        return (
+            strategy,
+            f"Standard routing: {complexity_score.level.value} complexity → {strategy.value}",
+        )
+
     def _is_cache_eligible(
-        self,
-        strategy: DetectionStrategy,
-        complexity_score: ComplexityScore
+        self, strategy: DetectionStrategy, complexity_score: ComplexityScore
     ) -> bool:
         """Determine if result can be cached.
-        
+
         Args:
             strategy: Detection strategy
             complexity_score: Complexity analysis
-            
+
         Returns:
             True if result can be cached
         """
         # Don't cache if caching is disabled
         if not settings.redis_enabled or not cache_manager.connected:
             return False
-        
+
         # Don't cache trivial heuristic-only detections (too fast anyway)
         if strategy == DetectionStrategy.HEURISTIC_ONLY:
             return False
-        
+
         # Don't cache if there are encoding indicators (might be dynamic)
         from .complexity_analyzer import RiskIndicator
+
         if RiskIndicator.ENCODING in complexity_score.risk_indicators:
             return False
-        
+
         # Cache strategies that benefit from it
         return strategy in [
             DetectionStrategy.HEURISTIC_CACHED,
             DetectionStrategy.HEURISTIC_LLM_CACHED,
-            DetectionStrategy.HEURISTIC_LLM_PII
+            DetectionStrategy.HEURISTIC_LLM_PII,
         ]
-    
+
     async def _execute_strategy(
-        self,
-        messages: List[Message],
-        strategy: DetectionStrategy,
-        use_cache: bool
+        self, messages: List[Message], strategy: DetectionStrategy, use_cache: bool
     ) -> DetectionResponse:
         """Execute detection with specified strategy.
-        
+
         Args:
             messages: Messages to analyze
             strategy: Detection strategy to use
             use_cache: Whether to use caching
-            
+
         Returns:
             Detection response
         """
@@ -355,104 +364,89 @@ class IntelligentRouter:
         if use_cache:
             content = " ".join(msg.content for msg in messages)
             cache_key = f"route_{strategy.value}_{hash(content)}"
-            
+
             # Try cache lookup
             cached_result = await cache_manager.get(cache_key)
             if cached_result:
                 logger.debug("Cache hit for routed detection", strategy=strategy.value)
                 # Convert cached dict to DetectionResponse
                 return DetectionResponse(**cached_result)
-        
+
         # Execute detection based on strategy
         if strategy == DetectionStrategy.HEURISTIC_ONLY:
             response = await self._execute_heuristic_only(messages)
-        
+
         elif strategy == DetectionStrategy.HEURISTIC_CACHED:
             response = await self._execute_heuristic_only(messages)
-        
+
         elif strategy == DetectionStrategy.HEURISTIC_LLM_CACHED:
             response = await self._execute_heuristic_llm(messages)
-        
+
         elif strategy == DetectionStrategy.HEURISTIC_LLM_PII:
             response = await self._execute_comprehensive(messages, include_pii=True)
-        
+
         elif strategy == DetectionStrategy.FULL_ANALYSIS:
             response = await self._execute_full_analysis(messages)
-        
+
         else:
             # Fallback to standard detection
             response = await self.detector.detect(messages)
-        
+
         # Cache result if eligible
         if use_cache and cache_key:
-            await cache_manager.set(
-                cache_key,
-                response.dict(),
-                ttl=settings.cache_ttl_detection
-            )
-        
+            await cache_manager.set(cache_key, response.dict(), ttl=settings.cache_ttl_detection)
+
         return response
-    
+
     async def _execute_heuristic_only(self, messages: List[Message]) -> DetectionResponse:
         """Execute heuristic detection only.
-        
+
         Args:
             messages: Messages to analyze
-            
+
         Returns:
             Detection response
         """
         # Use detector with LLM disabled
         return await self.detector.detect(
-            messages,
-            use_heuristics=True,
-            use_llm=False,
-            check_pii=False
+            messages, use_heuristics=True, use_llm=False, check_pii=False
         )
-    
+
     async def _execute_heuristic_llm(self, messages: List[Message]) -> DetectionResponse:
         """Execute heuristic + LLM detection.
-        
+
         Args:
             messages: Messages to analyze
-            
+
         Returns:
             Detection response
         """
         return await self.detector.detect(
-            messages,
-            use_heuristics=True,
-            use_llm=True,
-            check_pii=False
+            messages, use_heuristics=True, use_llm=True, check_pii=False
         )
-    
+
     async def _execute_comprehensive(
-        self,
-        messages: List[Message],
-        include_pii: bool = True
+        self, messages: List[Message], include_pii: bool = True
     ) -> DetectionResponse:
         """Execute comprehensive detection.
-        
+
         Args:
             messages: Messages to analyze
             include_pii: Whether to include PII detection
-            
+
         Returns:
             Detection response
         """
         return await self.detector.detect(
-            messages,
-            use_heuristics=True,
-            use_llm=True,
-            check_pii=include_pii
+            messages, use_heuristics=True, use_llm=True, check_pii=include_pii
         )
-    
+
     async def _execute_full_analysis(self, messages: List[Message]) -> DetectionResponse:
         """Execute full analysis with all detection methods.
-        
+
         Args:
             messages: Messages to analyze
-            
+
         Returns:
             Detection response with comprehensive analysis
         """
@@ -460,66 +454,69 @@ class IntelligentRouter:
         tasks = [
             self.detector.detect(messages, use_heuristics=True, use_llm=False, check_pii=False),
             self.detector.detect(messages, use_heuristics=False, use_llm=True, check_pii=False),
-            self.detector.detect(messages, use_heuristics=False, use_llm=False, check_pii=True)
+            self.detector.detect(messages, use_heuristics=False, use_llm=False, check_pii=True),
         ]
-        
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Combine results
         all_reasons = []
         max_confidence = 0.0
         most_severe_verdict = Verdict.ALLOW
-        
+
         for result in results:
             if isinstance(result, Exception):
                 logger.error("Detection method failed", error=str(result))
                 continue
-            
+
             all_reasons.extend(result.reasons)
             max_confidence = max(max_confidence, result.confidence)
-            
+
             # Update verdict to most severe
             if result.verdict == Verdict.BLOCK:
                 most_severe_verdict = Verdict.BLOCK
             elif result.verdict == Verdict.FLAG and most_severe_verdict != Verdict.BLOCK:
                 most_severe_verdict = Verdict.FLAG
-        
+
         # Create comprehensive response
         response = DetectionResponse(
             verdict=most_severe_verdict,
             confidence=max_confidence,
             reasons=all_reasons,
-            processing_time_ms=sum(r.processing_time_ms for r in results if not isinstance(r, Exception))
+            processing_time_ms=sum(
+                r.processing_time_ms for r in results if not isinstance(r, Exception)
+            ),
         )
-        
+
         return response
-    
+
     def _update_metrics(
         self,
         strategy: DetectionStrategy,
         complexity_score: ComplexityScore,
-        duration_seconds: float
+        duration_seconds: float,
     ):
         """Update routing metrics.
-        
+
         Args:
             strategy: Strategy used
             complexity_score: Complexity analysis results
             duration_seconds: Total processing time
         """
         self.metrics.total_requests += 1
-        
+
         # Update strategy counts
         strategy_key = strategy.value
-        self.metrics.strategy_counts[strategy_key] = \
+        self.metrics.strategy_counts[strategy_key] = (
             self.metrics.strategy_counts.get(strategy_key, 0) + 1
-        
+        )
+
         # Update average complexity score
         self.metrics.avg_complexity_score = (
-            (self.metrics.avg_complexity_score * (self.metrics.total_requests - 1) +
-             complexity_score.score) / self.metrics.total_requests
-        )
-        
+            self.metrics.avg_complexity_score * (self.metrics.total_requests - 1)
+            + complexity_score.score
+        ) / self.metrics.total_requests
+
         # Update latency by strategy
         latency_ms = duration_seconds * 1000
         if strategy_key not in self.metrics.avg_latency_by_strategy:
@@ -527,13 +524,12 @@ class IntelligentRouter:
         else:
             count = self.metrics.strategy_counts[strategy_key]
             self.metrics.avg_latency_by_strategy[strategy_key] = (
-                (self.metrics.avg_latency_by_strategy[strategy_key] * (count - 1) +
-                 latency_ms) / count
-            )
-    
+                self.metrics.avg_latency_by_strategy[strategy_key] * (count - 1) + latency_ms
+            ) / count
+
     def get_metrics(self) -> Dict[str, Any]:
         """Get current routing metrics.
-        
+
         Returns:
             Dictionary of routing metrics
         """
@@ -542,15 +538,14 @@ class IntelligentRouter:
             "strategy_distribution": self.metrics.strategy_counts,
             "average_complexity_score": round(self.metrics.avg_complexity_score, 3),
             "average_latency_by_strategy_ms": {
-                k: round(v, 2) 
-                for k, v in self.metrics.avg_latency_by_strategy.items()
+                k: round(v, 2) for k, v in self.metrics.avg_latency_by_strategy.items()
             },
-            "cache_hit_rate": self.metrics.cache_hit_rate
+            "cache_hit_rate": self.metrics.cache_hit_rate,
         }
-    
+
     def _load_strategy_config(self) -> Dict:
         """Load strategy configuration from settings.
-        
+
         Returns:
             Strategy configuration dictionary
         """
@@ -559,68 +554,64 @@ class IntelligentRouter:
             "performance_thresholds": {
                 "low_latency": 50,  # ms
                 "medium_latency": 500,  # ms
-                "high_latency": 2000  # ms
+                "high_latency": 2000,  # ms
             },
             "complexity_overrides": {
                 # Map specific patterns to strategies
-            }
+            },
         }
-    
+
     async def _check_experiments(
         self,
         user_id: str,
         session_id: Optional[str],
         user_context: Optional[Dict[str, Any]],
         messages: List[Message],
-        complexity_score: ComplexityScore
+        complexity_score: ComplexityScore,
     ) -> Optional[Tuple[DetectionStrategy, str, str, str]]:
         """Check if user is part of any active routing experiments.
-        
+
         Args:
             user_id: User identifier
             session_id: Session identifier
             user_context: User context attributes
             messages: Messages being analyzed
             complexity_score: Complexity analysis results
-            
+
         Returns:
             Tuple of (strategy, reasoning, experiment_id, variant_id) or None
         """
         if not self.experiment_manager:
             return None
-        
+
         # Check for active routing strategy experiments
         active_experiments = await self.experiment_manager.list_experiments(
             status_filter=None  # Will be filtered by active status in the method
         )
-        
+
         for experiment_summary in active_experiments:
             experiment_id = experiment_summary["id"]
             if not experiment_summary.get("is_active", False):
                 continue
-                
+
             # Only process strategy experiments for routing
             if experiment_summary.get("type") != "strategy":
                 continue
-            
+
             # Create assignment context
             context = AssignmentContext(
-                user_id=user_id,
-                session_id=session_id,
-                attributes=user_context or {}
+                user_id=user_id, session_id=session_id, attributes=user_context or {}
             )
-            
+
             # Get user assignment for this experiment
-            assignment = await self.experiment_manager.assign_user(
-                user_id, experiment_id, context
-            )
-            
+            assignment = await self.experiment_manager.assign_user(user_id, experiment_id, context)
+
             if assignment:
                 # Get variant configuration
                 variant_config = await self.experiment_manager.get_variant_config(
                     user_id, experiment_id
                 )
-                
+
                 if variant_config and "strategy" in variant_config:
                     strategy_name = variant_config["strategy"]
                     try:
@@ -628,13 +619,15 @@ class IntelligentRouter:
                         reasoning = f"Experiment {experiment_id}: {strategy_name}"
                         return strategy, reasoning, experiment_id, assignment.variant_id
                     except ValueError:
-                        logger.warning("Invalid strategy in experiment variant",
-                                     experiment_id=experiment_id,
-                                     variant_id=assignment.variant_id,
-                                     strategy=strategy_name)
-        
+                        logger.warning(
+                            "Invalid strategy in experiment variant",
+                            experiment_id=experiment_id,
+                            variant_id=assignment.variant_id,
+                            strategy=strategy_name,
+                        )
+
         return None
-    
+
     async def _record_experiment_metrics(
         self,
         experiment_id: str,
@@ -643,10 +636,10 @@ class IntelligentRouter:
         response: DetectionResponse,
         complexity_score: ComplexityScore,
         strategy: DetectionStrategy,
-        total_duration_seconds: float
+        total_duration_seconds: float,
     ):
         """Record routing metrics for experiment analysis.
-        
+
         Args:
             experiment_id: Experiment identifier
             variant_id: Variant identifier
@@ -658,77 +651,77 @@ class IntelligentRouter:
         """
         if not self.experiment_manager:
             return
-        
+
         try:
             # Record basic routing metrics
             await self.experiment_manager.record_metric(
-                experiment_id, user_id, "routing_time_ms",
-                total_duration_seconds * 1000
+                experiment_id, user_id, "routing_time_ms", total_duration_seconds * 1000
             )
-            
+
             await self.experiment_manager.record_metric(
-                experiment_id, user_id, "complexity_score",
-                complexity_score.score
+                experiment_id, user_id, "complexity_score", complexity_score.score
             )
-            
+
             await self.experiment_manager.record_metric(
-                experiment_id, user_id, "strategy_latency_target",
-                float(self.latency_targets.get(strategy, 0))
+                experiment_id,
+                user_id,
+                "strategy_latency_target",
+                float(self.latency_targets.get(strategy, 0)),
             )
-            
+
             # Record detection results
             await self.experiment_manager.record_detection_result(
-                experiment_id, user_id, response, {
+                experiment_id,
+                user_id,
+                response,
+                {
                     "strategy": strategy.value,
                     "complexity_level": complexity_score.level.value,
-                    "routing_latency_ms": total_duration_seconds * 1000
-                }
+                    "routing_latency_ms": total_duration_seconds * 1000,
+                },
             )
-            
-            logger.debug("Experiment metrics recorded",
-                        experiment_id=experiment_id,
-                        variant_id=variant_id,
-                        strategy=strategy.value)
-                        
+
+            logger.debug(
+                "Experiment metrics recorded",
+                experiment_id=experiment_id,
+                variant_id=variant_id,
+                strategy=strategy.value,
+            )
+
         except Exception as e:
-            logger.error("Failed to record experiment metrics",
-                        experiment_id=experiment_id,
-                        error=str(e))
-    
+            logger.error(
+                "Failed to record experiment metrics", experiment_id=experiment_id, error=str(e)
+            )
+
     def set_experiment_manager(self, experiment_manager: ExperimentManager):
         """Set or update the experiment manager.
-        
+
         Args:
             experiment_manager: Experiment manager instance
         """
         self.experiment_manager = experiment_manager
         logger.info("Experiment manager set for intelligent router")
-    
+
     async def get_experiment_routing_stats(self) -> Dict[str, Any]:
         """Get routing statistics related to experiments.
-        
+
         Returns:
             Experiment routing statistics
         """
         base_metrics = self.get_metrics()
-        
+
         if not self.experiment_manager:
-            return {
-                **base_metrics,
-                "experiments_enabled": False,
-                "active_experiments": 0
-            }
-        
+            return {**base_metrics, "experiments_enabled": False, "active_experiments": 0}
+
         # Get active experiment count
         experiments = await self.experiment_manager.list_experiments()
         active_count = sum(1 for exp in experiments if exp.get("is_active", False))
-        
+
         return {
             **base_metrics,
             "experiments_enabled": True,
             "active_experiments": active_count,
             "experiment_overrides": sum(
-                1 for key in self.metrics.strategy_counts.keys()
-                if "experiment" in key.lower()
-            )
+                1 for key in self.metrics.strategy_counts.keys() if "experiment" in key.lower()
+            ),
         }

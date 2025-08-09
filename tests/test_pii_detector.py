@@ -1,7 +1,6 @@
 """Tests for PII detection functionality."""
 
-import pytest
-from prompt_sentinel.detection.pii_detector import PIIDetector, PIIType, PIIMatch
+from prompt_sentinel.detection.pii_detector import PIIDetector, PIIType
 
 
 class TestPIIDetector:

@@ -2,16 +2,15 @@
 
 import asyncio
 import hashlib
-import json
 import logging
-from typing import Dict, List, Optional, Tuple
-from prompt_sentinel.config.settings import settings
+
 from prompt_sentinel.cache.cache_manager import cache_manager
-from prompt_sentinel.providers.base import LLMProvider
+from prompt_sentinel.config.settings import settings
+from prompt_sentinel.models.schemas import DetectionCategory, DetectionReason, Message, Verdict
 from prompt_sentinel.providers.anthropic_provider import AnthropicProvider
-from prompt_sentinel.providers.openai_provider import OpenAIProvider
+from prompt_sentinel.providers.base import LLMProvider
 from prompt_sentinel.providers.gemini_provider import GeminiProvider
-from prompt_sentinel.models.schemas import Message, DetectionCategory, DetectionReason, Verdict
+from prompt_sentinel.providers.openai_provider import OpenAIProvider
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 class LLMClassifierManager:
     """Manages multiple LLM providers with failover support."""
 
-    def __init__(self, provider_order: Optional[List[str]] = None):
+    def __init__(self, provider_order: list[str] | None = None):
         """
         Initialize the classifier manager.
 
@@ -27,7 +26,7 @@ class LLMClassifierManager:
             provider_order: Optional override for provider order
         """
         self.provider_order = provider_order or settings.llm_providers
-        self.providers: Dict[str, LLMProvider] = {}
+        self.providers: dict[str, LLMProvider] = {}
         self._initialize_providers()
 
     def _initialize_providers(self):
@@ -50,8 +49,8 @@ class LLMClassifierManager:
                     print(f"Failed to initialize {provider_name}: {e}")
 
     async def classify(
-        self, messages: List[Message], use_all_providers: bool = False, use_cache: bool = True
-    ) -> Tuple[Verdict, List[DetectionReason], float]:
+        self, messages: list[Message], use_all_providers: bool = False, use_cache: bool = True
+    ) -> tuple[Verdict, list[DetectionReason], float]:
         """Classify messages using LLM providers with optional caching.
 
         Sends messages to LLM providers for injection detection analysis.
@@ -109,8 +108,8 @@ class LLMClassifierManager:
             return await self._classify_with_failover(messages)
 
     async def _classify_with_failover(
-        self, messages: List[Message]
-    ) -> Tuple[Verdict, List[DetectionReason], float]:
+        self, messages: list[Message]
+    ) -> tuple[Verdict, list[DetectionReason], float]:
         """
         Classify using providers in order with failover.
 
@@ -151,8 +150,8 @@ class LLMClassifierManager:
         return (Verdict.ALLOW, [], 0.0)
 
     async def _classify_with_all_providers(
-        self, messages: List[Message]
-    ) -> Tuple[Verdict, List[DetectionReason], float]:
+        self, messages: list[Message]
+    ) -> tuple[Verdict, list[DetectionReason], float]:
         """
         Classify using all available providers and aggregate results.
 
@@ -179,7 +178,7 @@ class LLMClassifierManager:
         confidences = []
         categories = []
 
-        for provider_name, result in zip(provider_names, results):
+        for provider_name, result in zip(provider_names, results, strict=False):
             if isinstance(result, Exception):
                 print(f"Provider {provider_name} failed: {result}")
                 continue
@@ -268,7 +267,7 @@ class LLMClassifierManager:
             else:
                 return Verdict.ALLOW
 
-    def _get_most_severe_category(self, categories: List[DetectionCategory]) -> DetectionCategory:
+    def _get_most_severe_category(self, categories: list[DetectionCategory]) -> DetectionCategory:
         """
         Get the most severe category from a list.
 
@@ -295,7 +294,7 @@ class LLMClassifierManager:
 
         return DetectionCategory.BENIGN
 
-    async def health_check(self) -> Dict[str, bool]:
+    async def health_check(self) -> dict[str, bool]:
         """Check health status of all configured providers.
 
         Performs health checks on each provider to determine availability.
@@ -315,7 +314,7 @@ class LLMClassifierManager:
 
         return health_status
 
-    def _generate_cache_key(self, messages: List[Message]) -> str:
+    def _generate_cache_key(self, messages: list[Message]) -> str:
         """Generate a cache key from messages for LLM classification.
 
         Creates a deterministic cache key based on message content and roles.

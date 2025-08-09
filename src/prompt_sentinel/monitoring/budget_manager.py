@@ -7,16 +7,15 @@ This module provides budget tracking and enforcement including:
 - Cost optimization recommendations
 """
 
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Callable
-from dataclasses import dataclass, field
-from enum import Enum
 import asyncio
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
 
 import structlog
 
-from .usage_tracker import UsageTracker, UsageMetrics
-
+from .usage_tracker import UsageTracker
 
 logger = structlog.get_logger()
 
@@ -44,14 +43,14 @@ class BudgetConfig:
     """Budget configuration."""
 
     # Cost limits
-    hourly_limit: Optional[float] = None
-    daily_limit: Optional[float] = None
-    monthly_limit: Optional[float] = None
+    hourly_limit: float | None = None
+    daily_limit: float | None = None
+    monthly_limit: float | None = None
 
     # Token limits
-    hourly_tokens: Optional[int] = None
-    daily_tokens: Optional[int] = None
-    monthly_tokens: Optional[int] = None
+    hourly_tokens: int | None = None
+    daily_tokens: int | None = None
+    monthly_tokens: int | None = None
 
     # Alert thresholds (percentage of limit)
     warning_threshold: float = 0.75  # 75%
@@ -66,7 +65,7 @@ class BudgetConfig:
     prefer_cheap_models: bool = False
 
     # Per-provider limits
-    provider_limits: Dict[str, float] = field(default_factory=dict)
+    provider_limits: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -80,7 +79,7 @@ class BudgetAlert:
     percentage: float
     message: str
     timestamp: datetime
-    recommendations: List[str] = field(default_factory=list)
+    recommendations: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -88,7 +87,7 @@ class BudgetStatus:
     """Current budget status."""
 
     within_budget: bool
-    alerts: List[BudgetAlert]
+    alerts: list[BudgetAlert]
 
     # Current usage
     hourly_cost: float
@@ -96,16 +95,16 @@ class BudgetStatus:
     monthly_cost: float
 
     # Remaining budget
-    hourly_remaining: Optional[float]
-    daily_remaining: Optional[float]
-    monthly_remaining: Optional[float]
+    hourly_remaining: float | None
+    daily_remaining: float | None
+    monthly_remaining: float | None
 
     # Projections
     projected_daily: float
     projected_monthly: float
 
     # Recommendations
-    recommendations: List[str]
+    recommendations: list[str]
 
 
 class BudgetManager:
@@ -120,7 +119,7 @@ class BudgetManager:
         self,
         config: BudgetConfig,
         usage_tracker: UsageTracker,
-        alert_callback: Optional[Callable] = None,
+        alert_callback: Callable | None = None,
     ):
         """Initialize budget manager.
 
@@ -134,12 +133,12 @@ class BudgetManager:
         self.alert_callback = alert_callback
 
         # Alert history
-        self.alerts: List[BudgetAlert] = []
-        self.last_alert_time: Dict[str, datetime] = {}
+        self.alerts: list[BudgetAlert] = []
+        self.last_alert_time: dict[str, datetime] = {}
 
         # Throttling state
         self.is_throttled = False
-        self.throttle_until: Optional[datetime] = None
+        self.throttle_until: datetime | None = None
 
         # Start monitoring task
         self.monitoring_task = asyncio.create_task(self._monitor_budget())
@@ -250,7 +249,7 @@ class BudgetManager:
 
     def _check_limit(
         self, period: BudgetPeriod, current: float, limit: float, estimated: float
-    ) -> Optional[BudgetAlert]:
+    ) -> BudgetAlert | None:
         """Check a specific budget limit.
 
         Args:
@@ -423,7 +422,7 @@ class BudgetManager:
 
         return True
 
-    def get_optimization_suggestions(self) -> List[str]:
+    def get_optimization_suggestions(self) -> list[str]:
         """Get cost optimization suggestions.
 
         Returns:
@@ -465,7 +464,7 @@ class BudgetManager:
 
         return suggestions
 
-    def get_budget_summary(self) -> Dict:
+    def get_budget_summary(self) -> dict:
         """Get budget summary.
 
         Returns:

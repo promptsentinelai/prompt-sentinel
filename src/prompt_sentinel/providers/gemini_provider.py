@@ -9,12 +9,13 @@ Supported models:
 - Gemini 1.5 Flash: Fast responses
 """
 
-import json
 import asyncio
-from typing import Dict, List, Optional, Tuple
+import json
+
 import google.generativeai as genai
+
+from prompt_sentinel.models.schemas import DetectionCategory, Message
 from prompt_sentinel.providers.base import LLMProvider
-from prompt_sentinel.models.schemas import Message, DetectionCategory
 
 
 class GeminiProvider(LLMProvider):
@@ -28,7 +29,7 @@ class GeminiProvider(LLMProvider):
         generation_config: Settings for text generation
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         """Initialize Gemini provider with configuration.
 
         Args:
@@ -55,8 +56,8 @@ class GeminiProvider(LLMProvider):
         )
 
     async def classify(
-        self, messages: List[Message], system_prompt: Optional[str] = None
-    ) -> Tuple[DetectionCategory, float, str]:
+        self, messages: list[Message], system_prompt: str | None = None
+    ) -> tuple[DetectionCategory, float, str]:
         """
         Classify messages using Gemini.
 
@@ -89,7 +90,7 @@ class GeminiProvider(LLMProvider):
             content = response.text if response else ""
             return self._parse_response(content)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return (DetectionCategory.BENIGN, 0.0, "Classification timeout")
         except Exception as e:
             print(f"Gemini classification error: {e}")
@@ -115,7 +116,7 @@ class GeminiProvider(LLMProvider):
         except:
             return False
 
-    def _parse_response(self, content: str) -> Tuple[DetectionCategory, float, str]:
+    def _parse_response(self, content: str) -> tuple[DetectionCategory, float, str]:
         """
         Parse Gemini's response into structured format.
 

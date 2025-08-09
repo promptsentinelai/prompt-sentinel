@@ -4,14 +4,15 @@ This module provides middleware that handles authentication for all requests,
 storing client information in request state for use by other components.
 """
 
-from typing import Callable
+from collections.abc import Callable
+
+import structlog
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-import structlog
-from .dependencies import get_auth_config, get_api_key_manager, api_key_header
-from .models import AuthMode, AuthMethod, Client, UsageTier
+from .dependencies import get_api_key_manager, get_auth_config
+from .models import AuthMethod, AuthMode, Client, UsageTier
 
 logger = structlog.get_logger()
 

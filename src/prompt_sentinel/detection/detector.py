@@ -22,22 +22,21 @@ Key Features:
     - Batch processing support
 """
 
-import time
 import logging
-from typing import Dict, List, Optional, Tuple
+import time
+
 from prompt_sentinel.config.settings import settings
 from prompt_sentinel.detection.heuristics import HeuristicDetector
 from prompt_sentinel.detection.llm_classifier import LLMClassifierManager
+from prompt_sentinel.detection.pii_detector import PIIDetector
 from prompt_sentinel.detection.prompt_processor import PromptProcessor
-from prompt_sentinel.detection.pii_detector import PIIDetector, PIIType
 from prompt_sentinel.models.schemas import (
-    Message,
-    DetectionResponse,
-    DetectionReason,
     DetectionCategory,
-    Verdict,
-    FormatRecommendation,
+    DetectionReason,
+    DetectionResponse,
+    Message,
     PIIDetection,
+    Verdict,
 )
 
 
@@ -80,7 +79,7 @@ class PromptDetector:
 
     async def detect(
         self,
-        messages: List[Message],
+        messages: list[Message],
         check_format: bool = True,
         use_heuristics: bool = None,
         use_llm: bool = None,
@@ -274,7 +273,7 @@ class PromptDetector:
                             metadata=metadata,
                         )
                     )
-            except Exception as e:
+            except Exception:
                 # Don't let ML collection errors affect detection
                 pass
 
@@ -289,7 +288,7 @@ class PromptDetector:
 
         # Add PII pass-alert warning to metadata
         if settings.pii_redaction_mode == "pass-alert" and pii_detections:
-            metadata["pii_warning"] = f"PII detected but passed through (pass-alert mode)"
+            metadata["pii_warning"] = "PII detected but passed through (pass-alert mode)"
             # Note: pass-silent doesn't add warnings by design
 
         return DetectionResponse(
@@ -308,8 +307,8 @@ class PromptDetector:
         heuristic_verdict: Verdict,
         llm_verdict: Verdict,
         pii_verdict: Verdict,
-        confidences: List[float],
-    ) -> Tuple[Verdict, float]:
+        confidences: list[float],
+    ) -> tuple[Verdict, float]:
         """Combine verdicts from all detection methods including PII.
 
         Implements verdict priority logic where more severe verdicts take
@@ -372,8 +371,8 @@ class PromptDetector:
         return final_verdict, avg_confidence
 
     def _combine_verdicts(
-        self, heuristic_verdict: Verdict, llm_verdict: Verdict, confidences: List[float]
-    ) -> Tuple[Verdict, float]:
+        self, heuristic_verdict: Verdict, llm_verdict: Verdict, confidences: list[float]
+    ) -> tuple[Verdict, float]:
         """
         Combine verdicts from different detection methods.
 
@@ -420,7 +419,7 @@ class PromptDetector:
         return final_verdict, avg_confidence
 
     def _strip_malicious_content(
-        self, messages: List[Message], reasons: List[DetectionReason]
+        self, messages: list[Message], reasons: list[DetectionReason]
     ) -> str:
         """Strip detected malicious content from messages.
 
@@ -446,7 +445,7 @@ class PromptDetector:
 
         return sanitized
 
-    async def analyze_batch(self, message_batches: List[List[Message]]) -> List[DetectionResponse]:
+    async def analyze_batch(self, message_batches: list[list[Message]]) -> list[DetectionResponse]:
         """Analyze multiple message batches in sequence.
 
         Processes multiple independent conversations or prompt sets,
@@ -469,7 +468,7 @@ class PromptDetector:
             results.append(result)
         return results
 
-    def get_complexity_analysis(self, messages: List[Message]) -> Dict:
+    def get_complexity_analysis(self, messages: list[Message]) -> dict:
         """Get complexity metrics for messages.
 
         Analyzes structural and content complexity to identify suspicious

@@ -2,30 +2,24 @@
 
 import uuid
 from datetime import datetime
-from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Depends, Query, Path
-from fastapi.responses import JSONResponse
+
 import structlog
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+
+from prompt_sentinel.experiments.assignments import AssignmentContext
+from prompt_sentinel.experiments.config import ExperimentConfig, ExperimentStatus, ExperimentType
 
 from .schemas import (
+    BatchMetricsRequest,
     CreateExperimentRequest,
-    UpdateExperimentRequest,
-    ExperimentStatusRequest,
-    ExperimentSummary,
-    ExperimentDetails,
-    ExperimentMetricsQuery,
-    ExperimentMetricsResponse,
     ExperimentAssignmentRequest,
     ExperimentAssignmentResponse,
-    RecordMetricRequest,
-    BatchMetricsRequest,
-    ExperimentResultsQuery,
-    ExperimentResultsResponse,
-    ExperimentListQuery,
     ExperimentStatsResponse,
+    ExperimentStatusRequest,
+    ExperimentSummary,
+    RecordMetricRequest,
+    UpdateExperimentRequest,
 )
-from prompt_sentinel.experiments.config import ExperimentConfig, ExperimentStatus, ExperimentType
-from prompt_sentinel.experiments.assignments import AssignmentContext
 
 logger = structlog.get_logger()
 
@@ -113,10 +107,10 @@ async def create_experiment(
         raise HTTPException(status_code=500, detail="Failed to create experiment")
 
 
-@router.get("/", response_model=List[ExperimentSummary], summary="List experiments")
+@router.get("/", response_model=list[ExperimentSummary], summary="List experiments")
 async def list_experiments(
-    status: Optional[ExperimentStatus] = Query(None, description="Filter by status"),
-    experiment_type: Optional[ExperimentType] = Query(
+    status: ExperimentStatus | None = Query(None, description="Filter by status"),
+    experiment_type: ExperimentType | None = Query(
         None, alias="type", description="Filter by type"
     ),
     limit: int = Query(100, ge=1, le=1000, description="Maximum experiments to return"),

@@ -20,57 +20,55 @@ Environment:
 
 import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional
-from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI, HTTPException, Request, WebSocket, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import structlog
+
 from prompt_sentinel import __version__
-from prompt_sentinel.config.settings import settings
-from prompt_sentinel.cache.cache_manager import cache_manager
-from prompt_sentinel.detection.detector import PromptDetector
-from prompt_sentinel.detection.prompt_processor import PromptProcessor
-from prompt_sentinel.routing.router import IntelligentRouter
+from prompt_sentinel.api.experiments import experiment_router
 from prompt_sentinel.api_docs import (
-    API_TITLE,
     API_DESCRIPTION,
+    API_TITLE,
+    RESPONSES,
     TAGS_METADATA,
     custom_openapi_schema,
-    EXAMPLES,
-    RESPONSES,
-)
-from prompt_sentinel.monitoring import (
-    UsageTracker,
-    BudgetManager,
-    BudgetConfig,
-    RateLimiter,
-    RateLimitConfig,
 )
 from prompt_sentinel.auth import (
-    get_auth_config,
-    get_api_key_manager,
-    get_current_client,
-    AuthMode,
     AuthMethod,
+    AuthMode,
     Client,
     UsageTier,
+    get_api_key_manager,
+    get_auth_config,
 )
 from prompt_sentinel.auth.middleware import AuthenticationMiddleware
-from prompt_sentinel.api.experiments import experiment_router
+from prompt_sentinel.cache.cache_manager import cache_manager
+from prompt_sentinel.config.settings import settings
+from prompt_sentinel.detection.detector import PromptDetector
+from prompt_sentinel.detection.prompt_processor import PromptProcessor
 from prompt_sentinel.models.schemas import (
-    SimplePromptRequest,
-    StructuredPromptRequest,
-    UnifiedDetectionRequest,
-    DetectionResponse,
     AnalysisRequest,
     AnalysisResponse,
+    DetectionResponse,
     HealthResponse,
     Message,
     Role,
-    FormatRecommendation,
+    SimplePromptRequest,
+    UnifiedDetectionRequest,
 )
+from prompt_sentinel.monitoring import (
+    BudgetConfig,
+    BudgetManager,
+    RateLimitConfig,
+    RateLimiter,
+    UsageTracker,
+)
+from prompt_sentinel.routing.router import IntelligentRouter
 
 # Configure structured logging
 structlog.configure(
@@ -97,12 +95,12 @@ structlog.configure(
 logger = structlog.get_logger()
 
 # Global instances
-detector: Optional[PromptDetector] = None
-router: Optional[IntelligentRouter] = None
+detector: PromptDetector | None = None
+router: IntelligentRouter | None = None
 processor: PromptProcessor = PromptProcessor()
-usage_tracker: Optional[UsageTracker] = None
-budget_manager: Optional[BudgetManager] = None
-rate_limiter: Optional[RateLimiter] = None
+usage_tracker: UsageTracker | None = None
+budget_manager: BudgetManager | None = None
+rate_limiter: RateLimiter | None = None
 experiment_manager: Optional["ExperimentManager"] = (
     None  # Import at runtime to avoid circular imports
 )
@@ -417,8 +415,9 @@ async def health_check():
             logger.error(f"Failed to get cache stats: {e}")
 
     # Collect system metrics
-    import psutil
     import os
+
+    import psutil
 
     try:
         process = psutil.Process(os.getpid())
@@ -918,7 +917,7 @@ async def batch_detect(request: dict) -> JSONResponse:
     summary="Format assistance",
     description="Validate prompt format and provide security recommendations",
 )
-async def format_assist(raw_prompt: str, intent: Optional[str] = None):
+async def format_assist(raw_prompt: str, intent: str | None = None):
     """Help developers format prompts with proper role separation for security.
 
     Analyzes raw prompt text and generates properly formatted message structures
@@ -1139,7 +1138,7 @@ async def get_cache_stats():
     summary="Clear cache",
     description="Clear cache entries matching pattern",
 )
-async def clear_cache(pattern: Optional[str] = "*"):
+async def clear_cache(pattern: str | None = "*"):
     """Clear cache entries matching a pattern.
 
     Removes cached entries to force fresh computation. Useful for
@@ -1436,7 +1435,7 @@ async def get_routing_metrics():
     summary="Complexity metrics",
     description="Get detailed complexity metrics and risk indicators",
 )
-async def get_complexity_metrics(prompt: Optional[str] = None, include_distribution: bool = True):
+async def get_complexity_metrics(prompt: str | None = None, include_distribution: bool = True):
     """Get comprehensive prompt complexity metrics.
 
     Provides detailed complexity analysis and system-wide complexity distribution.
@@ -1558,7 +1557,7 @@ async def get_complexity_metrics(prompt: Optional[str] = None, include_distribut
     description="Get API usage statistics, costs, and performance metrics",
 )
 async def get_usage_metrics(
-    time_window_hours: Optional[int] = None, include_breakdown: bool = True
+    time_window_hours: int | None = None, include_breakdown: bool = True
 ):
     """Get API usage metrics and statistics.
 
@@ -1625,7 +1624,7 @@ async def get_usage_metrics(
     summary="Budget status",
     description="Check current budget usage and alerts",
 )
-async def get_budget_status(check_next_cost: Optional[float] = 0.0):
+async def get_budget_status(check_next_cost: float | None = 0.0):
     """Get current budget status and alerts.
 
     Monitors spending against configured budgets and provides
@@ -1683,7 +1682,7 @@ async def get_budget_status(check_next_cost: Optional[float] = 0.0):
     summary="Rate limit status",
     description="Check rate limiting status for global and per-client limits",
 )
-async def get_rate_limit_status(client_id: Optional[str] = None):
+async def get_rate_limit_status(client_id: str | None = None):
     """Get rate limiting status and metrics.
 
     Shows current rate limit status, available capacity,
@@ -1766,10 +1765,10 @@ async def get_usage_trend(period: str = "hour", limit: int = 24):
     description="Update budget limits and alert thresholds",
 )
 async def configure_budget(
-    hourly_limit: Optional[float] = None,
-    daily_limit: Optional[float] = None,
-    monthly_limit: Optional[float] = None,
-    block_on_exceeded: Optional[bool] = None,
+    hourly_limit: float | None = None,
+    daily_limit: float | None = None,
+    monthly_limit: float | None = None,
+    block_on_exceeded: bool | None = None,
 ):
     """Configure budget limits dynamically.
 
@@ -1816,7 +1815,7 @@ async def configure_budget(
 
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, api_key: Optional[str] = None):
+async def websocket_endpoint(websocket: WebSocket, api_key: str | None = None):
     """WebSocket endpoint for streaming detection and real-time monitoring.
 
     Supports bidirectional communication for:
@@ -1945,8 +1944,9 @@ async def benchmark_strategies(request: UnifiedDetectionRequest):
         raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
 
     # Benchmark each strategy
-    from prompt_sentinel.routing.router import DetectionStrategy
     import time
+
+    from prompt_sentinel.routing.router import DetectionStrategy
 
     results = {}
 

@@ -1,8 +1,7 @@
 """Tests for heuristic detection engine."""
 
-import pytest
 from prompt_sentinel.detection.heuristics import HeuristicDetector
-from prompt_sentinel.models.schemas import Message, Role, Verdict, DetectionCategory
+from prompt_sentinel.models.schemas import DetectionCategory, Message, Role, Verdict
 
 
 class TestHeuristicDetector:

@@ -19,7 +19,6 @@ The detector supports multiple redaction modes:
 """
 
 import re
-from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
@@ -86,7 +85,7 @@ class PIIDetector:
         patterns: Dictionary of compiled regex patterns
     """
 
-    def __init__(self, detection_config: Optional[Dict] = None):
+    def __init__(self, detection_config: dict | None = None):
         """Initialize PII detector with configuration.
 
         Args:
@@ -99,7 +98,7 @@ class PIIDetector:
         self.enabled_types = self._get_enabled_types()
         self._init_patterns()
 
-    def _get_enabled_types(self) -> List[PIIType]:
+    def _get_enabled_types(self) -> list[PIIType]:
         """Get list of PII types to detect based on configuration.
 
         Returns:
@@ -205,7 +204,7 @@ class PIIDetector:
             ],
         }
 
-    def detect(self, text: str) -> List[PIIMatch]:
+    def detect(self, text: str) -> list[PIIMatch]:
         """
         Detect PII in text.
 
@@ -323,7 +322,7 @@ class PIIDetector:
         else:
             return "*" * len(value)
 
-    def _deduplicate_matches(self, matches: List[PIIMatch]) -> List[PIIMatch]:
+    def _deduplicate_matches(self, matches: list[PIIMatch]) -> list[PIIMatch]:
         """
         Remove duplicate and overlapping matches.
 
@@ -351,7 +350,7 @@ class PIIDetector:
 
         return result
 
-    def redact(self, text: str, matches: List[PIIMatch], mode: str = "mask") -> str:
+    def redact(self, text: str, matches: list[PIIMatch], mode: str = "mask") -> str:
         """
         Redact PII from text.
 
@@ -395,7 +394,7 @@ class PIIDetector:
 
         return result
 
-    def get_summary(self, matches: List[PIIMatch]) -> Dict[str, int]:
+    def get_summary(self, matches: list[PIIMatch]) -> dict[str, int]:
         """
         Get summary of detected PII types.
 

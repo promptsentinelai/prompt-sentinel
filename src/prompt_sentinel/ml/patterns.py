@@ -3,13 +3,12 @@
 Extracts common patterns and generates regex rules from clustered attack samples.
 """
 
-import re
-import hashlib
-from typing import Dict, List, Optional, Tuple, Set
-from dataclasses import dataclass, field
-from collections import Counter, defaultdict
-from datetime import datetime
 import difflib
+import hashlib
+import re
+from collections import Counter
+from dataclasses import dataclass, field
+from datetime import datetime
 
 import structlog
 
@@ -27,9 +26,9 @@ class ExtractedPattern:
     cluster_id: int
     category: str
     description: str
-    examples: List[str]
+    examples: list[str]
     created_at: datetime
-    metadata: Dict[str, any] = field(default_factory=dict)
+    metadata: dict[str, any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
@@ -103,7 +102,7 @@ class PatternExtractor:
             ],
         }
 
-    async def extract_patterns(self, cluster: any, events: List[any]) -> List[ExtractedPattern]:
+    async def extract_patterns(self, cluster: any, events: list[any]) -> list[ExtractedPattern]:
         """Extract patterns from a cluster.
 
         Args:
@@ -153,7 +152,7 @@ class PatternExtractor:
         # Limit number of patterns per cluster
         return patterns[:10]
 
-    def _extract_common_substrings(self, prompts: List[str]) -> List[ExtractedPattern]:
+    def _extract_common_substrings(self, prompts: list[str]) -> list[ExtractedPattern]:
         """Extract common substrings from prompts."""
         patterns = []
 
@@ -200,7 +199,7 @@ class PatternExtractor:
 
         return patterns
 
-    def _match_templates(self, prompts: List[str], category: str) -> List[ExtractedPattern]:
+    def _match_templates(self, prompts: list[str], category: str) -> list[ExtractedPattern]:
         """Match prompts against template patterns."""
         patterns = []
 
@@ -235,7 +234,7 @@ class PatternExtractor:
 
         return patterns
 
-    def _extract_ngram_patterns(self, prompts: List[str]) -> List[ExtractedPattern]:
+    def _extract_ngram_patterns(self, prompts: list[str]) -> list[ExtractedPattern]:
         """Extract n-gram based patterns."""
         patterns = []
 
@@ -279,7 +278,7 @@ class PatternExtractor:
 
         return patterns
 
-    def _extract_diff_patterns(self, prompts: List[str]) -> List[ExtractedPattern]:
+    def _extract_diff_patterns(self, prompts: list[str]) -> list[ExtractedPattern]:
         """Extract patterns using differential analysis."""
         patterns = []
 
@@ -334,16 +333,16 @@ class PatternExtractor:
         return patterns
 
     async def _optimize_patterns_ga(
-        self, patterns: List[ExtractedPattern], prompts: List[str]
-    ) -> List[ExtractedPattern]:
+        self, patterns: list[ExtractedPattern], prompts: list[str]
+    ) -> list[ExtractedPattern]:
         """Optimize patterns using genetic algorithm (simplified)."""
         # This is a placeholder for GA optimization
         # In production, would use a proper GA library
         return patterns
 
     def _filter_patterns(
-        self, patterns: List[ExtractedPattern], prompts: List[str]
-    ) -> List[ExtractedPattern]:
+        self, patterns: list[ExtractedPattern], prompts: list[str]
+    ) -> list[ExtractedPattern]:
         """Filter and validate patterns."""
         filtered = []
         seen_patterns = set()
@@ -389,8 +388,8 @@ class PatternExtractor:
         return f"pat_{hashlib.sha256(hash_input.encode()).hexdigest()[:12]}"
 
     def merge_similar_patterns(
-        self, patterns: List[ExtractedPattern], similarity_threshold: float = 0.8
-    ) -> List[ExtractedPattern]:
+        self, patterns: list[ExtractedPattern], similarity_threshold: float = 0.8
+    ) -> list[ExtractedPattern]:
         """Merge similar patterns to reduce redundancy."""
         if len(patterns) <= 1:
             return patterns
@@ -439,8 +438,8 @@ class PatternExtractor:
         return merged
 
     def evaluate_pattern(
-        self, pattern: ExtractedPattern, test_prompts: List[Tuple[str, bool]]
-    ) -> Dict[str, float]:
+        self, pattern: ExtractedPattern, test_prompts: list[tuple[str, bool]]
+    ) -> dict[str, float]:
         """Evaluate pattern performance on test data.
 
         Args:

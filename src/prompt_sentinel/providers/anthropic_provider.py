@@ -13,13 +13,13 @@ The provider automatically maps common model names to their full
 API identifiers and handles the Anthropic-specific message format.
 """
 
-import json
 import asyncio
-from typing import Dict, List, Optional, Tuple
-import anthropic
+import json
+
 from anthropic import AsyncAnthropic
+
+from prompt_sentinel.models.schemas import DetectionCategory, Message
 from prompt_sentinel.providers.base import LLMProvider
-from prompt_sentinel.models.schemas import Message, DetectionCategory
 
 
 class AnthropicProvider(LLMProvider):
@@ -34,7 +34,7 @@ class AnthropicProvider(LLMProvider):
         model_mapping: Dictionary mapping short names to full model IDs
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         """Initialize Anthropic provider with configuration.
 
         Args:
@@ -59,8 +59,8 @@ class AnthropicProvider(LLMProvider):
         self.model = self.model_mapping.get(self.model, self.model)
 
     async def classify(
-        self, messages: List[Message], system_prompt: Optional[str] = None
-    ) -> Tuple[DetectionCategory, float, str]:
+        self, messages: list[Message], system_prompt: str | None = None
+    ) -> tuple[DetectionCategory, float, str]:
         """Classify messages for injection attempts using Claude.
 
         Sends messages to Claude for analysis and parses the response
@@ -100,7 +100,7 @@ class AnthropicProvider(LLMProvider):
             content = response.content[0].text if response.content else ""
             return self._parse_response(content)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Return benign on timeout to avoid false positives
             return (DetectionCategory.BENIGN, 0.0, "Classification timeout")
         except Exception as e:
@@ -129,7 +129,7 @@ class AnthropicProvider(LLMProvider):
         except:
             return False
 
-    def _parse_response(self, content: str) -> Tuple[DetectionCategory, float, str]:
+    def _parse_response(self, content: str) -> tuple[DetectionCategory, float, str]:
         """
         Parse Claude's response into structured format.
 

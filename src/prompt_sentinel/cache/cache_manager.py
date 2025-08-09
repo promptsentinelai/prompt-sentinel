@@ -15,9 +15,12 @@ Key features:
 import hashlib
 import json
 import logging
-from typing import Any, Optional, Callable, TypeVar, Dict
+from collections.abc import Callable
+from typing import Any, TypeVar
+
 import redis.asyncio as redis
-from redis.exceptions import RedisError, ConnectionError as RedisConnectionError
+from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import RedisError
 
 from prompt_sentinel.config.settings import settings
 
@@ -48,7 +51,7 @@ class CacheManager:
     def __init__(self):
         """Initialize cache manager with optional Redis connection."""
         self.enabled = settings.redis_enabled
-        self.client: Optional[redis.Redis] = None
+        self.client: redis.Redis | None = None
         self.connected = False
         self.max_ttl = 3600  # 1 hour max for security
         self._connection_attempts = 0
@@ -169,7 +172,7 @@ class CacheManager:
         # Compute the result
         try:
             result = await compute_func()
-        except Exception as e:
+        except Exception:
             if cache_on_error:
                 # Try to return cached version even if expired
                 try:
@@ -192,7 +195,7 @@ class CacheManager:
 
         return result
 
-    async def get(self, key: str, ignore_expiry: bool = False) -> Optional[Any]:
+    async def get(self, key: str, ignore_expiry: bool = False) -> Any | None:
         """
         Get value from cache.
 
@@ -218,7 +221,7 @@ class CacheManager:
 
         return None
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """
         Set value in cache with TTL.
 
@@ -327,7 +330,7 @@ class CacheManager:
             logger.warning(f"Cache clear failed: {e}")
             return 0
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """
         Get cache statistics for monitoring.
 

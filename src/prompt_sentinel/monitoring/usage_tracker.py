@@ -7,18 +7,16 @@ This module provides comprehensive tracking of LLM API usage including:
 - Usage patterns and trends
 """
 
-import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field, asdict
-from enum import Enum
-import json
 import asyncio
 from collections import defaultdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any
 
 import structlog
-from prompt_sentinel.cache.cache_manager import cache_manager
 
+from prompt_sentinel.cache.cache_manager import cache_manager
 
 logger = structlog.get_logger()
 
@@ -58,7 +56,7 @@ class ApiCall:
     cost_usd: float
     success: bool
     endpoint: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -75,7 +73,7 @@ class UsageMetrics:
     cache_hit_rate: float = 0.0
 
     # Per-provider breakdown
-    by_provider: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    by_provider: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     # Time-based metrics
     requests_per_minute: float = 0.0
@@ -129,7 +127,7 @@ class UsageTracker:
         self.retention_hours = retention_hours
 
         # In-memory storage
-        self.api_calls: List[ApiCall] = []
+        self.api_calls: list[ApiCall] = []
         self.metrics = UsageMetrics()
 
         # Time windows for rate limiting
@@ -163,7 +161,7 @@ class UsageTracker:
         latency_ms: float,
         success: bool = True,
         endpoint: str = "",
-        metadata: Optional[Dict] = None,
+        metadata: dict | None = None,
     ) -> ApiCall:
         """Track a single API call.
 
@@ -434,7 +432,7 @@ class UsageTracker:
         except Exception as e:
             logger.error("Failed to load persisted metrics", error=str(e))
 
-    def get_metrics(self, time_window: Optional[timedelta] = None) -> UsageMetrics:
+    def get_metrics(self, time_window: timedelta | None = None) -> UsageMetrics:
         """Get usage metrics for time window.
 
         Args:
@@ -473,7 +471,7 @@ class UsageTracker:
 
         return metrics
 
-    def get_provider_breakdown(self) -> Dict[str, Dict[str, Any]]:
+    def get_provider_breakdown(self) -> dict[str, dict[str, Any]]:
         """Get detailed breakdown by provider.
 
         Returns:
@@ -481,7 +479,7 @@ class UsageTracker:
         """
         return dict(self.provider_metrics)
 
-    def get_cost_breakdown(self, group_by: str = "provider") -> Dict[str, float]:
+    def get_cost_breakdown(self, group_by: str = "provider") -> dict[str, float]:
         """Get cost breakdown by provider or model.
 
         Args:
@@ -504,7 +502,7 @@ class UsageTracker:
 
         return dict(breakdown)
 
-    def get_usage_trend(self, period: str = "hour", limit: int = 24) -> List[Dict[str, Any]]:
+    def get_usage_trend(self, period: str = "hour", limit: int = 24) -> list[dict[str, Any]]:
         """Get usage trend over time.
 
         Args:
@@ -543,7 +541,7 @@ class UsageTracker:
 
         return list(reversed(trend))
 
-    def clear_old_data(self, retention_hours: Optional[int] = None):
+    def clear_old_data(self, retention_hours: int | None = None):
         """Clear data older than retention period.
 
         Args:

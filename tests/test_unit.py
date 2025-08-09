@@ -1,13 +1,14 @@
 """Unit tests for PromptSentinel core functionality."""
 
 import pytest
+
 from prompt_sentinel.detection.heuristics import HeuristicDetector
 from prompt_sentinel.detection.pii_detector import PIIDetector, PIIType
 from prompt_sentinel.detection.prompt_processor import PromptProcessor
-from prompt_sentinel.models.schemas import Message, Role, Verdict, DetectionCategory
-from prompt_sentinel.routing.complexity_analyzer import ComplexityAnalyzer, ComplexityLevel
+from prompt_sentinel.models.schemas import DetectionCategory, Message, Role, Verdict
 from prompt_sentinel.monitoring.budget_manager import BudgetManager, BudgetPeriod
 from prompt_sentinel.monitoring.rate_limiter import RateLimiter
+from prompt_sentinel.routing.complexity_analyzer import ComplexityAnalyzer, ComplexityLevel
 
 
 class TestHeuristicDetector:
@@ -261,31 +262,31 @@ class TestRateLimiter:
         # Should allow initial requests
         allowed, _ = await limiter.check_rate_limit(client_id, tokens=10)
         assert allowed
-        
+
         allowed, _ = await limiter.check_rate_limit(client_id, tokens=10)
         assert allowed
-        
+
         # Third request should be rate limited or close to it
         allowed, _ = await limiter.check_rate_limit(client_id, tokens=10)
         assert allowed  # Still might be allowed
-        
+
         # Now make several more requests to trigger limit
         limited = False
-        for i in range(10):
+        for _ in range(10):
             allowed, wait_time = await limiter.check_rate_limit(client_id, tokens=10)
             if not allowed:
                 limited = True
                 assert wait_time is not None and wait_time > 0
                 break
-                
+
         # If we didn't hit rate limit with requests, try overwhelming with tokens
         if not limited:
-            for i in range(5):
+            for _ in range(5):
                 allowed, wait_time = await limiter.check_rate_limit(client_id, tokens=100)
                 if not allowed:
                     limited = True
                     break
-                    
+
         # Rate limiting should have been triggered
         assert limited, "Rate limiting should have been triggered with low limits"
 

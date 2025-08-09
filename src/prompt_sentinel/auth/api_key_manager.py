@@ -5,27 +5,26 @@ It uses Redis for fast lookups and implements secure key generation and hashing.
 """
 
 import hashlib
-import secrets
-import json
-from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
-import uuid
 import ipaddress
+import json
+import secrets
+import uuid
+from datetime import datetime, timedelta
+from typing import Any
 
 import structlog
+
 from prompt_sentinel.cache.cache_manager import cache_manager
+
 from .models import (
     APIKey,
+    APIKeyInfo,
     APIKeyStatus,
-    Client,
+    AuthConfig,
     AuthMethod,
-    UsageTier,
-    ClientPermission,
+    Client,
     CreateAPIKeyRequest,
     CreateAPIKeyResponse,
-    APIKeyInfo,
-    AuthConfig,
-    AuthMode,
 )
 
 logger = structlog.get_logger()
@@ -145,7 +144,7 @@ class APIKeyManager:
             permissions=request.permissions,
         )
 
-    async def validate_api_key(self, api_key: str) -> Optional[Client]:
+    async def validate_api_key(self, api_key: str) -> Client | None:
         """Validate an API key and return client information.
 
         Args:
@@ -200,7 +199,7 @@ class APIKeyManager:
 
         return client
 
-    async def get_api_key(self, key_id: str) -> Optional[APIKeyInfo]:
+    async def get_api_key(self, key_id: str) -> APIKeyInfo | None:
         """Get information about an API key.
 
         Args:
@@ -227,8 +226,8 @@ class APIKeyManager:
         )
 
     async def list_api_keys(
-        self, client_id: Optional[str] = None, status: Optional[APIKeyStatus] = None
-    ) -> List[APIKeyInfo]:
+        self, client_id: str | None = None, status: APIKeyStatus | None = None
+    ) -> list[APIKeyInfo]:
         """List API keys with optional filters.
 
         Args:
@@ -293,7 +292,7 @@ class APIKeyManager:
 
         return True
 
-    async def rotate_api_key(self, key_id: str) -> Optional[CreateAPIKeyResponse]:
+    async def rotate_api_key(self, key_id: str) -> CreateAPIKeyResponse | None:
         """Rotate an API key (create new, mark old as rotating).
 
         Args:
@@ -356,7 +355,7 @@ class APIKeyManager:
 
         return False
 
-    def check_header_bypass(self, headers: Dict[str, str]) -> bool:
+    def check_header_bypass(self, headers: dict[str, str]) -> bool:
         """Check if headers match bypass rules.
 
         Args:
@@ -385,18 +384,18 @@ class APIKeyManager:
 
         # Store by key hash for validation
         await cache_manager.client.hset(
-            f"api_keys:by_hash", api_key.key_hash, api_key.model_dump_json()
+            "api_keys:by_hash", api_key.key_hash, api_key.model_dump_json()
         )
 
         # Store by key ID for management
         await cache_manager.client.hset(
-            f"api_keys:by_id", api_key.key_id, api_key.model_dump_json()
+            "api_keys:by_id", api_key.key_id, api_key.model_dump_json()
         )
 
         # Store client -> keys mapping
         await cache_manager.client.sadd(f"api_keys:client:{api_key.client_id}", api_key.key_id)
 
-    async def _get_api_key_by_hash(self, key_hash: str) -> Optional[APIKey]:
+    async def _get_api_key_by_hash(self, key_hash: str) -> APIKey | None:
         """Get API key by hash from Redis."""
         if not cache_manager.enabled:
             return None
@@ -406,7 +405,7 @@ class APIKeyManager:
             return APIKey(**json.loads(data))
         return None
 
-    async def _get_api_key_by_id(self, key_id: str) -> Optional[APIKey]:
+    async def _get_api_key_by_id(self, key_id: str) -> APIKey | None:
         """Get API key by ID from Redis."""
         if not cache_manager.enabled:
             return None
@@ -423,7 +422,7 @@ class APIKeyManager:
             api_key.last_used_at = datetime.utcnow()
             await self._store_api_key(api_key)
 
-    async def _list_all_keys(self) -> List[Dict[str, Any]]:
+    async def _list_all_keys(self) -> list[dict[str, Any]]:
         """List all API keys from Redis."""
         if not cache_manager.enabled:
             return []

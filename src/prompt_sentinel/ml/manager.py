@@ -6,18 +6,19 @@ promotion, and retirement based on performance metrics.
 
 import asyncio
 import json
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field, asdict
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from collections import defaultdict
+from typing import Any
 
 import structlog
+
 from prompt_sentinel.cache.cache_manager import cache_manager
-from prompt_sentinel.ml.collector import PatternCollector, DetectionEvent
-from prompt_sentinel.ml.features import FeatureExtractor
 from prompt_sentinel.ml.clustering import ClusteringEngine
-from prompt_sentinel.ml.patterns import PatternExtractor, ExtractedPattern
+from prompt_sentinel.ml.collector import DetectionEvent, PatternCollector
+from prompt_sentinel.ml.features import FeatureExtractor
+from prompt_sentinel.ml.patterns import ExtractedPattern, PatternExtractor
 
 logger = structlog.get_logger()
 
@@ -41,7 +42,7 @@ class PatternPerformance:
     true_negatives: int = 0
     false_negatives: int = 0
     total_matches: int = 0
-    last_match: Optional[datetime] = None
+    last_match: datetime | None = None
 
     @property
     def precision(self) -> float:
@@ -82,10 +83,10 @@ class ManagedPattern:
     pattern: ExtractedPattern
     status: PatternStatus
     performance: PatternPerformance
-    promoted_at: Optional[datetime] = None
-    retired_at: Optional[datetime] = None
+    promoted_at: datetime | None = None
+    retired_at: datetime | None = None
     version: int = 1
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
@@ -105,7 +106,7 @@ class PatternManager:
 
     def __init__(
         self,
-        collector: Optional[PatternCollector] = None,
+        collector: PatternCollector | None = None,
         min_precision: float = 0.9,
         min_recall: float = 0.5,
         min_samples_for_promotion: int = 100,
@@ -130,8 +131,8 @@ class PatternManager:
         self.max_active_patterns = max_active_patterns
 
         # Pattern storage
-        self.patterns: Dict[str, ManagedPattern] = {}
-        self.patterns_by_status: Dict[PatternStatus, List[str]] = defaultdict(list)
+        self.patterns: dict[str, ManagedPattern] = {}
+        self.patterns_by_status: dict[PatternStatus, list[str]] = defaultdict(list)
 
         # Components
         self.feature_extractor = FeatureExtractor()
@@ -147,7 +148,7 @@ class PatternManager:
         }
 
         # Background tasks
-        self._tasks: List[asyncio.Task] = []
+        self._tasks: list[asyncio.Task] = []
         self._running = False
 
     async def initialize(self):
@@ -186,7 +187,7 @@ class PatternManager:
 
         logger.info("Pattern manager shutdown")
 
-    async def discover_patterns(self) -> List[ExtractedPattern]:
+    async def discover_patterns(self) -> list[ExtractedPattern]:
         """Run pattern discovery on collected events."""
         # Get events for clustering
         events = self.collector.get_events_for_clustering()
@@ -354,7 +355,7 @@ class PatternManager:
 
         return True
 
-    def get_active_patterns(self) -> List[ExtractedPattern]:
+    def get_active_patterns(self) -> list[ExtractedPattern]:
         """Get all active patterns for detection.
 
         Returns:
@@ -368,7 +369,7 @@ class PatternManager:
 
         return active_patterns
 
-    def get_pattern_statistics(self) -> Dict[str, Any]:
+    def get_pattern_statistics(self) -> dict[str, Any]:
         """Get pattern management statistics.
 
         Returns:

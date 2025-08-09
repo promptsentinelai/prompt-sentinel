@@ -15,9 +15,10 @@ Models include validation logic to ensure data integrity and provide
 clear error messages for invalid inputs.
 """
 
-from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
 from datetime import datetime
+from enum import Enum
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field, validator
 
 
@@ -110,7 +111,7 @@ class SimplePromptRequest(BaseModel):
     """
 
     prompt: str = Field(..., description="The prompt text to analyze")
-    role: Optional[Role] = Field(
+    role: Role | None = Field(
         default=Role.USER, description="Role of the prompt (user, system, or combined)"
     )
 
@@ -125,7 +126,7 @@ class SimplePromptRequest(BaseModel):
 class StructuredPromptRequest(BaseModel):
     """Structured prompt with role separation."""
 
-    messages: List[Message] = Field(..., description="List of messages with roles", min_items=1)
+    messages: list[Message] = Field(..., description="List of messages with roles", min_items=1)
 
     @validator("messages")
     def validate_message_structure(cls, v):
@@ -145,25 +146,25 @@ class StructuredPromptRequest(BaseModel):
 class UnifiedDetectionRequest(BaseModel):
     """Unified request format supporting multiple input types."""
 
-    input: Union[str, List[Dict[str, str]]] = Field(
+    input: str | list[dict[str, str]] = Field(
         ..., description="Prompt as string or message array"
     )
-    role: Optional[Role] = Field(default=None, description="Role hint for string inputs")
-    config: Optional[Dict] = Field(
+    role: Role | None = Field(default=None, description="Role hint for string inputs")
+    config: dict | None = Field(
         default=None, description="Optional detection configuration overrides"
     )
     # User context for A/B testing experiments
-    user_id: Optional[str] = Field(
+    user_id: str | None = Field(
         default=None, description="User identifier for experiment assignment"
     )
-    session_id: Optional[str] = Field(
+    session_id: str | None = Field(
         default=None, description="Session identifier for context tracking"
     )
-    user_context: Optional[Dict[str, Any]] = Field(
+    user_context: dict[str, Any] | None = Field(
         default=None, description="Additional user attributes for targeting"
     )
 
-    def to_messages(self) -> List[Message]:
+    def to_messages(self) -> list[Message]:
         """Convert input to standardized message format."""
         if isinstance(self.input, str):
             role = self.role or Role.USER
@@ -179,7 +180,7 @@ class DetectionReason(BaseModel):
     description: str
     confidence: float = Field(ge=0.0, le=1.0)
     source: Literal["heuristic", "llm", "combined"]
-    patterns_matched: Optional[List[str]] = None
+    patterns_matched: list[str] | None = None
 
 
 class FormatRecommendation(BaseModel):
@@ -196,7 +197,7 @@ class PIIDetection(BaseModel):
     pii_type: str
     masked_value: str
     confidence: float = Field(ge=0.0, le=1.0)
-    location: Dict[str, int]  # {"start": x, "end": y}
+    location: dict[str, int]  # {"start": x, "end": y}
 
 
 class DetectionResponse(BaseModel):
@@ -208,11 +209,11 @@ class DetectionResponse(BaseModel):
 
     verdict: Verdict
     confidence: float = Field(ge=0.0, le=1.0)
-    modified_prompt: Optional[str] = None
-    reasons: List[DetectionReason] = Field(default_factory=list)
-    format_recommendations: List[FormatRecommendation] = Field(default_factory=list)
-    pii_detected: List[PIIDetection] = Field(default_factory=list)
-    metadata: Dict = Field(default_factory=dict)
+    modified_prompt: str | None = None
+    reasons: list[DetectionReason] = Field(default_factory=list)
+    format_recommendations: list[FormatRecommendation] = Field(default_factory=list)
+    pii_detected: list[PIIDetection] = Field(default_factory=list)
+    metadata: dict = Field(default_factory=dict)
     processing_time_ms: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
@@ -223,11 +224,11 @@ class DetectionResponse(BaseModel):
 class AnalysisRequest(BaseModel):
     """Full analysis request with options."""
 
-    messages: List[Message]
+    messages: list[Message]
     include_recommendations: bool = True
     include_metadata: bool = True
     check_format: bool = True
-    detection_mode: Optional[Literal["strict", "moderate", "permissive"]] = None
+    detection_mode: Literal["strict", "moderate", "permissive"] | None = None
 
 
 class AnalysisResponse(BaseModel):
@@ -235,12 +236,12 @@ class AnalysisResponse(BaseModel):
 
     verdict: Verdict
     confidence: float = Field(ge=0.0, le=1.0)
-    per_message_analysis: List[Dict] = Field(default_factory=list)
+    per_message_analysis: list[dict] = Field(default_factory=list)
     overall_risk_score: float = Field(ge=0.0, le=1.0)
-    reasons: List[DetectionReason] = Field(default_factory=list)
-    format_analysis: Dict = Field(default_factory=dict)
-    recommendations: List[FormatRecommendation] = Field(default_factory=list)
-    metadata: Dict = Field(default_factory=dict)
+    reasons: list[DetectionReason] = Field(default_factory=list)
+    format_analysis: dict = Field(default_factory=dict)
+    recommendations: list[FormatRecommendation] = Field(default_factory=list)
+    metadata: dict = Field(default_factory=dict)
     processing_time_ms: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
@@ -251,12 +252,12 @@ class HealthResponse(BaseModel):
     status: Literal["healthy", "degraded", "unhealthy"]
     version: str
     uptime_seconds: float
-    providers_status: Dict[str, str]
+    providers_status: dict[str, str]
     redis_connected: bool
-    redis_latency_ms: Optional[float] = None
-    cache_stats: Optional[Dict[str, Any]] = None
-    system_metrics: Optional[Dict[str, Any]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    redis_latency_ms: float | None = None
+    cache_stats: dict[str, Any] | None = None
+    system_metrics: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -268,7 +269,7 @@ class CorpusEntry(BaseModel):
     source: str
     category: str
     created_at: datetime
-    metadata: Optional[Dict] = None
+    metadata: dict | None = None
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}

@@ -10,12 +10,13 @@ Supported models:
 - GPT-3.5 Turbo: Fast and cost-effective
 """
 
-import json
 import asyncio
-from typing import Dict, List, Optional, Tuple
+import json
+
 from openai import AsyncOpenAI
+
+from prompt_sentinel.models.schemas import DetectionCategory, Message
 from prompt_sentinel.providers.base import LLMProvider
-from prompt_sentinel.models.schemas import Message, DetectionCategory
 
 
 class OpenAIProvider(LLMProvider):
@@ -29,7 +30,7 @@ class OpenAIProvider(LLMProvider):
         model_mapping: Dictionary mapping short names to model IDs
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         """Initialize OpenAI provider with configuration.
 
         Args:
@@ -48,8 +49,8 @@ class OpenAIProvider(LLMProvider):
         self.model = self.model_mapping.get(self.model, self.model)
 
     async def classify(
-        self, messages: List[Message], system_prompt: Optional[str] = None
-    ) -> Tuple[DetectionCategory, float, str]:
+        self, messages: list[Message], system_prompt: str | None = None
+    ) -> tuple[DetectionCategory, float, str]:
         """
         Classify messages using OpenAI GPT.
 
@@ -84,7 +85,7 @@ class OpenAIProvider(LLMProvider):
             content = response.choices[0].message.content if response.choices else ""
             return self._parse_response(content)
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return (DetectionCategory.BENIGN, 0.0, "Classification timeout")
         except Exception as e:
             print(f"OpenAI classification error: {e}")
@@ -108,7 +109,7 @@ class OpenAIProvider(LLMProvider):
         except:
             return False
 
-    def _parse_response(self, content: str) -> Tuple[DetectionCategory, float, str]:
+    def _parse_response(self, content: str) -> tuple[DetectionCategory, float, str]:
         """
         Parse OpenAI's response into structured format.
 

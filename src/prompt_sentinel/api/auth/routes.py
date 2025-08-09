@@ -3,21 +3,21 @@
 This module provides admin endpoints for creating, managing, and revoking API keys.
 """
 
-from typing import List, Optional, Annotated
-from fastapi import APIRouter, HTTPException, Depends, Query, Path, status
+from typing import Annotated
 
 import structlog
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+
 from prompt_sentinel.auth import (
+    APIKeyInfo,
     APIKeyManager,
+    APIKeyStatus,
     Client,
     CreateAPIKeyRequest,
     CreateAPIKeyResponse,
-    APIKeyInfo,
-    APIKeyStatus,
     get_api_key_manager,
     get_current_client,
     require_admin,
-    ClientPermission,
 )
 
 logger = structlog.get_logger()
@@ -73,21 +73,21 @@ async def create_api_key(
         logger.error("Failed to create API key", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create API key"
-        )
+        ) from e
 
 
 @router.get(
     "/",
-    response_model=List[APIKeyInfo],
+    response_model=list[APIKeyInfo],
     summary="List API keys",
     description="List all API keys with optional filters",
     dependencies=[Depends(require_admin())],
 )
 async def list_api_keys(
     manager: Annotated[APIKeyManager, Depends(get_api_key_manager)],
-    client_id: Optional[str] = Query(None, description="Filter by client ID"),
-    status: Optional[APIKeyStatus] = Query(None, description="Filter by status"),
-) -> List[APIKeyInfo]:
+    client_id: str | None = Query(None, description="Filter by client ID"),
+    status: APIKeyStatus | None = Query(None, description="Filter by status"),
+) -> list[APIKeyInfo]:
     """List API keys with optional filters.
 
     Requires admin permissions.
@@ -115,7 +115,7 @@ async def list_api_keys(
         logger.error("Failed to list API keys", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to list API keys"
-        )
+        ) from e
 
 
 @router.get(
@@ -227,7 +227,7 @@ async def rotate_api_key(
         logger.error("Failed to rotate API key", key_id=key_id, error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to rotate API key"
-        )
+        ) from e
 
 
 @router.get(

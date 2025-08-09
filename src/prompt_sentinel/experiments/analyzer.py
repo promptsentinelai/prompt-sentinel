@@ -5,11 +5,11 @@ including significance testing, confidence intervals, and effect size calculatio
 """
 
 import math
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Union
-from dataclasses import dataclass
-from enum import Enum
 import statistics
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 import structlog
 
@@ -39,16 +39,16 @@ class SignificanceTest(Enum):
 class MetricData:
     """Statistical data for a metric."""
 
-    values: List[float]
+    values: list[float]
     sample_size: int
     mean: float
     std_dev: float
     variance: float
     median: float
-    percentiles: Dict[int, float]  # e.g., {50: median, 95: p95, 99: p99}
+    percentiles: dict[int, float]  # e.g., {50: median, 95: p95, 99: p99}
 
     @classmethod
-    def from_values(cls, values: List[float]) -> "MetricData":
+    def from_values(cls, values: list[float]) -> "MetricData":
         """Create MetricData from list of values."""
         if not values:
             return cls(
@@ -83,7 +83,7 @@ class MetricData:
         )
 
     @staticmethod
-    def _percentile(sorted_values: List[float], percentile: int) -> float:
+    def _percentile(sorted_values: list[float], percentile: int) -> float:
         """Calculate percentile from sorted values."""
         if not sorted_values:
             return 0.0
@@ -114,7 +114,7 @@ class ExperimentResult:
     control_metrics: MetricData
     treatment_metrics: MetricData
     effect_size: float
-    effect_size_ci: Tuple[float, float]  # Confidence interval for effect size
+    effect_size_ci: tuple[float, float]  # Confidence interval for effect size
 
     # Significance testing
     p_value: float
@@ -129,14 +129,14 @@ class ExperimentResult:
 
     # Power analysis
     statistical_power: float
-    required_sample_size: Optional[int]
+    required_sample_size: int | None
 
     # Metadata
     analysis_timestamp: datetime
     total_observations: int
     experiment_duration_days: float
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get human-readable summary of results."""
         improvement = (
             (self.treatment_metrics.mean - self.control_metrics.mean)
@@ -181,11 +181,11 @@ class StatisticalAnalyzer:
     async def analyze_experiment(
         self,
         experiment_id: str,
-        metric_data: Dict[str, Dict[str, List[float]]],
-        metric_configs: Dict[str, Dict[str, Any]],
+        metric_data: dict[str, dict[str, list[float]]],
+        metric_configs: dict[str, dict[str, Any]],
         min_sample_size: int = 100,
-        confidence_level: Optional[float] = None,
-    ) -> List[ExperimentResult]:
+        confidence_level: float | None = None,
+    ) -> list[ExperimentResult]:
         """Analyze experiment results for all metrics.
 
         Args:
@@ -259,11 +259,11 @@ class StatisticalAnalyzer:
         metric_name: str,
         control_variant_id: str,
         treatment_variant_id: str,
-        control_values: List[float],
-        treatment_values: List[float],
-        metric_config: Dict[str, Any],
+        control_values: list[float],
+        treatment_values: list[float],
+        metric_config: dict[str, Any],
         confidence_level: float,
-    ) -> Optional[ExperimentResult]:
+    ) -> ExperimentResult | None:
         """Analyze a single metric comparison.
 
         Args:
@@ -352,8 +352,8 @@ class StatisticalAnalyzer:
             return None
 
     def _identify_variants(
-        self, variant_data: Dict[str, List[float]]
-    ) -> Tuple[Optional[str], List[str]]:
+        self, variant_data: dict[str, list[float]]
+    ) -> tuple[str | None, list[str]]:
         """Identify control and treatment variants.
 
         Args:
@@ -404,10 +404,10 @@ class StatisticalAnalyzer:
 
     def _perform_significance_test(
         self,
-        control_values: List[float],
-        treatment_values: List[float],
+        control_values: list[float],
+        treatment_values: list[float],
         test_type: SignificanceTest,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Perform statistical significance test.
 
         Args:
@@ -432,8 +432,8 @@ class StatisticalAnalyzer:
             return self._t_test(control_values, treatment_values)
 
     def _t_test(
-        self, control_values: List[float], treatment_values: List[float]
-    ) -> Tuple[float, float]:
+        self, control_values: list[float], treatment_values: list[float]
+    ) -> tuple[float, float]:
         """Perform Welch's t-test for unequal variances.
 
         Args:
@@ -470,8 +470,8 @@ class StatisticalAnalyzer:
         return max(0.0, min(1.0, p_value)), t_stat
 
     def _z_test(
-        self, control_values: List[float], treatment_values: List[float]
-    ) -> Tuple[float, float]:
+        self, control_values: list[float], treatment_values: list[float]
+    ) -> tuple[float, float]:
         """Perform z-test for proportions.
 
         Args:
@@ -502,8 +502,8 @@ class StatisticalAnalyzer:
         return max(0.0, min(1.0, p_value)), z_stat
 
     def _mann_whitney_test(
-        self, control_values: List[float], treatment_values: List[float]
-    ) -> Tuple[float, float]:
+        self, control_values: list[float], treatment_values: list[float]
+    ) -> tuple[float, float]:
         """Perform Mann-Whitney U test (simplified implementation).
 
         Args:
@@ -586,7 +586,7 @@ class StatisticalAnalyzer:
 
     def _calculate_effect_size_ci(
         self, control_data: MetricData, treatment_data: MetricData, confidence_level: float
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Calculate confidence interval for effect size.
 
         Args:

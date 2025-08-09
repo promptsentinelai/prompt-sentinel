@@ -67,7 +67,7 @@ class HeuristicDetector:
 
         # Jailbreak patterns
         self.jailbreak_patterns = [
-            (r"DAN (mode|prompt)", 0.95, "DAN jailbreak attempt"),
+            (r"dan (mode|prompt)", 0.95, "DAN jailbreak attempt"),
             (r"developer mode", 0.9, "Developer mode jailbreak"),
             (
                 r"(unlock|enable|activate).{0,20}(hidden|secret|advanced)",
@@ -220,7 +220,7 @@ class HeuristicDetector:
                     category=DetectionCategory.DIRECT_INJECTION,
                     description=description,
                     confidence=confidence,
-                    source="ml_pattern",
+                    source="heuristic",  # ML patterns are still heuristic-based
                     patterns_matched=[pattern_id],
                 )
             )

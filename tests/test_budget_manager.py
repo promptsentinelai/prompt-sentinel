@@ -2,7 +2,7 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -81,29 +81,29 @@ class TestBudgetConfig:
     def test_default_config(self):
         """Test default budget configuration."""
         config = BudgetConfig()
-        
+
         # Cost limits should be None by default
         assert config.hourly_limit is None
         assert config.daily_limit is None
         assert config.monthly_limit is None
-        
+
         # Token limits should be None by default
         assert config.hourly_tokens is None
         assert config.daily_tokens is None
         assert config.monthly_tokens is None
-        
+
         # Alert thresholds
         assert config.warning_threshold == 0.75
         assert config.critical_threshold == 0.90
-        
+
         # Actions
         assert config.block_on_exceeded is True
         assert config.throttle_on_warning is False
-        
+
         # Optimization
         assert config.prefer_cache is True
         assert config.prefer_cheap_models is False
-        
+
         # Provider limits
         assert config.provider_limits == {}
 
@@ -117,9 +117,9 @@ class TestBudgetConfig:
             critical_threshold=0.95,
             block_on_exceeded=False,
             throttle_on_warning=True,
-            provider_limits={"openai": 500.0, "anthropic": 300.0}
+            provider_limits={"openai": 500.0, "anthropic": 300.0},
         )
-        
+
         assert config.hourly_limit == 10.0  # Test value
         assert config.daily_limit == 100.0  # Test value
         assert config.monthly_limit == 1000.0  # Test value
@@ -144,9 +144,9 @@ class TestBudgetAlert:
             percentage=75.0,
             message="Daily budget warning",
             timestamp=datetime.now(),
-            recommendations=["Reduce usage", "Switch to cache"]
+            recommendations=["Reduce usage", "Switch to cache"],
         )
-        
+
         assert alert.level == AlertLevel.WARNING
         assert alert.period == BudgetPeriod.DAILY
         assert alert.current_value == 75.0
@@ -168,9 +168,9 @@ class TestBudgetStatus:
             limit_value=10.0,
             percentage=50.0,
             message="Info",
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-        
+
         status = BudgetStatus(
             within_budget=True,
             alerts=[alert],
@@ -182,9 +182,9 @@ class TestBudgetStatus:
             monthly_remaining=500.0,
             projected_daily=75.0,
             projected_monthly=750.0,
-            recommendations=["Monitor usage"]
+            recommendations=["Monitor usage"],
         )
-        
+
         assert status.within_budget is True
         assert len(status.alerts) == 1
         assert status.hourly_cost == 5.0
@@ -229,9 +229,7 @@ class TestBudgetManager:
     def budget_manager(self, budget_config, mock_usage_tracker):
         """Create budget manager instance."""
         return BudgetManager(
-            config=budget_config,
-            usage_tracker=mock_usage_tracker,
-            alert_callback=None
+            config=budget_config, usage_tracker=mock_usage_tracker, alert_callback=None
         )
 
     def test_initialization(self, budget_manager, budget_config, mock_usage_tracker):
@@ -247,7 +245,7 @@ class TestBudgetManager:
     async def test_check_budget_within_limits(self, budget_manager):
         """Test checking budget when within limits."""
         status = await budget_manager.check_budget(estimated_cost=0.5)
-        
+
         assert status.within_budget is True
         assert len(status.alerts) == 0
         assert status.hourly_cost == 1.0
@@ -265,11 +263,11 @@ class TestBudgetManager:
             current_hour_cost=1.0,
             current_day_cost=75.0,
             current_month_cost=75.0,
-            total_cost_usd=75.0
+            total_cost_usd=75.0,
         )
-        
+
         status = await budget_manager.check_budget(estimated_cost=1.0)
-        
+
         assert status.within_budget is True
         assert len(status.alerts) == 1
         assert status.alerts[0].level == AlertLevel.WARNING
@@ -284,11 +282,11 @@ class TestBudgetManager:
             current_hour_cost=1.0,
             current_day_cost=90.0,
             current_month_cost=90.0,
-            total_cost_usd=90.0
+            total_cost_usd=90.0,
         )
-        
+
         status = await budget_manager.check_budget(estimated_cost=1.0)
-        
+
         assert status.within_budget is True
         assert len(status.alerts) == 1
         assert status.alerts[0].level == AlertLevel.CRITICAL
@@ -302,11 +300,11 @@ class TestBudgetManager:
             current_hour_cost=1.0,
             current_day_cost=101.0,
             current_month_cost=101.0,
-            total_cost_usd=101.0
+            total_cost_usd=101.0,
         )
-        
+
         status = await budget_manager.check_budget(estimated_cost=0.0)
-        
+
         assert status.within_budget is False
         assert len(status.alerts) == 1
         assert status.alerts[0].level == AlertLevel.EXCEEDED
@@ -316,30 +314,21 @@ class TestBudgetManager:
     def test_check_limit_none(self, budget_manager):
         """Test checking limit when limit is None."""
         alert = budget_manager._check_limit(
-            BudgetPeriod.HOURLY,
-            current=10.0,
-            limit=None,
-            estimated=1.0
+            BudgetPeriod.HOURLY, current=10.0, limit=None, estimated=1.0
         )
         assert alert is None
 
     def test_check_limit_under_threshold(self, budget_manager):
         """Test checking limit when under threshold."""
         alert = budget_manager._check_limit(
-            BudgetPeriod.HOURLY,
-            current=5.0,
-            limit=10.0,
-            estimated=1.0
+            BudgetPeriod.HOURLY, current=5.0, limit=10.0, estimated=1.0
         )
         assert alert is None
 
     def test_check_limit_warning_threshold(self, budget_manager):
         """Test checking limit at warning threshold."""
         alert = budget_manager._check_limit(
-            BudgetPeriod.HOURLY,
-            current=7.0,
-            limit=10.0,
-            estimated=1.0
+            BudgetPeriod.HOURLY, current=7.0, limit=10.0, estimated=1.0
         )
         assert alert is not None
         assert alert.level == AlertLevel.WARNING
@@ -348,10 +337,7 @@ class TestBudgetManager:
     def test_check_limit_critical_threshold(self, budget_manager):
         """Test checking limit at critical threshold."""
         alert = budget_manager._check_limit(
-            BudgetPeriod.HOURLY,
-            current=8.5,
-            limit=10.0,
-            estimated=1.0
+            BudgetPeriod.HOURLY, current=8.5, limit=10.0, estimated=1.0
         )
         assert alert is not None
         assert alert.level == AlertLevel.CRITICAL
@@ -360,10 +346,7 @@ class TestBudgetManager:
     def test_check_limit_exceeded(self, budget_manager):
         """Test checking limit when exceeded."""
         alert = budget_manager._check_limit(
-            BudgetPeriod.HOURLY,
-            current=10.0,
-            limit=10.0,
-            estimated=1.0
+            BudgetPeriod.HOURLY, current=10.0, limit=10.0, estimated=1.0
         )
         assert alert is not None
         assert alert.level == AlertLevel.EXCEEDED
@@ -374,18 +357,16 @@ class TestBudgetManager:
         """Test processing alert with callback."""
         callback_called = False
         received_alert = None
-        
+
         async def alert_callback(alert):
             nonlocal callback_called, received_alert
             callback_called = True
             received_alert = alert
-        
+
         manager = BudgetManager(
-            config=budget_config,
-            usage_tracker=mock_usage_tracker,
-            alert_callback=alert_callback
+            config=budget_config, usage_tracker=mock_usage_tracker, alert_callback=alert_callback
         )
-        
+
         alert = BudgetAlert(
             level=AlertLevel.WARNING,
             period=BudgetPeriod.DAILY,
@@ -393,11 +374,11 @@ class TestBudgetManager:
             limit_value=100.0,
             percentage=75.0,
             message="Test alert",
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-        
+
         await manager._process_alert(alert)
-        
+
         assert callback_called is True
         assert received_alert == alert
 
@@ -411,11 +392,11 @@ class TestBudgetManager:
             limit_value=100.0,
             percentage=75.0,
             message="Test alert",
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-        
+
         await budget_manager._process_alert(alert)
-        
+
         assert budget_manager.is_throttled is True
         assert budget_manager.throttle_until is not None
 
@@ -429,13 +410,13 @@ class TestBudgetManager:
             limit_value=100.0,
             percentage=75.0,
             message="Test alert",
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-        
+
         # Process first alert
         await budget_manager._process_alert(alert)
         assert len(budget_manager.alerts) == 1
-        
+
         # Process same alert again (should be rate limited)
         await budget_manager._process_alert(alert)
         assert len(budget_manager.alerts) == 1  # Not added again
@@ -459,9 +440,9 @@ class TestBudgetManager:
             current_hour_cost=1.0,
             current_day_cost=99.0,
             current_month_cost=99.0,
-            total_cost_usd=99.0
+            total_cost_usd=99.0,
         )
-        
+
         assert budget_manager.should_block(2.0) is True
 
     def test_should_throttle_not_throttled(self, budget_manager):
@@ -487,9 +468,9 @@ class TestBudgetManager:
         mock_usage_tracker.get_metrics.return_value = create_usage_metrics(
             cache_hit_rate=0.25  # Below 30% threshold
         )
-        
+
         suggestions = budget_manager.get_optimization_suggestions()
-        
+
         assert isinstance(suggestions, list)
         assert len(suggestions) > 0
         # Should have cache suggestion
@@ -498,10 +479,9 @@ class TestBudgetManager:
     def test_get_optimization_suggestions_high_failure(self, budget_manager, mock_usage_tracker):
         """Test optimization suggestions with high failure rate."""
         mock_usage_tracker.get_metrics.return_value = create_usage_metrics(
-            successful_requests=80,
-            failed_requests=20
+            successful_requests=80, failed_requests=20
         )
-        
+
         suggestions = budget_manager.get_optimization_suggestions()
         assert any("failure rate" in s.lower() for s in suggestions)
 
@@ -513,44 +493,45 @@ class TestBudgetManager:
             failed_requests=0,
             total_tokens=20000,
             cache_hits=3,
-            cache_hit_rate=0.3
+            cache_hit_rate=0.3,
         )
-        
+
         suggestions = budget_manager.get_optimization_suggestions()
         assert any("token usage" in s.lower() for s in suggestions)
 
     def test_get_budget_summary(self, budget_manager):
         """Test getting budget summary."""
         summary = budget_manager.get_budget_summary()
-        
+
         assert "current_usage" in summary
         assert "limits" in summary
         assert "status" in summary
         assert "optimization" in summary
-        
+
         assert summary["current_usage"]["hourly"] == 1.0
         assert summary["current_usage"]["daily"] == 5.0
         assert summary["current_usage"]["monthly"] == 10.0
-        
+
         assert summary["limits"]["hourly"] == 10.0
         assert summary["limits"]["daily"] == 100.0
         assert summary["limits"]["monthly"] == 1000.0
-        
+
         assert summary["status"]["throttled"] is False
         assert summary["status"]["recent_alerts"] == 0
 
     @pytest.mark.asyncio
-    async def test_budget_manager_with_alert_callback_error(self, budget_config, mock_usage_tracker):
+    async def test_budget_manager_with_alert_callback_error(
+        self, budget_config, mock_usage_tracker
+    ):
         """Test budget manager handles callback errors gracefully."""
+
         async def failing_callback(alert):
             raise Exception("Callback failed")
-        
+
         manager = BudgetManager(
-            config=budget_config,
-            usage_tracker=mock_usage_tracker,
-            alert_callback=failing_callback
+            config=budget_config, usage_tracker=mock_usage_tracker, alert_callback=failing_callback
         )
-        
+
         alert = BudgetAlert(
             level=AlertLevel.WARNING,
             period=BudgetPeriod.DAILY,
@@ -558,25 +539,25 @@ class TestBudgetManager:
             limit_value=100.0,
             percentage=75.0,
             message="Test alert",
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
-        
+
         # Should not raise exception
         await manager._process_alert(alert)
         assert len(manager.alerts) == 1
 
     def test_budget_projections(self, budget_manager):
         """Test budget projections calculation."""
-        with patch('prompt_sentinel.monitoring.budget_manager.datetime') as mock_datetime:
+        with patch("prompt_sentinel.monitoring.budget_manager.datetime") as mock_datetime:
             mock_datetime.now.return_value = datetime(2024, 1, 15, 12, 0, 0)
             mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
-            
+
             status = asyncio.run(budget_manager.check_budget())
-            
+
             # Projected daily = current_day + (hourly * remaining_hours)
             # At noon, 12 hours remaining: 5.0 + (1.0 * 12) = 17.0
             assert status.projected_daily == 17.0
-            
+
             # Projected monthly = current_month + (daily * remaining_days)
             # On 15th, ~15 days remaining: 10.0 + (5.0 * 15) = 85.0
             assert status.projected_monthly == 85.0
@@ -600,10 +581,10 @@ class TestIntegrationScenarios:
             cache_hit_rate=0.0,
             current_hour_cost=0.0,
             current_day_cost=0.0,
-            current_month_cost=0.0
+            current_month_cost=0.0,
         )
         tracker.get_provider_breakdown.return_value = {}
-        
+
         config = BudgetConfig(
             hourly_limit=10.0,
             daily_limit=100.0,
@@ -611,25 +592,25 @@ class TestIntegrationScenarios:
             critical_threshold=0.90,
             throttle_on_warning=True,
         )
-        
+
         manager = BudgetManager(config, tracker)
-        
+
         # Initially within budget
         status = await manager.check_budget()
         assert status.within_budget is True
         assert len(status.alerts) == 0
-        
+
         # Simulate increasing usage
         for cost in [50.0, 75.0, 90.0, 101.0]:
             tracker.get_metrics.return_value = create_usage_metrics(
                 current_hour_cost=cost / 10,
                 current_day_cost=cost,
                 current_month_cost=cost,
-                total_cost_usd=cost
+                total_cost_usd=cost,
             )
-            
+
             status = await manager.check_budget()
-            
+
             if cost == 75.0:
                 # Should have warning (might be multiple periods)
                 assert len(status.alerts) >= 1
@@ -653,20 +634,20 @@ class TestIntegrationScenarios:
             current_hour_cost=8.0,  # 80% of hourly limit
             current_day_cost=80.0,  # 80% of daily limit
             current_month_cost=800.0,  # 80% of monthly limit
-            total_cost_usd=800.0
+            total_cost_usd=800.0,
         )
         tracker.get_provider_breakdown.return_value = {}
-        
+
         config = BudgetConfig(
             hourly_limit=10.0,  # Test value
             daily_limit=100.0,  # Test value
             monthly_limit=1000.0,  # Test value
             warning_threshold=0.75,
         )
-        
+
         manager = BudgetManager(config, tracker)
         status = await manager.check_budget()
-        
+
         # Should have warnings for all three periods
         assert len(status.alerts) == 3
         assert all(a.level == AlertLevel.WARNING for a in status.alerts)

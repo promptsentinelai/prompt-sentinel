@@ -1,14 +1,10 @@
 """Unit tests for actual monitoring modules."""
 
-import asyncio
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
 
 from prompt_sentinel.monitoring.budget_manager import BudgetManager
-from prompt_sentinel.monitoring.usage_tracker import UsageTracker
 from prompt_sentinel.monitoring.rate_limiter import RateLimiter
+from prompt_sentinel.monitoring.usage_tracker import UsageTracker
 
 
 @pytest.mark.skip(reason="Tests use outdated API - monitoring modules have been refactored")
@@ -20,6 +16,7 @@ class TestBudgetManagerActual:
         """Create budget manager instance."""
         from prompt_sentinel.config.settings import Settings as Config
         from prompt_sentinel.monitoring.usage_tracker import UsageTracker
+
         config = Config()
         usage_tracker = UsageTracker(config)
         return BudgetManager(config, usage_tracker)
@@ -34,7 +31,7 @@ class TestBudgetManagerActual:
             input_tokens=1000,
             output_tokens=500,
         )
-        
+
         # Get current spend
         daily_spend = budget_manager.get_daily_spend()
         assert daily_spend > 0
@@ -45,7 +42,7 @@ class TestBudgetManagerActual:
         # Should be under budget initially
         is_under = await budget_manager.is_under_budget()
         assert is_under is True
-        
+
         # Track large cost to exceed budget
         for _ in range(100):
             await budget_manager.track_cost(
@@ -54,7 +51,7 @@ class TestBudgetManagerActual:
                 input_tokens=10000,
                 output_tokens=5000,
             )
-        
+
         # Check if over budget
         daily_spend = budget_manager.get_daily_spend()
         if daily_spend > budget_manager.daily_limit:
@@ -71,7 +68,7 @@ class TestBudgetManagerActual:
             output_tokens=500,
         )
         assert cost > 0
-        
+
         # OpenAI costs
         cost = budget_manager.calculate_cost(
             provider="openai",
@@ -91,17 +88,17 @@ class TestBudgetManagerActual:
             input_tokens=500,
             output_tokens=250,
         )
-        
+
         await budget_manager.track_cost(
             provider="openai",
             model="gpt-3.5-turbo",
             input_tokens=300,
             output_tokens=150,
         )
-        
+
         # Get summary
         summary = budget_manager.get_usage_summary()
-        
+
         assert "daily_spend" in summary
         assert "monthly_spend" in summary
         assert "daily_limit" in summary
@@ -112,10 +109,10 @@ class TestBudgetManagerActual:
         """Test resetting daily budget."""
         # Track some cost
         budget_manager.daily_spend = 50.0
-        
+
         # Reset
         budget_manager.reset_daily()
-        
+
         assert budget_manager.daily_spend == 0.0
         assert budget_manager.last_reset is not None
 
@@ -128,6 +125,7 @@ class TestUsageTrackerActual:
     def usage_tracker(self):
         """Create usage tracker instance."""
         from prompt_sentinel.config.settings import Settings as Config
+
         config = Config()
         return UsageTracker(config)
 
@@ -141,7 +139,7 @@ class TestUsageTrackerActual:
             response_time_ms=150,
             status_code=200,
         )
-        
+
         # Get stats
         stats = usage_tracker.get_stats()
         assert stats["total_requests"] == 1
@@ -156,13 +154,13 @@ class TestUsageTrackerActual:
             confidence=0.95,
             processing_time_ms=100,
         )
-        
+
         await usage_tracker.track_detection(
             verdict="ALLOW",
             confidence=0.1,
             processing_time_ms=50,
         )
-        
+
         # Get detection stats
         stats = usage_tracker.get_detection_stats()
         assert stats["total_detections"] == 2
@@ -180,7 +178,7 @@ class TestUsageTrackerActual:
             latency_ms=450,
             success=True,
         )
-        
+
         # Track failed call
         await usage_tracker.track_api_call(
             provider="openai",
@@ -189,7 +187,7 @@ class TestUsageTrackerActual:
             latency_ms=30000,
             success=False,
         )
-        
+
         # Get API stats
         stats = usage_tracker.get_api_stats()
         assert stats["total_calls"] == 2
@@ -201,7 +199,7 @@ class TestUsageTrackerActual:
         """Test getting hourly statistics."""
         # Add some data points
         usage_tracker.hourly_requests = [10, 20, 15, 25, 30]
-        
+
         hourly = usage_tracker.get_hourly_stats()
         assert "requests_per_hour" in hourly
         assert len(hourly["requests_per_hour"]) > 0
@@ -212,10 +210,10 @@ class TestUsageTrackerActual:
         # Track cache operations
         for _ in range(7):
             await usage_tracker.track_cache_hit()
-        
+
         for _ in range(3):
             await usage_tracker.track_cache_miss()
-        
+
         # Get cache stats
         stats = usage_tracker.get_cache_stats()
         assert stats["hits"] == 7
@@ -231,6 +229,7 @@ class TestRateLimiterActual:
     def rate_limiter(self):
         """Create rate limiter instance."""
         from prompt_sentinel.monitoring.rate_limiter import RateLimitConfig
+
         config = RateLimitConfig(
             requests_per_minute=60,
             burst_size=10,
@@ -250,12 +249,12 @@ class TestRateLimiterActual:
     async def test_rate_limiting(self, rate_limiter):
         """Test rate limiting enforcement."""
         client_id = "test_client"
-        
+
         # Use up burst capacity
         for _ in range(rate_limiter.config.burst_size):
             allowed = await rate_limiter.allow_request(client_id)
             assert allowed is True
-        
+
         # Next request might be rate limited
         # (depends on token refill rate)
         allowed = await rate_limiter.allow_request(client_id)
@@ -267,7 +266,7 @@ class TestRateLimiterActual:
         # Client 1 uses some capacity
         for _ in range(5):
             await rate_limiter.allow_request("client_1")
-        
+
         # Client 2 should still have full capacity
         allowed = await rate_limiter.allow_request("client_2")
         assert allowed is True
@@ -275,11 +274,11 @@ class TestRateLimiterActual:
     def test_get_client_status(self, rate_limiter):
         """Test getting client rate limit status."""
         client_id = "test_client"
-        
+
         # Make some requests
         for _ in range(3):
             rate_limiter.allow_request_sync(client_id)
-        
+
         # Get status
         status = rate_limiter.get_client_status(client_id)
         assert "tokens_remaining" in status
@@ -290,14 +289,14 @@ class TestRateLimiterActual:
     async def test_reset_client(self, rate_limiter):
         """Test resetting client rate limit."""
         client_id = "test_client"
-        
+
         # Use some capacity
         for _ in range(5):
             await rate_limiter.allow_request(client_id)
-        
+
         # Reset client
         rate_limiter.reset_client(client_id)
-        
+
         # Should have full capacity again
         status = rate_limiter.get_client_status(client_id)
         assert status["tokens_remaining"] == rate_limiter.config.burst_size
@@ -307,16 +306,16 @@ class TestRateLimiterActual:
         """Test global rate limiting across all clients."""
         # Set global limit
         rate_limiter.set_global_limit(requests_per_minute=100)
-        
+
         # Many clients making requests
         clients = [f"client_{i}" for i in range(10)]
-        
+
         allowed_count = 0
         for _ in range(20):
             for client in clients:
                 if await rate_limiter.allow_request(client):
                     allowed_count += 1
-        
+
         # Should respect global limit
         assert allowed_count <= 200  # Some requests allowed
 
@@ -324,16 +323,17 @@ class TestRateLimiterActual:
         """Test rate limiter configuration."""
         assert rate_limiter.config.requests_per_minute == 60
         assert rate_limiter.config.burst_size == 10
-        
+
         # Update configuration
         from prompt_sentinel.monitoring.rate_limiter import RateLimitConfig
+
         new_config = RateLimitConfig(
             requests_per_minute=120,
             burst_size=20,
             tokens_per_minute=20000,
         )
         rate_limiter.config = new_config
-        
+
         assert rate_limiter.config.requests_per_minute == 120
         assert rate_limiter.config.burst_size == 20
 
@@ -346,10 +346,11 @@ class TestMonitoringIntegration:
     async def test_usage_and_budget_integration(self):
         """Test usage tracker and budget manager working together."""
         from prompt_sentinel.config.settings import Settings as Config
+
         config = Config()
         usage_tracker = UsageTracker(config)
         budget_manager = BudgetManager(config, usage_tracker)
-        
+
         # Track API call with cost
         await usage_tracker.track_api_call(
             provider="anthropic",
@@ -358,7 +359,7 @@ class TestMonitoringIntegration:
             latency_ms=200,
             success=True,
         )
-        
+
         # Budget manager tracks the cost
         await budget_manager.track_cost(
             provider="anthropic",
@@ -366,11 +367,11 @@ class TestMonitoringIntegration:
             input_tokens=1000,
             output_tokens=500,
         )
-        
+
         # Both should have data
         usage_stats = usage_tracker.get_api_stats()
         assert usage_stats["total_tokens"] == 1500
-        
+
         budget_summary = budget_manager.get_usage_summary()
         assert budget_summary["daily_spend"] > 0
 
@@ -379,6 +380,7 @@ class TestMonitoringIntegration:
         """Test rate limiter with usage tracking."""
         from prompt_sentinel.config.settings import Settings as Config
         from prompt_sentinel.monitoring.rate_limiter import RateLimitConfig
+
         config = Config()
         rate_limit_config = RateLimitConfig(
             requests_per_minute=60,
@@ -387,12 +389,12 @@ class TestMonitoringIntegration:
         )
         rate_limiter = RateLimiter(rate_limit_config)
         usage_tracker = UsageTracker(config)
-        
+
         client_id = "test_client"
         allowed_count = 0
-        
+
         # Make requests with tracking
-        for i in range(20):
+        for _i in range(20):
             if await rate_limiter.allow_request(client_id):
                 allowed_count += 1
                 await usage_tracker.track_request(
@@ -408,7 +410,7 @@ class TestMonitoringIntegration:
                     response_time_ms=0,
                     status_code=429,  # Rate limited
                 )
-        
+
         # Check tracking
         stats = usage_tracker.get_stats()
         assert stats["total_requests"] == 20

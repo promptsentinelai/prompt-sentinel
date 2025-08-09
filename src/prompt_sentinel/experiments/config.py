@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any
 
 import structlog
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 logger = structlog.get_logger()
 
@@ -179,7 +179,7 @@ class ExperimentConfig(BaseModel):
         return v
 
     @field_validator("end_time")
-    @classmethod 
+    @classmethod
     def validate_end_time(cls, v, info):
         """Validate end time is after start time."""
         start_time = info.data.get("start_time")

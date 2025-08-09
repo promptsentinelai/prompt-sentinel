@@ -1,16 +1,16 @@
 """Machine Learning module for automated pattern discovery."""
 
-from .collector import PatternCollector, DetectionEvent
-from .features import FeatureExtractor
 from .clustering import ClusteringEngine
-from .patterns import PatternExtractor
+from .collector import DetectionEvent, PatternCollector
+from .features import FeatureExtractor
 from .manager import PatternManager
+from .patterns import PatternExtractor
 
 __all__ = [
     "PatternCollector",
     "DetectionEvent",
-    "FeatureExtractor", 
+    "FeatureExtractor",
     "ClusteringEngine",
     "PatternExtractor",
-    "PatternManager"
+    "PatternManager",
 ]

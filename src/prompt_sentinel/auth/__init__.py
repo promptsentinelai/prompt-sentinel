@@ -7,28 +7,28 @@ This module provides flexible authentication with support for:
 - Rate limiting integration
 """
 
-from .models import (
-    AuthMode,
-    AuthMethod,
-    UsageTier,
-    ClientPermission,
-    APIKeyStatus,
-    APIKey,
-    Client,
-    CreateAPIKeyRequest,
-    CreateAPIKeyResponse,
-    APIKeyInfo,
-    AuthConfig
-)
 from .api_key_manager import APIKeyManager
 from .dependencies import (
-    get_auth_config,
     get_api_key_manager,
+    get_auth_config,
     get_current_client,
     get_optional_client,
-    require_permission,
+    require_admin,
     require_authenticated,
-    require_admin
+    require_permission,
+)
+from .models import (
+    APIKey,
+    APIKeyInfo,
+    APIKeyStatus,
+    AuthConfig,
+    AuthMethod,
+    AuthMode,
+    Client,
+    ClientPermission,
+    CreateAPIKeyRequest,
+    CreateAPIKeyResponse,
+    UsageTier,
 )
 
 __all__ = [
@@ -53,5 +53,5 @@ __all__ = [
     "get_optional_client",
     "require_permission",
     "require_authenticated",
-    "require_admin"
+    "require_admin",
 ]

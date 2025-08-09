@@ -1,6 +1,6 @@
 """OpenAPI documentation enhancements for PromptSentinel API."""
 
-from typing import Any
+from typing import Any, cast
 
 # API metadata
 API_TITLE = "PromptSentinel API"
@@ -10,7 +10,7 @@ API_DESCRIPTION = """
 
 ## Overview
 
-PromptSentinel is a defensive security microservice for detecting and mitigating prompt injection attacks, 
+PromptSentinel is a defensive security microservice for detecting and mitigating prompt injection attacks,
 PII exposure, and other security threats in LLM-based systems.
 
 ## Features
@@ -192,10 +192,10 @@ EXAMPLES = {
 
 
 # Custom OpenAPI schema modifications
-def custom_openapi_schema(app) -> dict[str, Any]:
+def custom_openapi_schema(app: Any) -> dict[str, Any]:
     """Generate custom OpenAPI schema with enhanced documentation."""
     if app.openapi_schema:
-        return app.openapi_schema
+        return cast(dict[str, Any], app.openapi_schema)
 
     from fastapi.openapi.utils import get_openapi
 
@@ -220,7 +220,10 @@ def custom_openapi_schema(app) -> dict[str, Any]:
     # Add server information
     openapi_schema["servers"] = [
         {"url": "http://localhost:8080/api/v1", "description": "Local development server"},
-        {"url": "https://api.promptsentinel.ai/api/v1", "description": "Production server (example)"},
+        {
+            "url": "https://api.promptsentinel.ai/api/v1",
+            "description": "Production server (example)",
+        },
     ]
 
     # Add external documentation
@@ -231,7 +234,7 @@ def custom_openapi_schema(app) -> dict[str, Any]:
 
     # Cache the schema
     app.openapi_schema = openapi_schema
-    return app.openapi_schema
+    return cast(dict[str, Any], app.openapi_schema)
 
 
 # Response status descriptions

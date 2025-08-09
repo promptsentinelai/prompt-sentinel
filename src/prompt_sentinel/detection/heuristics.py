@@ -230,10 +230,10 @@ class HeuristicDetector:
                         # Check if decoded content contains text
                         if any(32 <= b < 127 for b in decoded):
                             return True
-                    except:
+                    except Exception:
                         pass
             return False
-        except:
+        except Exception:
             return False
     
     def _check_role_manipulation(self, content: str) -> bool:

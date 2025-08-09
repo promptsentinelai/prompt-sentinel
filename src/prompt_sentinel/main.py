@@ -23,9 +23,13 @@ Environment:
 
 import time
 import uuid
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from prompt_sentinel.experiments import ExperimentManager
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request, WebSocket, status
@@ -34,6 +38,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from prompt_sentinel import __version__
+from prompt_sentinel.api.auth.routes import router as auth_router
 from prompt_sentinel.api.experiments import experiment_router
 from prompt_sentinel.api_docs import (
     API_DESCRIPTION,
@@ -113,7 +118,7 @@ app_start_time: datetime = datetime.utcnow()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application lifecycle for startup and shutdown operations.
 
     Handles initialization of the detection system and health checks for
@@ -125,7 +130,8 @@ async def lifespan(app: FastAPI):
     Yields:
         Control back to FastAPI after startup tasks complete
     """
-    global detector, router, usage_tracker, budget_manager, rate_limiter, experiment_manager, pattern_manager, processor
+    global detector, router, usage_tracker, budget_manager, rate_limiter
+    global experiment_manager, pattern_manager, processor
 
     # Startup
     logger.info("Starting PromptSentinel", version=__version__)
@@ -276,8 +282,6 @@ app.add_middleware(
 )
 
 # Include authentication API routes (admin endpoints)
-from prompt_sentinel.api.auth.routes import router as auth_router
-
 app.include_router(auth_router, prefix="/api/v1")
 
 # Include experiment management API routes
@@ -293,7 +297,7 @@ except ImportError:
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def log_requests(request: Request, call_next: Callable) -> Any:
     """Log all incoming requests and their responses for monitoring.
 
     Captures request metadata, processes the request, and logs the response
@@ -342,13 +346,44 @@ async def log_requests(request: Request, call_next):
 
 
 @app.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["System"],
+    summary="Health check",
+    description="Check service health and provider status",
+    include_in_schema=False,  # Hide from docs since it's a duplicate
+)
+async def health_check_legacy() -> HealthResponse:
+    """Legacy health check endpoint for backward compatibility."""
+    return await health_check()
+
+
+@app.get("/health/detailed", include_in_schema=False)
+async def detailed_health_check_legacy() -> dict:
+    """Legacy detailed health check endpoint for backward compatibility."""
+    return await detailed_health_check()
+
+
+@app.get("/health/live", include_in_schema=False)
+async def liveness_probe_legacy() -> dict:
+    """Legacy liveness probe endpoint for backward compatibility."""
+    return await liveness_probe()
+
+
+@app.get("/health/ready", include_in_schema=False)
+async def readiness_probe_legacy() -> dict:
+    """Legacy readiness probe endpoint for backward compatibility."""
+    return await readiness_probe()
+
+
+@app.get(
     "/api/v1/health",
     response_model=HealthResponse,
     tags=["System"],
     summary="Health check",
     description="Check service health and provider status",
 )
-async def health_check():
+async def health_check() -> HealthResponse:
     """Health check endpoint for monitoring service availability.
 
     Provides comprehensive health status including:
@@ -468,7 +503,7 @@ async def health_check():
     summary="Detailed health check",
     description="Comprehensive health check with component status",
 )
-async def detailed_health_check():
+async def detailed_health_check() -> dict:
     """Detailed health check with component-level status information.
 
     Returns comprehensive health information including:
@@ -539,9 +574,8 @@ async def detailed_health_check():
 
     # Check ML pattern discovery
     try:
-        from prompt_sentinel.ml.manager import PatternManager
-
-        # Note: This would need to be initialized at startup
+        # Note: Pattern manager would need to be initialized at startup
+        # from prompt_sentinel.ml.manager import PatternManager
         components["ml_patterns"] = {"status": "healthy", "enabled": True}
     except ImportError:
         components["ml_patterns"] = {
@@ -597,7 +631,7 @@ async def detailed_health_check():
     summary="Liveness probe",
     description="Kubernetes liveness probe endpoint",
 )
-async def liveness_probe():
+async def liveness_probe() -> dict:
     """Simple liveness probe for Kubernetes.
 
     Returns 200 if the service is alive, regardless of dependency health.
@@ -611,7 +645,7 @@ async def liveness_probe():
     summary="Readiness probe",
     description="Kubernetes readiness probe endpoint",
 )
-async def readiness_probe():
+async def readiness_probe() -> dict:
     """Readiness probe for Kubernetes.
 
     Returns 200 if the service is ready to accept traffic.
@@ -643,13 +677,13 @@ async def readiness_probe():
     description="Detect prompt injections with support for both simple strings and role-based messages",
     responses=RESPONSES,
 )
-async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
+async def detect(request: UnifiedDetectionRequest | SimplePromptRequest) -> DetectionResponse:
     """Unified prompt injection detection endpoint.
 
     Accepts either:
     - Simple string prompt with optional role specification
     - Role-separated messages for more complex conversations
-    
+
     Performs injection detection using heuristic patterns, LLM classification,
     and PII detection based on configuration.
 
@@ -666,7 +700,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
         >>> # Simple format
         >>> request = {"prompt": "Help me write an email"}
         >>> response = await client.post("/api/v1/detect", json=request)
-        >>> 
+        >>>
         >>> # Advanced format
         >>> request = {"messages": [{"role": "user", "content": "Hello"}]}
         >>> response = await client.post("/api/v1/detect", json=request)
@@ -679,36 +713,40 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
         # Simple format with 'prompt' field
         messages = [Message(role=request.role or Role.USER, content=request.prompt)]
         check_format = False
-        use_routing = getattr(request, 'use_intelligent_routing', False)
+        use_routing = getattr(request, "use_intelligent_routing", False)
     elif isinstance(request, UnifiedDetectionRequest):
         # Unified format with 'input' field
         try:
             messages = request.to_messages()
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid role in message: {str(e)}")
-        check_format = request.config.get('check_format', False) if request.config else False
-        use_routing = request.config.get('use_intelligent_routing', False) if request.config else False
-    elif hasattr(request, 'prompt'):
+            raise HTTPException(status_code=400, detail=f"Invalid role in message: {str(e)}") from e
+        check_format = request.config.get("check_format", False) if request.config else False
+        use_routing = (
+            request.config.get("use_intelligent_routing", False) if request.config else False
+        )
+    elif hasattr(request, "prompt"):
         # Legacy simple format
-        messages = [Message(role=getattr(request, 'role', Role.USER) or Role.USER, content=request.prompt)]
-        check_format = getattr(request, 'check_format', False)
-        use_routing = getattr(request, 'use_intelligent_routing', False)
-    elif hasattr(request, 'messages'):
+        messages = [
+            Message(role=getattr(request, "role", Role.USER) or Role.USER, content=request.prompt)
+        ]
+        check_format = getattr(request, "check_format", False)
+        use_routing = getattr(request, "use_intelligent_routing", False)
+    elif hasattr(request, "messages"):
         # Advanced format with messages
         messages = request.messages
-        check_format = getattr(request, 'check_format', False)
-        use_routing = getattr(request, 'use_intelligent_routing', False)
+        check_format = getattr(request, "check_format", False)
+        use_routing = getattr(request, "use_intelligent_routing", False)
     else:
         # Default case - try to convert
         try:
-            if hasattr(request, 'to_messages'):
+            if hasattr(request, "to_messages"):
                 messages = request.to_messages()
             else:
                 raise ValueError("Cannot convert request to messages")
             check_format = False
             use_routing = False
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}") from e
 
     # Use intelligent routing if enabled and router available
     if use_routing and router:
@@ -724,7 +762,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
         return response
     except Exception as e:
         logger.error("Detection failed", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}") from e
 
 
 # All detection functionality is now handled by the unified /api/v1/detect endpoint above
@@ -738,7 +776,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
     description="Perform deep analysis including all detection methods and format validation",
     responses=RESPONSES,
 )
-async def analyze(request: AnalysisRequest):
+async def analyze(request: AnalysisRequest) -> AnalysisResponse:
     """Comprehensive prompt analysis with per-message threat assessment.
 
     Performs in-depth analysis of multi-message conversations, providing:
@@ -772,7 +810,7 @@ async def analyze(request: AnalysisRequest):
     """
     if not detector:
         raise HTTPException(status_code=503, detail="Detector not initialized")
-    
+
     if not processor:
         raise HTTPException(status_code=503, detail="Prompt processor not initialized")
 
@@ -843,7 +881,7 @@ async def analyze(request: AnalysisRequest):
         )
     except Exception as e:
         logger.error("Analysis failed", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}") from e
 
 
 @app.post(
@@ -867,7 +905,7 @@ async def batch_detect(request: dict) -> JSONResponse:
     """
     if not detector:
         raise HTTPException(status_code=503, detail="Detection service unavailable")
-    
+
     if not processor:
         raise HTTPException(status_code=503, detail="Prompt processor not initialized")
 
@@ -928,7 +966,7 @@ class FormatAssistRequest(BaseModel):
     summary="Format assistance",
     description="Validate prompt format and provide security recommendations",
 )
-async def format_assist(request: FormatAssistRequest):
+async def format_assist(request: FormatAssistRequest) -> dict:
     """Help developers format prompts with proper role separation for security.
 
     Analyzes raw prompt text and generates properly formatted message structures
@@ -957,7 +995,7 @@ async def format_assist(request: FormatAssistRequest):
     """
     if not processor:
         raise HTTPException(status_code=503, detail="Prompt processor not initialized")
-    
+
     # Analyze the raw prompt
     complexity = processor.calculate_complexity_metrics(request.raw_prompt)
 
@@ -1040,7 +1078,7 @@ async def format_assist(request: FormatAssistRequest):
     summary="Security recommendations",
     description="Get best practices for secure prompt design",
 )
-async def get_recommendations():
+async def get_recommendations() -> dict:
     """Get comprehensive guidelines for secure prompt design.
 
     Provides best practices, examples, and security tips for creating
@@ -1118,7 +1156,7 @@ async def get_recommendations():
     summary="Cache statistics",
     description="Get Redis cache statistics and performance metrics",
 )
-async def get_cache_stats():
+async def get_cache_stats() -> dict:
     """Get cache statistics and status.
 
     Provides cache hit/miss rates, memory usage, and connection status.
@@ -1155,7 +1193,7 @@ async def get_cache_stats():
     summary="Clear cache",
     description="Clear cache entries matching pattern",
 )
-async def clear_cache(pattern: str | None = "*"):
+async def clear_cache(pattern: str | None = "*") -> dict:
     """Clear cache entries matching a pattern.
 
     Removes cached entries to force fresh computation. Useful for
@@ -1189,7 +1227,7 @@ async def clear_cache(pattern: str | None = "*"):
     summary="Cache health",
     description="Check Redis cache connection and health",
 )
-async def cache_health_check():
+async def cache_health_check() -> dict:
     """Check cache connection health.
 
     Performs a quick health check on the Redis connection.
@@ -1221,7 +1259,7 @@ async def cache_health_check():
     description="Automatically route to optimal detection strategy based on prompt complexity",
     responses=RESPONSES,
 )
-async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request):
+async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request) -> DetectionResponse:
     """Intelligent routing-based detection endpoint (v3 API).
 
     Analyzes prompt complexity and automatically routes to the optimal
@@ -1254,7 +1292,7 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request):
     try:
         messages = request.to_messages()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid input format: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid input format: {str(e)}") from e
 
     # Validate input
     if len(messages) > 100:
@@ -1334,18 +1372,21 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request):
             tokens_used = routing_decision.complexity_score.metrics.get("total_tokens", 0)
 
             await usage_tracker.track_request(
-                client_id=client_id,
                 endpoint="/v3/detect",
-                provider=provider,
-                tokens_used=tokens_used,
-                response_time_ms=routing_decision.estimated_latency_ms,
+                latency_ms=routing_decision.estimated_latency_ms,
                 success=True,
+                client_id=client_id,
+                metadata={
+                    "provider": provider,
+                    "tokens_used": tokens_used,
+                    "complexity_level": routing_decision.complexity_score.level.value,
+                },
             )
 
         return response
     except Exception as e:
         logger.error("Routed detection failed", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}") from e
 
 
 @app.get(
@@ -1354,7 +1395,7 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request):
     summary="Analyze complexity",
     description="Analyze prompt complexity without performing detection",
 )
-async def analyze_complexity(prompt: str):
+async def analyze_complexity(prompt: str) -> dict:
     """Analyze prompt complexity without performing detection.
 
     Useful for understanding how the routing system would handle
@@ -1401,7 +1442,7 @@ async def analyze_complexity(prompt: str):
     summary="Routing metrics",
     description="Get intelligent routing performance metrics and strategy distribution",
 )
-async def get_routing_metrics():
+async def get_routing_metrics() -> dict:
     """Get routing system performance metrics.
 
     Provides insights into routing decisions, strategy distribution,
@@ -1452,7 +1493,9 @@ async def get_routing_metrics():
     summary="Complexity metrics",
     description="Get detailed complexity metrics and risk indicators",
 )
-async def get_complexity_metrics(prompt: str | None = None, include_distribution: bool = True):
+async def get_complexity_metrics(
+    prompt: str | None = None, include_distribution: bool = True
+) -> dict:
     """Get comprehensive prompt complexity metrics.
 
     Provides detailed complexity analysis and system-wide complexity distribution.
@@ -1575,7 +1618,9 @@ async def get_complexity_metrics(prompt: str | None = None, include_distribution
     summary="API usage",
     description="Get API usage statistics, costs, and performance metrics",
 )
-async def get_usage_metrics(time_window_hours: int | None = None, include_breakdown: bool = True):
+async def get_usage_metrics(
+    time_window_hours: int | None = None, include_breakdown: bool = True
+) -> dict:
     """Get API usage metrics and statistics.
 
     Provides comprehensive usage tracking including costs, tokens,
@@ -1641,7 +1686,7 @@ async def get_usage_metrics(time_window_hours: int | None = None, include_breakd
     summary="Budget status",
     description="Check current budget usage and alerts",
 )
-async def get_budget_status(check_next_cost: float | None = 0.0):
+async def get_budget_status(check_next_cost: float | None = 0.0) -> dict:
     """Get current budget status and alerts.
 
     Monitors spending against configured budgets and provides
@@ -1722,7 +1767,9 @@ async def get_rate_limit_status(client_id: str | None = None):
         from prompt_sentinel.monitoring.rate_limiter import Priority
 
         allowed, wait_time = await rate_limiter.check_rate_limit(
-            client_id=client_id, tokens=100, priority=Priority.NORMAL  # Check for typical request
+            client_id=client_id,
+            tokens=100,
+            priority=Priority.NORMAL,  # Check for typical request
         )
         client_status = {"allowed": allowed, "wait_time_seconds": wait_time}
 
@@ -1786,7 +1833,7 @@ async def configure_budget(
     daily_limit: float | None = None,
     monthly_limit: float | None = None,
     block_on_exceeded: bool | None = None,
-):
+) -> dict:
     """Configure budget limits dynamically.
 
     Updates budget configuration at runtime without restart.
@@ -1958,7 +2005,7 @@ async def benchmark_strategies(request: UnifiedDetectionRequest):
     try:
         messages = request.to_messages()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}") from e
 
     # Benchmark each strategy
     import time

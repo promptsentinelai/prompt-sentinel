@@ -106,14 +106,39 @@ stop: ## Stop all Docker containers
 # ============================================================================
 
 .PHONY: test
-test: ## Run all tests
+test: ## Run all tests without coverage (faster)
 	@echo "$(GREEN)Running tests...$(NC)"
 	$(UV) run pytest -v
+
+.PHONY: test-quick
+test-quick: ## Run only comprehensive tests (fastest, ~5s)
+	@echo "$(GREEN)Running comprehensive tests only...$(NC)"
+	$(UV) run pytest tests/*comprehensive*.py -v
+
+.PHONY: test-parallel
+test-parallel: ## Run tests in parallel using all CPU cores
+	@echo "$(GREEN)Running tests in parallel...$(NC)"
+	$(UV) run pytest -n auto -v
 
 .PHONY: test-coverage
 test-coverage: ## Run tests with coverage report
 	@echo "$(GREEN)Running tests with coverage...$(NC)"
 	$(UV) run pytest --cov=$(SRC_DIR) --cov-report=html --cov-report=term
+
+.PHONY: test-unit
+test-unit: ## Run only unit tests (no integration/e2e)
+	@echo "$(GREEN)Running unit tests...$(NC)"
+	$(UV) run pytest -m "unit" -v
+
+.PHONY: test-integration
+test-integration: ## Run only integration tests
+	@echo "$(GREEN)Running integration tests...$(NC)"
+	$(UV) run pytest -m "integration" -v
+
+.PHONY: test-fast
+test-fast: ## Run tests excluding slow tests
+	@echo "$(GREEN)Running fast tests only...$(NC)"
+	$(UV) run pytest -m "not slow" -v
 
 .PHONY: test-watch
 test-watch: ## Run tests in watch mode
@@ -121,8 +146,8 @@ test-watch: ## Run tests in watch mode
 	$(UV) pip install pytest-watch
 	$(UV) run pytest-watch
 
-.PHONY: test-integration
-test-integration: ## Run integration tests with Redis
+.PHONY: test-integration-redis
+test-integration-redis: ## Run integration tests with Redis
 	@echo "$(GREEN)Running integration tests...$(NC)"
 	$(DOCKER_COMPOSE) -f docker-compose.redis.yml up -d redis
 	@echo "Waiting for Redis to start..."
@@ -231,10 +256,35 @@ type-check: ## Run type checking with MyPy
 quality: format lint type-check ## Run all code quality checks
 	@echo "$(GREEN)✓ All quality checks passed$(NC)"
 
+.PHONY: check
+check: ## Check code formatting and linting without modifying files
+	@echo "$(GREEN)Checking code formatting...$(NC)"
+	$(UV) run black --check $(SRC_DIR) $(TEST_DIR)
+	@echo "$(GREEN)✓ Formatting check passed$(NC)"
+	@echo "$(GREEN)Checking linting...$(NC)"
+	$(UV) run ruff check $(SRC_DIR) $(TEST_DIR)
+	@echo "$(GREEN)✓ Linting check passed$(NC)"
+	@echo "$(GREEN)Running type checks...$(NC)"
+	$(UV) run mypy $(SRC_DIR)
+	@echo "$(GREEN)✓ All checks passed$(NC)"
+
 .PHONY: pre-commit
 pre-commit: ## Run pre-commit hooks
 	@echo "$(GREEN)Running pre-commit hooks...$(NC)"
-	pre-commit run --all-files
+	$(UV) run pre-commit run --all-files
+
+.PHONY: pre-commit-install
+pre-commit-install: ## Install pre-commit hooks
+	@echo "$(GREEN)Installing pre-commit hooks...$(NC)"
+	$(UV) run pre-commit install
+	@echo "$(GREEN)✓ Pre-commit hooks installed$(NC)"
+
+.PHONY: fix
+fix: ## Auto-fix formatting and linting issues
+	@echo "$(GREEN)Auto-fixing code issues...$(NC)"
+	$(UV) run black $(SRC_DIR) $(TEST_DIR)
+	$(UV) run ruff check --fix $(SRC_DIR) $(TEST_DIR)
+	@echo "$(GREEN)✓ Code issues fixed$(NC)"
 
 # ============================================================================
 # Docker & Deployment

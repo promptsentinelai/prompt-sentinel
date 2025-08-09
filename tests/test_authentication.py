@@ -115,9 +115,9 @@ class TestBypassRules:
         manager = APIKeyManager(config)
 
         # Should bypass for internal networks
-        assert manager.check_network_bypass("10.0.0.1") == True
-        assert manager.check_network_bypass("192.168.1.1") == True
-        assert manager.check_network_bypass("8.8.8.8") == False
+        assert manager.check_network_bypass("10.0.0.1")
+        assert manager.check_network_bypass("192.168.1.1")
+        assert not manager.check_network_bypass("8.8.8.8")
 
     def test_header_bypass(self):
         """Test header bypass."""
@@ -129,13 +129,13 @@ class TestBypassRules:
 
         # Should bypass with correct headers
         headers = {"X-Internal": "true"}
-        assert manager.check_header_bypass(headers) == True
+        assert manager.check_header_bypass(headers)
 
         headers = {"X-Service": "gateway"}
-        assert manager.check_header_bypass(headers) == True
+        assert manager.check_header_bypass(headers)
 
         headers = {"X-Internal": "false"}
-        assert manager.check_header_bypass(headers) == False
+        assert not manager.check_header_bypass(headers)
 
 
 class TestAPIKeyManagement:

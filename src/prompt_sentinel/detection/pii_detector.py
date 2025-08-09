@@ -112,7 +112,7 @@ class PIIDetector:
                 return [PIIType(t) for t in types_list]
         return list(PIIType)  # All types by default
 
-    def _init_patterns(self):
+    def _init_patterns(self) -> None:
         """Initialize regex patterns for each PII type.
 
         Creates compiled regex patterns for efficient matching.
@@ -404,7 +404,7 @@ class PIIDetector:
         Returns:
             Dictionary with counts by PII type
         """
-        summary = {}
+        summary: dict[str, int] = {}
         for match in matches:
             pii_type = match.pii_type.value
             summary[pii_type] = summary.get(pii_type, 0) + 1

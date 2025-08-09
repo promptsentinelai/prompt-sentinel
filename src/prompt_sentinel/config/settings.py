@@ -42,9 +42,11 @@ class Settings(BaseSettings):
     )
 
     # API Configuration
-    api_host: str = Field(default="0.0.0.0")  # nosec B104 - Docker requires binding to all interfaces
+    api_host: str = Field(default="0.0.0.0")
     api_port: int = Field(default=8080)
-    api_env: Literal["development", "staging", "production"] = Field(default="development")
+    api_env: Literal["development", "staging", "production"] = Field(
+        default="development"
+    )
     debug: bool = Field(default=False)
 
     # LLM Provider Configuration
@@ -83,7 +85,9 @@ class Settings(BaseSettings):
     cache_ttl_health: int = Field(default=60)  # 1 min for health checks
 
     # Detection Configuration
-    detection_mode: Literal["strict", "moderate", "permissive"] = Field(default="strict")
+    detection_mode: Literal["strict", "moderate", "permissive"] = Field(
+        default="strict"
+    )
     detection_timeout: float = Field(default=10.0)
     heuristic_enabled: bool = Field(default=True)
     llm_classification_enabled: bool = Field(default=True)
@@ -99,18 +103,6 @@ class Settings(BaseSettings):
     auth_unauthenticated_tpm: int = Field(default=1000)
     api_key_prefix: str = Field(default="psk_")
     api_key_length: int = Field(default=32)
-
-    # Budget Configuration
-    budget_hourly_limit: float = Field(default=10.0)
-    budget_daily_limit: float = Field(default=100.0)
-    budget_monthly_limit: float = Field(default=1000.0)
-    budget_block_on_exceeded: bool = Field(default=True)
-    budget_prefer_cache: bool = Field(default=True)
-
-    # Rate Limiting Configuration
-    rate_limit_requests_per_minute: int = Field(default=60)
-    rate_limit_tokens_per_minute: int = Field(default=10000)
-    rate_limit_client_requests_per_minute: int = Field(default=20)
 
     # Security Configuration
     max_prompt_length: int = Field(default=50000)
@@ -137,10 +129,6 @@ class Settings(BaseSettings):
     pii_types_to_detect: str = Field(default="all")
     pii_log_detected: bool = Field(default=False)
     pii_confidence_threshold: float = Field(default=0.7)
-
-    # Custom PII Rules Configuration
-    custom_pii_rules_path: str | None = Field(default="config/custom_pii_rules.yaml")
-    custom_pii_rules_enabled: bool = Field(default=True)
 
     @property
     def llm_providers(self) -> list[str]:
@@ -231,15 +219,3 @@ class Settings(BaseSettings):
 
 # Create global settings instance
 settings = Settings()
-
-
-def get_settings() -> Settings:
-    """Get the global settings instance.
-
-    This function is used for dependency injection in FastAPI
-    and provides a single point of configuration access.
-
-    Returns:
-        The global Settings instance
-    """
-    return settings

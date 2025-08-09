@@ -18,7 +18,7 @@ from .models import (
     CreateAPIKeyRequest,
     CreateAPIKeyResponse,
     APIKeyInfo,
-    AuthConfig
+    AuthConfig,
 )
 from .api_key_manager import APIKeyManager
 from .dependencies import (
@@ -28,7 +28,7 @@ from .dependencies import (
     get_optional_client,
     require_permission,
     require_authenticated,
-    require_admin
+    require_admin,
 )
 
 __all__ = [
@@ -53,5 +53,5 @@ __all__ = [
     "get_optional_client",
     "require_permission",
     "require_authenticated",
-    "require_admin"
+    "require_admin",
 ]

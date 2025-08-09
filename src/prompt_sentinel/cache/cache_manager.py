@@ -23,28 +23,28 @@ from prompt_sentinel.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class CacheManager:
     """
     Optional caching layer for PromptSentinel.
-    
+
     Provides transparent caching with graceful degradation when Redis
     is unavailable. All methods handle Redis failures silently and
     fall back to direct computation.
-    
+
     Security features:
     - Keys are hashed to avoid storing sensitive data
     - Maximum TTL enforced (1 hour)
     - No persistence to disk (ephemeral only)
-    
+
     Attributes:
         enabled: Whether caching is enabled in configuration
         connected: Whether Redis is currently connected
         client: Redis client instance (if connected)
     """
-    
+
     def __init__(self):
         """Initialize cache manager with optional Redis connection."""
         self.enabled = settings.redis_enabled
@@ -53,10 +53,10 @@ class CacheManager:
         self.max_ttl = 3600  # 1 hour max for security
         self._connection_attempts = 0
         self._max_connection_attempts = 3
-        
+
         if self.enabled:
             self._initialize_client()
-    
+
     def _initialize_client(self):
         """Initialize Redis client with connection pooling."""
         try:
@@ -81,21 +81,21 @@ class CacheManager:
             logger.warning(f"Redis client initialization failed: {e}")
             self.enabled = False
             self.client = None
-    
+
     async def connect(self) -> bool:
         """
         Test Redis connection and mark as connected if successful.
-        
+
         Returns:
             bool: True if connected successfully, False otherwise
         """
         if not self.enabled or not self.client:
             return False
-        
+
         if self._connection_attempts >= self._max_connection_attempts:
             logger.debug("Max connection attempts reached, skipping")
             return False
-            
+
         try:
             self._connection_attempts += 1
             await self.client.ping()
@@ -111,7 +111,7 @@ class CacheManager:
             logger.error(f"Unexpected error connecting to Redis: {e}")
             self.connected = False
             return False
-    
+
     async def disconnect(self):
         """Gracefully disconnect from Redis."""
         if self.client and self.connected:
@@ -122,30 +122,26 @@ class CacheManager:
                 logger.debug(f"Error disconnecting from Redis: {e}")
             finally:
                 self.connected = False
-    
+
     async def get_or_compute(
-        self,
-        key: str,
-        compute_func: Callable,
-        ttl: int = 300,
-        cache_on_error: bool = False
+        self, key: str, compute_func: Callable, ttl: int = 300, cache_on_error: bool = False
     ) -> Any:
         """
         Try to get value from cache, compute if missing.
-        
+
         This is the main method for cached operations. It handles all
         failure scenarios gracefully and ensures the system continues
         to work even if Redis is unavailable.
-        
+
         Args:
             key: Cache key (will be hashed for security)
             compute_func: Async function to compute value if not cached
             ttl: Time to live in seconds (capped at max_ttl)
             cache_on_error: Whether to return stale cache on compute error
-            
+
         Returns:
             Cached or computed value
-            
+
         Example:
             result = await cache_manager.get_or_compute(
                 key="llm:prompt_hash",
@@ -156,7 +152,7 @@ class CacheManager:
         # If caching disabled or not connected, just compute
         if not self.enabled or not self.connected:
             return await compute_func()
-        
+
         # Try to get from cache
         try:
             cached = await self.get(key)
@@ -169,7 +165,7 @@ class CacheManager:
         except Exception as e:
             logger.debug(f"Cache get failed: {e}")
             # Continue to compute
-        
+
         # Compute the result
         try:
             result = await compute_func()
@@ -186,30 +182,30 @@ class CacheManager:
                 except:
                     pass
             raise
-        
+
         # Try to cache the result, but don't fail if Redis is down
         try:
             await self.set(key, result, ttl)
         except Exception as e:
             logger.debug(f"Cache set failed: {e}")
             # Result is still valid, just not cached
-        
+
         return result
-    
+
     async def get(self, key: str, ignore_expiry: bool = False) -> Optional[Any]:
         """
         Get value from cache.
-        
+
         Args:
             key: Cache key (will be hashed)
             ignore_expiry: Whether to return expired values
-            
+
         Returns:
             Cached value or None if not found/error
         """
         if not self.enabled or not self.connected or not self.client:
             return None
-            
+
         try:
             hashed_key = self._hash_key(key)
             value = await self.client.get(hashed_key)
@@ -219,27 +215,27 @@ class CacheManager:
             logger.warning(f"Cache value decode error for {key[:20]}: {e}")
         except Exception as e:
             logger.debug(f"Cache get error: {e}")
-        
+
         return None
-    
+
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """
         Set value in cache with TTL.
-        
+
         Args:
             key: Cache key (will be hashed)
             value: Value to cache (must be JSON serializable)
             ttl: Time to live in seconds
-            
+
         Returns:
             True if cached successfully, False otherwise
         """
         if not self.enabled or not self.connected or not self.client:
             return False
-        
+
         # Enforce maximum TTL for security
         ttl = min(ttl or 300, self.max_ttl)
-        
+
         try:
             hashed_key = self._hash_key(key)
             serialized = json.dumps(value, default=str)
@@ -252,20 +248,20 @@ class CacheManager:
         except Exception as e:
             logger.debug(f"Cache set error: {e}")
             return False
-    
+
     async def delete(self, key: str) -> bool:
         """
         Delete a specific key from cache.
-        
+
         Args:
             key: Cache key to delete
-            
+
         Returns:
             True if deleted, False otherwise
         """
         if not self.enabled or not self.connected or not self.client:
             return False
-            
+
         try:
             hashed_key = self._hash_key(key)
             result = await self.client.delete(hashed_key)
@@ -273,72 +269,68 @@ class CacheManager:
         except Exception as e:
             logger.debug(f"Cache delete error: {e}")
             return False
-    
+
     def _hash_key(self, key: str) -> str:
         """
         Hash cache keys for security.
-        
+
         Prevents sensitive data from being stored as Redis keys.
         Maintains prefix for key organization.
-        
+
         Args:
             key: Original cache key
-            
+
         Returns:
             Hashed key with preserved prefix
         """
         # Extract prefix for organization (e.g., "llm", "detect", "pattern")
-        parts = key.split(':', 1)
-        prefix = parts[0] if len(parts) > 1 else 'cache'
-        
+        parts = key.split(":", 1)
+        prefix = parts[0] if len(parts) > 1 else "cache"
+
         # Hash the full key for security
         key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
-        
+
         return f"{prefix}:{key_hash}"
-    
+
     async def clear_pattern(self, pattern: str = "*") -> int:
         """
         Clear all keys matching a pattern.
-        
+
         Args:
             pattern: Redis pattern (e.g., "llm:*", "*")
-            
+
         Returns:
             Number of keys deleted
         """
         if not self.enabled or not self.connected or not self.client:
             return 0
-            
+
         try:
             # For safety, hash common prefixes
-            if ':' in pattern and not pattern.endswith('*'):
+            if ":" in pattern and not pattern.endswith("*"):
                 pattern = self._hash_key(pattern)
-            
+
             cursor = 0
             deleted = 0
-            
+
             # Use SCAN for better performance with large keysets
             while True:
-                cursor, keys = await self.client.scan(
-                    cursor, 
-                    match=pattern,
-                    count=100
-                )
+                cursor, keys = await self.client.scan(cursor, match=pattern, count=100)
                 if keys:
                     deleted += await self.client.delete(*keys)
                 if cursor == 0:
                     break
-                    
+
             logger.info(f"Cleared {deleted} cache entries matching pattern: {pattern}")
             return deleted
         except Exception as e:
             logger.warning(f"Cache clear failed: {e}")
             return 0
-    
+
     async def get_stats(self) -> Dict[str, Any]:
         """
         Get cache statistics for monitoring.
-        
+
         Returns:
             Dictionary with cache stats or error status
         """
@@ -346,34 +338,34 @@ class CacheManager:
             return {
                 "enabled": False,
                 "connected": False,
-                "message": "Cache disabled in configuration"
+                "message": "Cache disabled in configuration",
             }
-        
+
         if not self.connected or not self.client:
             return {
                 "enabled": True,
                 "connected": False,
-                "message": "Cache enabled but not connected"
+                "message": "Cache enabled but not connected",
             }
-        
+
         try:
             # Get Redis INFO stats
             info = await self.client.info("stats")
             memory = await self.client.info("memory")
             keyspace = await self.client.info("keyspace")
-            
+
             # Calculate hit rate
             hits = info.get("keyspace_hits", 0)
             misses = info.get("keyspace_misses", 0)
             total_ops = hits + misses
             hit_rate = (hits / total_ops * 100) if total_ops > 0 else 0
-            
+
             # Get total keys
             total_keys = 0
             for db_info in keyspace.values():
-                if isinstance(db_info, dict) and 'keys' in db_info:
-                    total_keys += db_info['keys']
-            
+                if isinstance(db_info, dict) and "keys" in db_info:
+                    total_keys += db_info["keys"]
+
             return {
                 "enabled": True,
                 "connected": True,
@@ -385,26 +377,22 @@ class CacheManager:
                 "memory_peak": memory.get("used_memory_peak_human", "0"),
                 "evicted_keys": info.get("evicted_keys", 0),
                 "expired_keys": info.get("expired_keys", 0),
-                "uptime_seconds": info.get("uptime_in_seconds", 0)
+                "uptime_seconds": info.get("uptime_in_seconds", 0),
             }
         except Exception as e:
             logger.error(f"Failed to get cache stats: {e}")
-            return {
-                "enabled": True,
-                "connected": True,
-                "error": str(e)
-            }
-    
+            return {"enabled": True, "connected": True, "error": str(e)}
+
     async def health_check(self) -> bool:
         """
         Perform a health check on the cache.
-        
+
         Returns:
             True if healthy, False otherwise
         """
         if not self.enabled:
             return True  # Not enabled = not a problem
-            
+
         try:
             if self.connected and self.client:
                 await self.client.ping()

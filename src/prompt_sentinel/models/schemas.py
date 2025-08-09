@@ -23,10 +23,11 @@ from pydantic import BaseModel, Field, validator
 
 class Role(str, Enum):
     """Message role types for conversation structure.
-    
+
     Defines the sender role for each message in a conversation,
     enabling proper role separation and security boundaries.
     """
+
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
@@ -35,7 +36,7 @@ class Role(str, Enum):
 
 class Verdict(str, Enum):
     """Detection verdict types indicating recommended action.
-    
+
     Each verdict represents a different security response:
     - ALLOW: Safe to process
     - BLOCK: Reject entirely
@@ -43,6 +44,7 @@ class Verdict(str, Enum):
     - STRIP: Remove malicious parts
     - REDACT: Remove PII before processing
     """
+
     ALLOW = "allow"
     BLOCK = "block"
     FLAG = "flag"
@@ -52,10 +54,11 @@ class Verdict(str, Enum):
 
 class DetectionCategory(str, Enum):
     """Categories of detected security threats.
-    
+
     Classifies different types of prompt injection and
     manipulation attempts for detailed threat analysis.
     """
+
     DIRECT_INJECTION = "direct_injection"
     INDIRECT_INJECTION = "indirect_injection"
     JAILBREAK = "jailbreak"
@@ -69,27 +72,28 @@ class DetectionCategory(str, Enum):
 
 class Message(BaseModel):
     """Structured message format with role and content.
-    
+
     Represents a single message in a conversation with
     explicit role assignment for security boundaries.
-    
+
     Attributes:
         role: Sender role (system/user/assistant)
         content: Message text content
     """
+
     role: Role
     content: str
-    
+
     @validator("content")
     def validate_content_length(cls, v):
         """Validate that message content is not empty.
-        
+
         Args:
             v: Content value to validate
-            
+
         Returns:
             Validated content
-            
+
         Raises:
             ValueError: If content is empty or only whitespace
         """
@@ -100,16 +104,16 @@ class Message(BaseModel):
 
 class SimplePromptRequest(BaseModel):
     """Simple string prompt request for v1 API.
-    
+
     Basic request format accepting a plain text prompt
     with optional role specification.
     """
+
     prompt: str = Field(..., description="The prompt text to analyze")
     role: Optional[Role] = Field(
-        default=Role.USER,
-        description="Role of the prompt (user, system, or combined)"
+        default=Role.USER, description="Role of the prompt (user, system, or combined)"
     )
-    
+
     @validator("prompt")
     def validate_prompt_length(cls, v):
         """Basic prompt validation."""
@@ -120,22 +124,19 @@ class SimplePromptRequest(BaseModel):
 
 class StructuredPromptRequest(BaseModel):
     """Structured prompt with role separation."""
-    messages: List[Message] = Field(
-        ..., 
-        description="List of messages with roles",
-        min_items=1
-    )
-    
+
+    messages: List[Message] = Field(..., description="List of messages with roles", min_items=1)
+
     @validator("messages")
     def validate_message_structure(cls, v):
         """Validate message structure."""
         if not v:
             raise ValueError("Messages list cannot be empty")
-        
+
         # Check for proper role separation
         has_system = any(msg.role == Role.SYSTEM for msg in v)
         has_user = any(msg.role == Role.USER for msg in v)
-        
+
         # This is just a warning in the response, not an error
         # We'll include this info in the response metadata
         return v
@@ -143,46 +144,37 @@ class StructuredPromptRequest(BaseModel):
 
 class UnifiedDetectionRequest(BaseModel):
     """Unified request format supporting multiple input types."""
+
     input: Union[str, List[Dict[str, str]]] = Field(
-        ...,
-        description="Prompt as string or message array"
+        ..., description="Prompt as string or message array"
     )
-    role: Optional[Role] = Field(
-        default=None,
-        description="Role hint for string inputs"
-    )
+    role: Optional[Role] = Field(default=None, description="Role hint for string inputs")
     config: Optional[Dict] = Field(
-        default=None,
-        description="Optional detection configuration overrides"
+        default=None, description="Optional detection configuration overrides"
     )
     # User context for A/B testing experiments
     user_id: Optional[str] = Field(
-        default=None,
-        description="User identifier for experiment assignment"
+        default=None, description="User identifier for experiment assignment"
     )
     session_id: Optional[str] = Field(
-        default=None,
-        description="Session identifier for context tracking"
+        default=None, description="Session identifier for context tracking"
     )
     user_context: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Additional user attributes for targeting"
+        default=None, description="Additional user attributes for targeting"
     )
-    
+
     def to_messages(self) -> List[Message]:
         """Convert input to standardized message format."""
         if isinstance(self.input, str):
             role = self.role or Role.USER
             return [Message(role=role, content=self.input)]
         else:
-            return [
-                Message(role=msg["role"], content=msg["content"])
-                for msg in self.input
-            ]
+            return [Message(role=msg["role"], content=msg["content"]) for msg in self.input]
 
 
 class DetectionReason(BaseModel):
     """Detailed reason for detection verdict."""
+
     category: DetectionCategory
     description: str
     confidence: float = Field(ge=0.0, le=1.0)
@@ -192,6 +184,7 @@ class DetectionReason(BaseModel):
 
 class FormatRecommendation(BaseModel):
     """Recommendation for improving prompt format."""
+
     issue: str
     recommendation: str
     severity: Literal["info", "warning", "error"]
@@ -199,6 +192,7 @@ class FormatRecommendation(BaseModel):
 
 class PIIDetection(BaseModel):
     """PII detection information."""
+
     pii_type: str
     masked_value: str
     confidence: float = Field(ge=0.0, le=1.0)
@@ -207,10 +201,11 @@ class PIIDetection(BaseModel):
 
 class DetectionResponse(BaseModel):
     """Comprehensive detection result response.
-    
+
     Contains the complete analysis results including verdict,
     confidence scores, detection reasons, and recommendations.
     """
+
     verdict: Verdict
     confidence: float = Field(ge=0.0, le=1.0)
     modified_prompt: Optional[str] = None
@@ -220,15 +215,14 @@ class DetectionResponse(BaseModel):
     metadata: Dict = Field(default_factory=dict)
     processing_time_ms: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class AnalysisRequest(BaseModel):
     """Full analysis request with options."""
+
     messages: List[Message]
     include_recommendations: bool = True
     include_metadata: bool = True
@@ -238,6 +232,7 @@ class AnalysisRequest(BaseModel):
 
 class AnalysisResponse(BaseModel):
     """Comprehensive analysis response."""
+
     verdict: Verdict
     confidence: float = Field(ge=0.0, le=1.0)
     per_message_analysis: List[Dict] = Field(default_factory=list)
@@ -252,6 +247,7 @@ class AnalysisResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
     status: Literal["healthy", "degraded", "unhealthy"]
     version: str
     uptime_seconds: float
@@ -266,14 +262,13 @@ class HealthResponse(BaseModel):
 
 class CorpusEntry(BaseModel):
     """Corpus entry for testing."""
+
     prompt: str
     label: DetectionCategory
     source: str
     category: str
     created_at: datetime
     metadata: Optional[Dict] = None
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}

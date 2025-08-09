@@ -9,8 +9,8 @@ from .manager import PatternManager
 __all__ = [
     "PatternCollector",
     "DetectionEvent",
-    "FeatureExtractor", 
+    "FeatureExtractor",
     "ClusteringEngine",
     "PatternExtractor",
-    "PatternManager"
+    "PatternManager",
 ]

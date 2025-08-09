@@ -19,7 +19,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Role(str, Enum):
@@ -87,7 +87,7 @@ class Message(BaseModel):
 
     @field_validator("content")
     @classmethod
-    def validate_content_length(cls, v):
+    def validate_content_length(cls, v: str) -> str:
         """Validate that message content is not empty.
 
         Args:
@@ -118,7 +118,7 @@ class SimplePromptRequest(BaseModel):
 
     @field_validator("prompt")
     @classmethod
-    def validate_prompt_length(cls, v):
+    def validate_prompt_length(cls, v: str) -> str:
         """Basic prompt validation."""
         if not v or not v.strip():
             raise ValueError("Prompt cannot be empty")
@@ -132,7 +132,7 @@ class StructuredPromptRequest(BaseModel):
 
     @field_validator("messages")
     @classmethod
-    def validate_message_structure(cls, v):
+    def validate_message_structure(cls, v: list["Message"]) -> list["Message"]:
         """Validate message structure."""
         if not v:
             raise ValueError("Messages list cannot be empty")
@@ -173,7 +173,7 @@ class UnifiedDetectionRequest(BaseModel):
             role = self.role or Role.USER
             return [Message(role=role, content=self.input)]
         else:
-            return [Message(role=msg["role"], content=msg["content"]) for msg in self.input]
+            return [Message(role=Role(msg["role"]), content=msg["content"]) for msg in self.input]
 
 
 class DetectionReason(BaseModel):

@@ -63,19 +63,20 @@ class PromptProcessor:
 
         # Handle list of Message objects
         if input_data and isinstance(input_data[0], Message):
-            return input_data
+            return input_data  # type: ignore
 
         # Handle list of dictionaries
         if isinstance(input_data, list):
             messages = []
             for item in input_data:
                 if isinstance(item, dict):
-                    role = item.get("role", "user")
+                    role_str = item.get("role", "user")
                     content = item.get("content", "")
 
-                    # Validate role
-                    if role not in ["system", "user", "assistant"]:
-                        role = "user"  # Default to user if invalid
+                    # Validate and convert role
+                    if role_str not in ["system", "user", "assistant"]:
+                        role_str = "user"  # Default to user if invalid
+                    role = Role(role_str)
 
                     messages.append(Message(role=Role(role), content=content))
             return messages
@@ -206,7 +207,7 @@ class PromptProcessor:
         Returns:
             Dictionary with role-based content segments
         """
-        segments = {"system": [], "user": [], "assistant": []}
+        segments: dict[str, list[str]] = {"system": [], "user": [], "assistant": []}
 
         for msg in messages:
             if msg.role in [Role.SYSTEM, Role.USER, Role.ASSISTANT]:

@@ -87,6 +87,10 @@ async def get_current_client(
     Raises:
         HTTPException: If authentication fails when required
     """
+    # 0. Check if client is already in request state (e.g., from middleware)
+    if hasattr(request.state, "client") and request.state.client:
+        return request.state.client
+
     # 1. Check auth mode - no auth needed
     if config.mode == AuthMode.NONE:
         return Client(
@@ -132,8 +136,19 @@ async def get_current_client(
         )
 
     # 3. Check API key authentication
-    if api_key:
-        client = await manager.validate_api_key(api_key)
+    # Check multiple sources for API key
+    api_key_to_check = api_key
+    
+    # Also check X-API-Key header
+    if not api_key_to_check and "X-API-Key" in dict(request.headers):
+        api_key_to_check = request.headers.get("X-API-Key")
+    
+    # Also check query parameters
+    if not api_key_to_check and hasattr(request, "query_params") and "api_key" in request.query_params:
+        api_key_to_check = request.query_params.get("api_key")
+    
+    if api_key_to_check:
+        client = await manager.validate_api_key(api_key_to_check)
         if client:
             return client
         elif config.mode == AuthMode.REQUIRED:

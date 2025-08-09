@@ -88,6 +88,8 @@ class TestAuthenticationMiddleware:
     @pytest.mark.asyncio
     async def test_middleware_optional_mode_no_auth(self, middleware, mock_request):
         """Test middleware in optional mode without authentication."""
+        mock_request.client.host = "192.168.1.100"  # Not localhost
+        
         async def call_next(request):
             return Response(content="success", status_code=200)
         
@@ -95,7 +97,7 @@ class TestAuthenticationMiddleware:
         
         assert response.status_code == 200
         assert hasattr(mock_request.state, "client")
-        assert mock_request.state.client.is_anonymous()
+        assert mock_request.state.client.is_anonymous
 
     @pytest.mark.asyncio
     async def test_middleware_optional_mode_with_valid_key(
@@ -121,7 +123,7 @@ class TestAuthenticationMiddleware:
         
         assert response.status_code == 200
         assert mock_request.state.client == valid_client
-        assert mock_request.state.client.is_authenticated()
+        assert mock_request.state.client.is_authenticated
         mock_api_key_manager.validate_api_key.assert_called_once_with("psk_test123")
 
     @pytest.mark.asyncio
@@ -161,11 +163,12 @@ class TestAuthenticationMiddleware:
         response = await middleware.dispatch(mock_request, call_next)
         
         assert response.status_code == 200
-        assert mock_request.state.client.is_authenticated()
+        assert mock_request.state.client.is_authenticated
 
     @pytest.mark.asyncio
     async def test_middleware_invalid_api_key(self, middleware, mock_request, mock_api_key_manager):
         """Test middleware with invalid API key."""
+        mock_request.client.host = "192.168.1.101"  # Not localhost
         mock_request.headers = {"Authorization": "Bearer invalid_key"}
         mock_api_key_manager.validate_api_key.return_value = None
         
@@ -176,7 +179,7 @@ class TestAuthenticationMiddleware:
         
         # In optional mode, should still work but as anonymous
         assert response.status_code == 200
-        assert mock_request.state.client.is_anonymous()
+        assert mock_request.state.client.is_anonymous
 
     @pytest.mark.asyncio
     async def test_middleware_localhost_bypass(self, middleware, mock_request):
@@ -299,6 +302,7 @@ class TestAuthenticationMiddleware:
     @pytest.mark.asyncio
     async def test_middleware_malformed_authorization_header(self, middleware, mock_request):
         """Test malformed authorization header."""
+        mock_request.client.host = "192.168.1.102"  # Not localhost
         mock_request.headers = {"Authorization": "InvalidFormat"}
         
         async def call_next(request):
@@ -308,7 +312,7 @@ class TestAuthenticationMiddleware:
         
         # Should treat as anonymous in optional mode
         assert response.status_code == 200
-        assert mock_request.state.client.is_anonymous()
+        assert mock_request.state.client.is_anonymous
 
     @pytest.mark.asyncio
     async def test_middleware_rate_limiting_headers(self, middleware, mock_request):
@@ -327,6 +331,7 @@ class TestAuthenticationMiddleware:
     @pytest.mark.asyncio
     async def test_middleware_disabled_mode(self, middleware, mock_request):
         """Test middleware in disabled mode."""
+        mock_request.client.host = "192.168.1.103"  # Not localhost
         middleware.auth_config.mode = AuthMode.DISABLED
         
         async def call_next(request):
@@ -336,7 +341,7 @@ class TestAuthenticationMiddleware:
         
         assert response.status_code == 200
         # Should have anonymous client
-        assert mock_request.state.client.is_anonymous()
+        assert mock_request.state.client.is_anonymous
         # Should not attempt to validate any keys
         middleware.api_key_manager.validate_api_key.assert_not_called()
 
@@ -416,7 +421,7 @@ class TestAuthenticationMiddlewareIntegration:
         from prompt_sentinel.auth.models import CreateAPIKeyRequest
         
         create_request = CreateAPIKeyRequest(
-            name="Test Key",
+            client_name="Test Key",
             description="Test key for integration test",
             permissions=[ClientPermission.DETECT_READ],
         )
@@ -444,7 +449,7 @@ class TestAuthenticationMiddlewareIntegration:
         response = await middleware.dispatch(request, call_next)
         
         assert response.status_code == 200
-        assert request.state.client.is_authenticated()
+        assert request.state.client.is_authenticated
         assert request.state.client.api_key_id == key_response.key_id
 
     @pytest.mark.asyncio

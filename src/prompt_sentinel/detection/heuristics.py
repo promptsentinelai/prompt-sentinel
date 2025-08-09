@@ -255,8 +255,8 @@ class HeuristicDetector:
     def _verify_encoding(self, content: str, pattern: str) -> bool:
         """Verify if a pattern match is actual encoding."""
         try:
-            # Check for base64
-            if "base64" in pattern.lower():
+            # Check for base64 pattern
+            if r"[A-Za-z0-9+/]" in pattern:
                 matches = re.findall(r"[A-Za-z0-9+/]{50,}={0,2}", content)
                 for match in matches:
                     try:
@@ -266,6 +266,9 @@ class HeuristicDetector:
                             return True
                     except:
                         pass
+            # For other encoding patterns, just return True if pattern matched
+            elif any(enc in pattern for enc in [r"\\x", r"\\u", r"%", r"&"]):
+                return True
             return False
         except:
             return False

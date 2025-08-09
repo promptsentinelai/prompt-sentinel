@@ -140,8 +140,12 @@ class BudgetManager:
         self.is_throttled = False
         self.throttle_until: datetime | None = None
 
-        # Start monitoring task
-        self.monitoring_task = asyncio.create_task(self._monitor_budget())
+        # Start monitoring task (only if event loop is running)
+        try:
+            self.monitoring_task = asyncio.create_task(self._monitor_budget())
+        except RuntimeError:
+            # No event loop running - this is fine for sync contexts
+            self.monitoring_task = None
 
     async def check_budget(self, estimated_cost: float = 0.0) -> BudgetStatus:
         """Check current budget status.

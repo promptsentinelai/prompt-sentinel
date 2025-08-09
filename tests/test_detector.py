@@ -206,7 +206,7 @@ class TestPromptDetector:
             
         with patch.object(
             detector.pii_detector,
-            "detect_pii",
+            "detect",
             return_value=[],
         ):
             response = await detector.detect(pii_messages)

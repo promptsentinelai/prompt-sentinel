@@ -96,9 +96,13 @@ class TestAuthDependencies:
         with patch("prompt_sentinel.auth.dependencies.settings") as mock_settings:
             mock_settings.auth_mode = "optional"
             mock_settings.auth_enforce_https = False
-            mock_settings.auth_bypass_networks = []
-            mock_settings.auth_bypass_headers = {}
+            mock_settings.auth_bypass_networks_list = []
+            mock_settings.auth_bypass_headers_dict = {}
             mock_settings.auth_allow_localhost = True
+            mock_settings.auth_unauthenticated_rpm = 10
+            mock_settings.auth_unauthenticated_tpm = 1000
+            mock_settings.api_key_prefix = "psk_"
+            mock_settings.api_key_length = 32
             
             config = get_auth_config()
             
@@ -111,9 +115,13 @@ class TestAuthDependencies:
         with patch("prompt_sentinel.auth.dependencies.settings") as mock_settings:
             mock_settings.auth_mode = "required"
             mock_settings.auth_enforce_https = True
-            mock_settings.auth_bypass_networks = ["10.0.0.0/8"]
-            mock_settings.auth_bypass_headers = {"X-Secret": "value"}
+            mock_settings.auth_bypass_networks_list = ["10.0.0.0/8"]
+            mock_settings.auth_bypass_headers_dict = {"X-Secret": "value"}
             mock_settings.auth_allow_localhost = False
+            mock_settings.auth_unauthenticated_rpm = 20
+            mock_settings.auth_unauthenticated_tpm = 2000
+            mock_settings.api_key_prefix = "api_"
+            mock_settings.api_key_length = 48
             
             config = get_auth_config()
             
@@ -158,6 +166,7 @@ class TestAuthDependencies:
         
         client = await get_current_client(
             request=mock_request,
+            api_key="psk_test123",
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -176,6 +185,7 @@ class TestAuthDependencies:
         
         client = await get_current_client(
             request=mock_request,
+            api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -194,6 +204,7 @@ class TestAuthDependencies:
         
         client = await get_current_client(
             request=mock_request,
+            api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -212,6 +223,7 @@ class TestAuthDependencies:
         
         client = await get_current_client(
             request=mock_request,
+            api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -230,6 +242,7 @@ class TestAuthDependencies:
         
         client = await get_current_client(
             request=mock_request,
+            api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -249,6 +262,7 @@ class TestAuthDependencies:
         
         client = await get_current_client(
             request=mock_request,
+            api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -285,6 +299,7 @@ class TestAuthDependencies:
         
         client = await get_current_client(
             request=mock_request,
+            api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -303,6 +318,7 @@ class TestAuthDependencies:
         
         client = await get_current_client(
             request=mock_request,
+            api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -321,6 +337,7 @@ class TestAuthDependencies:
         
         client = await get_optional_client(
             request=mock_request,
+            api_key="psk_test",
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
@@ -336,6 +353,7 @@ class TestAuthDependencies:
         
         client = await get_optional_client(
             request=mock_request,
+            api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )

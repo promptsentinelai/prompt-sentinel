@@ -51,6 +51,7 @@ class TestAPIKeyManager:
             name="Test Key",
             description="Test API key",
             client_id="client_123",
+            client_name="Test Client",
             created_at=datetime.utcnow(),
             expires_at=datetime.utcnow() + timedelta(days=30),
             last_used_at=None,
@@ -261,6 +262,7 @@ class TestAPIKeyManager:
                 key_hash=f"hash_{i}",
                 name=f"Key {i}",
                 client_id=f"client_{i}",
+                client_name=f"Client {i}",
                 status=APIKeyStatus.ACTIVE,
             )
             manager._keys[key.key_id] = key
@@ -289,6 +291,7 @@ class TestAPIKeyManager:
                 key_hash=f"hash_{i}",
                 name=f"Key {i}",
                 client_id="client",
+                client_name="Test Client",
             )
             manager._keys[key.key_id] = key
         
@@ -435,6 +438,7 @@ class TestAPIKeyManager:
                 key_hash=f"hash_{i}",
                 name=f"Key {i}",
                 client_id="client",
+                client_name="Test Client",
                 status=status,
             )
             manager._keys[key.key_id] = key

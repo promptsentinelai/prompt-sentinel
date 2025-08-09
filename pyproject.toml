@@ -50,7 +50,7 @@ dependencies = [
 ml = [
     "hdbscan>=0.8.33",
     "sentence-transformers>=2.2.0",
-    "umap-learn>=0.5.4",
+    "umap-learn>=0.5.10",
 ]
 dev = [
     "pytest>=7.4.0",
@@ -64,6 +64,8 @@ dev = [
     "types-redis>=4.6.0",
     "ipython>=8.0.0",
     "pre-commit>=3.6.0",
+    "bandit[toml]>=1.7.0",
+    "safety>=2.3.0",
 ]
 
 test = [

@@ -60,7 +60,7 @@ jobs:
         run: |
           uv venv --python python${{ matrix.python-version }}
           source .venv/bin/activate
-          uv pip install -e ".[dev]"
+          uv pip install -e ".[dev,ml,test]"
 
       - name: Run unit tests
         run: |
@@ -112,7 +112,7 @@ jobs:
         run: |
           uv venv
           source .venv/bin/activate
-          uv pip install -e ".[dev]"
+          uv pip install -e ".[dev,ml,test]"
 
       - name: Run Black formatter check
         run: |
@@ -152,7 +152,7 @@ jobs:
         run: |
           uv venv
           source .venv/bin/activate
-          uv pip install bandit safety
+          uv pip install -e ".[dev]"
 
       - name: Run Bandit security scan
         run: |
@@ -307,12 +307,11 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          release_name: Release v${{ steps.version.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
           body: |
             ## PromptSentinel v${{ steps.version.outputs.version }}
 

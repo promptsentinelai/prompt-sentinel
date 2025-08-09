@@ -50,7 +50,7 @@ dependencies = [
 ml = [
     "hdbscan>=0.8.33",
     "sentence-transformers>=2.2.0",
-    "umap-learn>=0.5.10",
+    "umap-learn>=0.5.4",
 ]
 dev = [
     "pytest>=7.4.0",

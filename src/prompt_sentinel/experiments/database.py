@@ -5,15 +5,15 @@ experiment configurations, metrics, and analysis results.
 """
 
 import json
-import sqlite3
 from datetime import datetime
-from typing import Dict, List, Optional, Any
 from pathlib import Path
-import aiosqlite
+from typing import Any
 
+import aiosqlite
 import structlog
-from .config import ExperimentConfig, ExperimentStatus, ExperimentType
+
 from .analyzer import ExperimentResult
+from .config import ExperimentConfig, ExperimentStatus, ExperimentType
 from .safety import GuardrailViolation
 
 logger = structlog.get_logger()
@@ -224,7 +224,7 @@ class ExperimentDatabase:
             logger.error("Failed to save experiment", experiment_id=config.id, error=str(e))
             return False
 
-    async def get_experiment(self, experiment_id: str) -> Optional[ExperimentConfig]:
+    async def get_experiment(self, experiment_id: str) -> ExperimentConfig | None:
         """Get experiment configuration by ID.
 
         Args:
@@ -263,11 +263,11 @@ class ExperimentDatabase:
 
     async def list_experiments(
         self,
-        status_filter: Optional[ExperimentStatus] = None,
-        type_filter: Optional[ExperimentType] = None,
+        status_filter: ExperimentStatus | None = None,
+        type_filter: ExperimentType | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[ExperimentConfig]:
+    ) -> list[ExperimentConfig]:
         """List experiments with optional filtering.
 
         Args:
@@ -344,7 +344,7 @@ class ExperimentDatabase:
             logger.error("Failed to delete experiment", experiment_id=experiment_id, error=str(e))
             return False
 
-    async def save_metrics_batch(self, metrics: List[Dict[str, Any]]) -> bool:
+    async def save_metrics_batch(self, metrics: list[dict[str, Any]]) -> bool:
         """Save batch of metrics to database.
 
         Args:
@@ -389,11 +389,11 @@ class ExperimentDatabase:
     async def get_experiment_metrics(
         self,
         experiment_id: str,
-        variant_ids: Optional[List[str]] = None,
-        metric_names: Optional[List[str]] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> Dict[str, Dict[str, List[float]]]:
+        variant_ids: list[str] | None = None,
+        metric_names: list[str] | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> dict[str, dict[str, list[float]]]:
         """Get metrics for experiment analysis.
 
         Args:
@@ -452,7 +452,7 @@ class ExperimentDatabase:
             return {}
 
     async def save_analysis_results(
-        self, experiment_id: str, results: List[ExperimentResult]
+        self, experiment_id: str, results: list[ExperimentResult]
     ) -> bool:
         """Save statistical analysis results.
 
@@ -505,7 +505,7 @@ class ExperimentDatabase:
             )
             return False
 
-    async def get_analysis_results(self, experiment_id: str) -> List[Dict[str, Any]]:
+    async def get_analysis_results(self, experiment_id: str) -> list[dict[str, Any]]:
         """Get latest analysis results for experiment.
 
         Args:
@@ -548,7 +548,7 @@ class ExperimentDatabase:
             )
             return []
 
-    async def save_assignment_event(self, event: Dict[str, Any]) -> bool:
+    async def save_assignment_event(self, event: dict[str, Any]) -> bool:
         """Save assignment event for analytics.
 
         Args:
@@ -626,7 +626,7 @@ class ExperimentDatabase:
             )
             return False
 
-    async def get_experiment_stats(self) -> Dict[str, Any]:
+    async def get_experiment_stats(self) -> dict[str, Any]:
         """Get overall experiment statistics.
 
         Returns:

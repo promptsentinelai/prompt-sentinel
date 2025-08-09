@@ -1,6 +1,6 @@
 """OpenAPI documentation enhancements for PromptSentinel API."""
 
-from typing import Dict, Any
+from typing import Any
 
 # API metadata
 API_TITLE = "PromptSentinel API"
@@ -200,7 +200,7 @@ EXAMPLES = {
 
 
 # Custom OpenAPI schema modifications
-def custom_openapi_schema(app) -> Dict[str, Any]:
+def custom_openapi_schema(app) -> dict[str, Any]:
     """Generate custom OpenAPI schema with enhanced documentation."""
     if app.openapi_schema:
         return app.openapi_schema

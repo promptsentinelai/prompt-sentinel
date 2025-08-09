@@ -3,9 +3,10 @@
 Tests both with and without Redis to ensure the system works in all scenarios.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-import asyncio
-from unittest.mock import Mock, AsyncMock, patch
+
 from prompt_sentinel.cache.cache_manager import CacheManager
 from prompt_sentinel.config.settings import settings
 
@@ -70,7 +71,7 @@ class TestCacheManager:
 
         # Check that cache metadata was added
         assert result["value"] == "cached_result"
-        assert result["_cache_hit"] == True
+        assert result["_cache_hit"]
         compute_func.assert_not_called()
 
     @pytest.mark.asyncio
@@ -115,7 +116,7 @@ class TestCacheManager:
 
         # Check that stale cache metadata was added
         assert result["value"] == "stale_data"
-        assert result["_cache_stale"] == True
+        assert result["_cache_stale"]
 
     def test_hash_key(self):
         """Test that cache keys are properly hashed."""
@@ -196,8 +197,8 @@ class TestCacheManager:
         # Get stats
         stats = await manager.get_stats()
 
-        assert stats["enabled"] == True
-        assert stats["connected"] == True
+        assert stats["enabled"]
+        assert stats["connected"]
         assert stats["hits"] == 100
         assert stats["misses"] == 50
         assert stats["hit_rate"] == 66.67  # 100/(100+50) * 100
@@ -218,12 +219,12 @@ class TestCacheManager:
 
         # Health check should succeed
         is_healthy = await manager.health_check()
-        assert is_healthy == True
+        assert is_healthy
 
         # Test failed health check
         mock_client.ping = AsyncMock(side_effect=Exception("Connection lost"))
         is_healthy = await manager.health_check()
-        assert is_healthy == False
+        assert not is_healthy
 
 
 class TestCacheIntegration:

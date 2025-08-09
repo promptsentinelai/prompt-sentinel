@@ -1,15 +1,12 @@
 """Comprehensive integration tests for PromptSentinel."""
 
+from unittest.mock import patch
+
 import pytest
-import asyncio
-import json
-from typing import Dict, Any
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock, AsyncMock
-from prompt_sentinel.main import app
-from prompt_sentinel.models.schemas import Message, Role
-from prompt_sentinel.monitoring.usage_tracker import Provider
+
 from prompt_sentinel.config.settings import settings
+from prompt_sentinel.main import app
 
 
 class TestIntegrationEndToEnd:
@@ -77,7 +74,7 @@ class TestIntegrationEndToEnd:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["pii_detected"] == True
+        assert data["pii_detected"]
         assert "credit_card" in data["pii_types"]
 
     def test_v2_comprehensive_analysis(self):
@@ -327,7 +324,7 @@ class TestBatchProcessing:
         # Second should be flagged
         assert data["results"][1]["verdict"] in ["block", "flag"]
         # Third should detect PII
-        assert data["results"][2]["pii_detected"] == True
+        assert data["results"][2]["pii_detected"]
 
 
 class TestErrorHandling:

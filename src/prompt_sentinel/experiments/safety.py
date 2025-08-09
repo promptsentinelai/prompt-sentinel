@@ -5,16 +5,15 @@ don't negatively impact system performance or user experience.
 """
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 import structlog
-from prompt_sentinel.cache.cache_manager import cache_manager
 
 from .config import ExperimentConfig, ExperimentStatus, GuardrailConfig
-
 
 logger = structlog.get_logger()
 
@@ -51,7 +50,7 @@ class GuardrailViolation:
     action_taken: GuardrailAction
     timestamp: datetime
     message: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 @dataclass
@@ -60,8 +59,8 @@ class SafetyMetrics:
 
     experiment_id: str
     total_violations: int
-    violations_by_severity: Dict[GuardrailSeverity, int]
-    last_violation: Optional[datetime]
+    violations_by_severity: dict[GuardrailSeverity, int]
+    last_violation: datetime | None
     experiment_health_score: float  # 0.0 to 1.0
     auto_actions_taken: int
     manual_interventions: int
@@ -76,13 +75,13 @@ class SafetyControls:
 
     def __init__(self):
         """Initialize safety controls."""
-        self.active_experiments: Dict[str, ExperimentConfig] = {}
-        self.guardrail_violations: List[GuardrailViolation] = []
-        self.safety_metrics: Dict[str, SafetyMetrics] = {}
-        self.monitoring_tasks: Dict[str, asyncio.Task] = {}
+        self.active_experiments: dict[str, ExperimentConfig] = {}
+        self.guardrail_violations: list[GuardrailViolation] = []
+        self.safety_metrics: dict[str, SafetyMetrics] = {}
+        self.monitoring_tasks: dict[str, asyncio.Task] = {}
 
         # Safety callbacks
-        self.violation_callbacks: List[Callable] = []
+        self.violation_callbacks: list[Callable] = []
 
         # Default safety thresholds
         self.default_guardrails = self._create_default_guardrails()
@@ -90,7 +89,7 @@ class SafetyControls:
     async def register_experiment(
         self,
         experiment: ExperimentConfig,
-        custom_guardrails: Optional[List[GuardrailConfig]] = None,
+        custom_guardrails: list[GuardrailConfig] | None = None,
     ):
         """Register experiment for safety monitoring.
 
@@ -104,7 +103,7 @@ class SafetyControls:
         self.safety_metrics[experiment.id] = SafetyMetrics(
             experiment_id=experiment.id,
             total_violations=0,
-            violations_by_severity={severity: 0 for severity in GuardrailSeverity},
+            violations_by_severity=dict.fromkeys(GuardrailSeverity, 0),
             last_violation=None,
             experiment_health_score=1.0,
             auto_actions_taken=0,
@@ -151,8 +150,8 @@ class SafetyControls:
         logger.info("Experiment unregistered from safety monitoring", experiment_id=experiment_id)
 
     async def check_experiment_safety(
-        self, experiment_id: str, metric_data: Dict[str, float]
-    ) -> List[GuardrailViolation]:
+        self, experiment_id: str, metric_data: dict[str, float]
+    ) -> list[GuardrailViolation]:
         """Check experiment metrics against safety guardrails.
 
         Args:
@@ -240,7 +239,7 @@ class SafetyControls:
 
         logger.critical("Emergency experiment stop", experiment_id=experiment_id, reason=reason)
 
-    def get_safety_report(self, experiment_id: str) -> Dict[str, Any]:
+    def get_safety_report(self, experiment_id: str) -> dict[str, Any]:
         """Get safety report for experiment.
 
         Args:
@@ -295,7 +294,7 @@ class SafetyControls:
         """
         self.violation_callbacks.append(callback)
 
-    async def _monitor_experiment(self, experiment_id: str, guardrails: List[GuardrailConfig]):
+    async def _monitor_experiment(self, experiment_id: str, guardrails: list[GuardrailConfig]):
         """Background monitoring task for experiment.
 
         Args:
@@ -330,7 +329,7 @@ class SafetyControls:
         except Exception as e:
             logger.error("Experiment monitoring failed", experiment_id=experiment_id, error=str(e))
 
-    async def _collect_experiment_metrics(self, experiment_id: str) -> Dict[str, float]:
+    async def _collect_experiment_metrics(self, experiment_id: str) -> dict[str, float]:
         """Collect current metrics for experiment.
 
         Args:
@@ -352,7 +351,7 @@ class SafetyControls:
 
     def _check_guardrail(
         self, experiment_id: str, guardrail: GuardrailConfig, actual_value: float
-    ) -> Optional[GuardrailViolation]:
+    ) -> GuardrailViolation | None:
         """Check if a guardrail is violated.
 
         Args:
@@ -542,7 +541,7 @@ class SafetyControls:
             new_percentage=experiment.target_percentage,
         )
 
-    async def _update_health_score(self, experiment_id: str, violations: List[GuardrailViolation]):
+    async def _update_health_score(self, experiment_id: str, violations: list[GuardrailViolation]):
         """Update experiment health score based on recent violations.
 
         Args:
@@ -579,7 +578,7 @@ class SafetyControls:
 
             metrics.experiment_health_score = max(0.0, metrics.experiment_health_score - penalty)
 
-    def _create_default_guardrails(self) -> List[GuardrailConfig]:
+    def _create_default_guardrails(self) -> list[GuardrailConfig]:
         """Create default safety guardrails.
 
         Returns:

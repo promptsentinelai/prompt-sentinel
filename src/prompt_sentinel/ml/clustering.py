@@ -3,13 +3,12 @@
 Implements various clustering algorithms to discover groups of similar attacks.
 """
 
-import asyncio
-from typing import Dict, List, Optional, Any, Tuple
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-import numpy as np
-from collections import defaultdict
+from typing import Any
 
+import numpy as np
 import structlog
 
 logger = structlog.get_logger()
@@ -20,21 +19,21 @@ class Cluster:
     """Represents a cluster of similar prompts."""
 
     cluster_id: int
-    centroid: Optional[np.ndarray]
-    members: List[int]  # Indices of member events
+    centroid: np.ndarray | None
+    members: list[int]  # Indices of member events
     density: float
     avg_confidence: float
     dominant_category: str
-    patterns: List[str]
+    patterns: list[str]
     created_at: datetime
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
     def size(self) -> int:
         """Get cluster size."""
         return len(self.members)
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get cluster summary."""
         return {
             "cluster_id": self.cluster_id,
@@ -76,9 +75,9 @@ class ClusteringEngine:
         self.kmeans = None
 
         # Results
-        self.clusters: List[Cluster] = []
-        self.noise_points: List[int] = []
-        self.cluster_labels: Optional[np.ndarray] = None
+        self.clusters: list[Cluster] = []
+        self.noise_points: list[int] = []
+        self.cluster_labels: np.ndarray | None = None
 
         # Initialize models
         self._init_models()
@@ -112,8 +111,8 @@ class ClusteringEngine:
             logger.warning("hdbscan not installed, using DBSCAN only")
 
     async def cluster_events(
-        self, feature_vectors: np.ndarray, events: List[Any], algorithm: Optional[str] = None
-    ) -> List[Cluster]:
+        self, feature_vectors: np.ndarray, events: list[Any], algorithm: str | None = None
+    ) -> list[Cluster]:
         """Cluster events based on feature vectors.
 
         Args:
@@ -154,7 +153,7 @@ class ClusteringEngine:
 
         return clusters
 
-    async def _cluster_dbscan(self, features: np.ndarray, events: List[Any]) -> List[Cluster]:
+    async def _cluster_dbscan(self, features: np.ndarray, events: list[Any]) -> list[Cluster]:
         """Cluster using DBSCAN algorithm."""
         # Run DBSCAN
         labels = self.dbscan.fit_predict(features)
@@ -218,7 +217,7 @@ class ClusteringEngine:
 
         return clusters
 
-    async def _cluster_hdbscan(self, features: np.ndarray, events: List[Any]) -> List[Cluster]:
+    async def _cluster_hdbscan(self, features: np.ndarray, events: list[Any]) -> list[Cluster]:
         """Cluster using HDBSCAN algorithm."""
         if not self.hdbscan:
             return await self._cluster_dbscan(features, events)
@@ -288,7 +287,7 @@ class ClusteringEngine:
 
         return clusters
 
-    async def _cluster_kmeans(self, features: np.ndarray, events: List[Any]) -> List[Cluster]:
+    async def _cluster_kmeans(self, features: np.ndarray, events: list[Any]) -> list[Cluster]:
         """Cluster using Mini-batch K-means."""
         # Determine optimal K using elbow method (simplified)
         n_clusters = min(10, max(2, len(features) // 50))
@@ -406,7 +405,7 @@ class ClusteringEngine:
 
         return float(optimal_eps)
 
-    def get_cluster_statistics(self) -> Dict[str, Any]:
+    def get_cluster_statistics(self) -> dict[str, Any]:
         """Get clustering statistics.
 
         Returns:
@@ -429,7 +428,7 @@ class ClusteringEngine:
             "algorithm_used": self.algorithm,
         }
 
-    def export_clusters(self) -> List[Dict[str, Any]]:
+    def export_clusters(self) -> list[dict[str, Any]]:
         """Export clusters for persistence.
 
         Returns:

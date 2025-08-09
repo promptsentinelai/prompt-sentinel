@@ -4,9 +4,10 @@ This module defines the data models for API key management and client authentica
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any, List
 from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AuthMode(str, Enum):
@@ -70,22 +71,22 @@ class APIKey(BaseModel):
 
     # Lifecycle
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    expires_at: Optional[datetime] = Field(None, description="Expiration time")
-    last_used_at: Optional[datetime] = Field(None, description="Last usage time")
+    expires_at: datetime | None = Field(None, description="Expiration time")
+    last_used_at: datetime | None = Field(None, description="Last usage time")
     status: APIKeyStatus = Field(default=APIKeyStatus.ACTIVE)
 
     # Access control
     usage_tier: UsageTier = Field(default=UsageTier.FREE)
-    permissions: List[ClientPermission] = Field(
+    permissions: list[ClientPermission] = Field(
         default_factory=lambda: [ClientPermission.DETECT_READ]
     )
 
     # Rate limits (override defaults)
-    rate_limits: Optional[Dict[str, int]] = Field(None, description="Custom rate limits")
+    rate_limits: dict[str, int] | None = Field(None, description="Custom rate limits")
 
     # Metadata
-    description: Optional[str] = Field(None, description="Key description/purpose")
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    description: str | None = Field(None, description="Key description/purpose")
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     def is_valid(self) -> bool:
         """Check if the key is currently valid."""
@@ -110,16 +111,16 @@ class Client(BaseModel):
     auth_method: AuthMethod = Field(..., description="How client was authenticated")
 
     # For authenticated clients
-    api_key: Optional[APIKey] = Field(None, description="Associated API key")
+    api_key: APIKey | None = Field(None, description="Associated API key")
 
     # Rate limiting
     usage_tier: UsageTier = Field(default=UsageTier.FREE)
-    rate_limits: Dict[str, int] = Field(default_factory=dict)
+    rate_limits: dict[str, int] = Field(default_factory=dict)
 
     # Usage tracking
     request_count: int = Field(default=0)
     token_count: int = Field(default=0)
-    last_request_at: Optional[datetime] = None
+    last_request_at: datetime | None = None
 
     @property
     def is_authenticated(self) -> bool:
@@ -136,14 +137,14 @@ class CreateAPIKeyRequest(BaseModel):
     """Request to create a new API key."""
 
     client_name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    expires_in_days: Optional[int] = Field(None, ge=1, le=365)
+    description: str | None = Field(None, max_length=500)
+    expires_in_days: int | None = Field(None, ge=1, le=365)
     usage_tier: UsageTier = Field(default=UsageTier.FREE)
-    permissions: List[ClientPermission] = Field(
+    permissions: list[ClientPermission] = Field(
         default_factory=lambda: [ClientPermission.DETECT_READ]
     )
-    rate_limits: Optional[Dict[str, int]] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    rate_limits: dict[str, int] | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class CreateAPIKeyResponse(BaseModel):
@@ -154,9 +155,9 @@ class CreateAPIKeyResponse(BaseModel):
     client_id: str = Field(..., description="Associated client ID")
     client_name: str = Field(..., description="Client name")
     created_at: datetime
-    expires_at: Optional[datetime]
+    expires_at: datetime | None
     usage_tier: UsageTier
-    permissions: List[ClientPermission]
+    permissions: list[ClientPermission]
 
 
 class APIKeyInfo(BaseModel):
@@ -166,12 +167,12 @@ class APIKeyInfo(BaseModel):
     client_id: str
     client_name: str
     created_at: datetime
-    expires_at: Optional[datetime]
-    last_used_at: Optional[datetime]
+    expires_at: datetime | None
+    last_used_at: datetime | None
     status: APIKeyStatus
     usage_tier: UsageTier
-    permissions: List[ClientPermission]
-    description: Optional[str]
+    permissions: list[ClientPermission]
+    description: str | None
 
 
 class AuthConfig(BaseModel):
@@ -181,10 +182,10 @@ class AuthConfig(BaseModel):
     enforce_https: bool = Field(default=False)
 
     # Bypass rules
-    bypass_networks: List[str] = Field(
+    bypass_networks: list[str] = Field(
         default_factory=list, description="CIDR networks to bypass auth"
     )
-    bypass_headers: Dict[str, str] = Field(
+    bypass_headers: dict[str, str] = Field(
         default_factory=dict, description="Headers that bypass auth"
     )
     allow_localhost: bool = Field(default=True, description="Allow localhost without auth")

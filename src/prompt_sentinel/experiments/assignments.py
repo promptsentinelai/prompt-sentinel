@@ -4,19 +4,19 @@ This module handles the assignment of users to experiment variants using
 various bucketing strategies while ensuring consistency and statistical validity.
 """
 
+import asyncio
 import hashlib
 import random
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple
-from enum import Enum
 from dataclasses import dataclass
-import asyncio
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 import structlog
+
 from prompt_sentinel.cache.cache_manager import cache_manager
 
-from .config import ExperimentConfig, ExperimentVariant, ExperimentAssignment, ExperimentStatus
-
+from .config import ExperimentAssignment, ExperimentConfig, ExperimentVariant
 
 logger = structlog.get_logger()
 
@@ -41,10 +41,10 @@ class AssignmentContext:
     """Context information for user assignment."""
 
     user_id: str
-    session_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
-    attributes: Dict[str, Any] = None
+    session_id: str | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
+    attributes: dict[str, Any] = None
     timestamp: datetime = None
 
     def __post_init__(self):
@@ -75,7 +75,7 @@ class AssignmentService:
         context: AssignmentContext,
         experiment: ExperimentConfig,
         strategy: BucketingStrategy = BucketingStrategy.HASH_BASED,
-    ) -> Optional[ExperimentAssignment]:
+    ) -> ExperimentAssignment | None:
         """Assign user to experiment variant.
 
         Args:
@@ -150,7 +150,7 @@ class AssignmentService:
 
     async def get_assignment(
         self, user_id: str, experiment_id: str
-    ) -> Optional[ExperimentAssignment]:
+    ) -> ExperimentAssignment | None:
         """Get existing user assignment for experiment.
 
         Args:
@@ -164,10 +164,10 @@ class AssignmentService:
 
     async def bulk_assign_users(
         self,
-        contexts: List[AssignmentContext],
+        contexts: list[AssignmentContext],
         experiment: ExperimentConfig,
         strategy: BucketingStrategy = BucketingStrategy.HASH_BASED,
-    ) -> List[Optional[ExperimentAssignment]]:
+    ) -> list[ExperimentAssignment | None]:
         """Assign multiple users to experiment variants.
 
         Args:
@@ -200,7 +200,7 @@ class AssignmentService:
 
     async def _get_existing_assignment(
         self, user_id: str, experiment_id: str
-    ) -> Optional[ExperimentAssignment]:
+    ) -> ExperimentAssignment | None:
         """Get existing assignment from cache or storage.
 
         Args:
@@ -325,7 +325,7 @@ class AssignmentService:
 
     async def _assign_to_variant(
         self, context: AssignmentContext, experiment: ExperimentConfig, strategy: BucketingStrategy
-    ) -> Optional[ExperimentVariant]:
+    ) -> ExperimentVariant | None:
         """Assign user to specific variant using bucketing strategy.
 
         Args:
@@ -441,7 +441,7 @@ class AssignmentService:
 
     async def get_assignment_stats(
         self, experiment_id: str, time_window_hours: int = 24
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get assignment statistics for experiment.
 
         Args:

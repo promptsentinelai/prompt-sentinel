@@ -4,13 +4,13 @@ This module defines the core data structures for A/B testing experiments,
 including experiment types, variants, and configuration management.
 """
 
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Union
-from enum import Enum
 from dataclasses import dataclass, field
-from pydantic import BaseModel, Field, validator
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 import structlog
+from pydantic import BaseModel, Field, validator
 
 logger = structlog.get_logger()
 
@@ -59,7 +59,7 @@ class ExperimentVariant(BaseModel):
     id: str = Field(description="Unique variant identifier")
     name: str = Field(description="Human-readable variant name")
     description: str = Field(description="Variant description")
-    config: Dict[str, Any] = Field(description="Variant-specific configuration")
+    config: dict[str, Any] = Field(description="Variant-specific configuration")
     traffic_percentage: float = Field(ge=0.0, le=1.0, description="Traffic allocation")
     is_control: bool = Field(default=False, description="Whether this is the control variant")
 
@@ -110,24 +110,24 @@ class ExperimentConfig(BaseModel):
     status: ExperimentStatus = Field(default=ExperimentStatus.DRAFT)
 
     # Timing
-    start_time: Optional[datetime] = Field(description="Experiment start time")
-    end_time: Optional[datetime] = Field(description="Experiment end time")
-    duration_hours: Optional[int] = Field(description="Maximum duration in hours")
+    start_time: datetime | None = Field(description="Experiment start time")
+    end_time: datetime | None = Field(description="Experiment end time")
+    duration_hours: int | None = Field(description="Maximum duration in hours")
 
     # Variants
-    variants: List[ExperimentVariant] = Field(description="List of experiment variants")
+    variants: list[ExperimentVariant] = Field(description="List of experiment variants")
 
     # Targeting
     target_percentage: float = Field(
         default=0.1, ge=0.0, le=1.0, description="Percentage of traffic to include"
     )
-    target_filters: Dict[str, Any] = Field(
+    target_filters: dict[str, Any] = Field(
         default_factory=dict, description="Filters for user targeting"
     )
 
     # Metrics
-    primary_metrics: List[str] = Field(description="Primary success metrics")
-    secondary_metrics: List[str] = Field(
+    primary_metrics: list[str] = Field(description="Primary success metrics")
+    secondary_metrics: list[str] = Field(
         default_factory=list, description="Secondary metrics to track"
     )
 
@@ -141,14 +141,14 @@ class ExperimentConfig(BaseModel):
     )
 
     # Safety
-    guardrails: List[GuardrailConfig] = Field(default_factory=list, description="Safety guardrails")
+    guardrails: list[GuardrailConfig] = Field(default_factory=list, description="Safety guardrails")
     auto_promote: bool = Field(default=False, description="Auto-promote winning variant")
 
     # Metadata
     created_by: str = Field(description="Experiment creator")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    tags: List[str] = Field(default_factory=list, description="Experiment tags")
+    tags: list[str] = Field(default_factory=list, description="Experiment tags")
 
     @validator("variants")
     def validate_variants(cls, v):
@@ -197,7 +197,7 @@ class ExperimentConfig(BaseModel):
                 return variant
         raise ValueError("No control variant found")
 
-    def get_treatment_variants(self) -> List[ExperimentVariant]:
+    def get_treatment_variants(self) -> list[ExperimentVariant]:
         """Get all treatment variants."""
         return [variant for variant in self.variants if not variant.is_control]
 
@@ -216,7 +216,7 @@ class ExperimentConfig(BaseModel):
 
         return True
 
-    def get_variant_by_id(self, variant_id: str) -> Optional[ExperimentVariant]:
+    def get_variant_by_id(self, variant_id: str) -> ExperimentVariant | None:
         """Get variant by ID."""
         for variant in self.variants:
             if variant.id == variant_id:
@@ -280,12 +280,12 @@ class ExperimentMetadata(BaseModel):
 
     total_users: int = Field(description="Total users exposed to experiment")
     total_events: int = Field(description="Total events recorded")
-    variant_stats: Dict[str, Dict[str, Any]] = Field(description="Per-variant statistics")
+    variant_stats: dict[str, dict[str, Any]] = Field(description="Per-variant statistics")
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 
     # Statistical power
-    current_power: Optional[float] = Field(description="Current statistical power")
-    estimated_completion: Optional[datetime] = Field(description="Estimated completion time")
+    current_power: float | None = Field(description="Current statistical power")
+    estimated_completion: datetime | None = Field(description="Estimated completion time")
 
     # Performance metrics
     experiment_overhead_ms: float = Field(default=0.0, description="Average experiment overhead")

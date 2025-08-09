@@ -1,16 +1,11 @@
 """Tests for intelligent routing system."""
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
 
+from prompt_sentinel.models.schemas import Message, Role
 from prompt_sentinel.routing.complexity_analyzer import (
     ComplexityAnalyzer,
     ComplexityLevel,
-    ComplexityScore,
-    RiskIndicator,
 )
-from prompt_sentinel.routing.router import IntelligentRouter, DetectionStrategy, RoutingDecision
-from prompt_sentinel.models.schemas import Message, Role, Verdict, DetectionResponse
 
 
 class TestComplexityAnalyzer:

@@ -5,17 +5,18 @@ for ML analysis and pattern extraction.
 """
 
 import asyncio
-import json
 import hashlib
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Set
-from dataclasses import dataclass, field, asdict
+import json
 from collections import deque
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 import structlog
+
 from prompt_sentinel.cache.cache_manager import cache_manager
-from prompt_sentinel.models.schemas import Verdict, DetectionCategory
+from prompt_sentinel.models.schemas import Verdict
 
 logger = structlog.get_logger()
 
@@ -40,20 +41,20 @@ class DetectionEvent:
     prompt: str
     verdict: Verdict
     confidence: float
-    categories: List[str]
-    patterns_matched: List[str]
+    categories: list[str]
+    patterns_matched: list[str]
     provider_used: str
     processing_time_ms: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     # Feedback fields
-    user_label: Optional[str] = None
+    user_label: str | None = None
     is_false_positive: bool = False
     is_false_negative: bool = False
 
     # Feature cache
-    features: Optional[Dict[str, Any]] = None
-    embedding: Optional[List[float]] = None
+    features: dict[str, Any] | None = None
+    embedding: list[float] | None = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for storage."""
@@ -101,11 +102,11 @@ class PatternCollector:
         self.event_buffer = deque(maxlen=buffer_size)
 
         # Indexes for fast lookup
-        self.events_by_verdict: Dict[str, List[DetectionEvent]] = {
+        self.events_by_verdict: dict[str, list[DetectionEvent]] = {
             verdict.value: [] for verdict in Verdict
         }
-        self.events_by_category: Dict[str, List[DetectionEvent]] = {}
-        self.prompt_hashes: Set[str] = set()
+        self.events_by_category: dict[str, list[DetectionEvent]] = {}
+        self.prompt_hashes: set[str] = set()
 
         # Statistics
         self.total_events = 0
@@ -114,7 +115,7 @@ class PatternCollector:
         self.false_negatives = 0
 
         # Background tasks
-        self._tasks: List[asyncio.Task] = []
+        self._tasks: list[asyncio.Task] = []
         self._running = False
 
     async def initialize(self):
@@ -154,11 +155,11 @@ class PatternCollector:
         prompt: str,
         verdict: Verdict,
         confidence: float,
-        categories: List[str],
-        patterns_matched: List[str],
+        categories: list[str],
+        patterns_matched: list[str],
         provider_used: str,
         processing_time_ms: float,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> DetectionEvent:
         """Collect a new detection event.
 
@@ -249,9 +250,9 @@ class PatternCollector:
     def get_events_for_clustering(
         self,
         min_confidence: float = 0.5,
-        verdicts: Optional[List[Verdict]] = None,
-        limit: Optional[int] = None,
-    ) -> List[DetectionEvent]:
+        verdicts: list[Verdict] | None = None,
+        limit: int | None = None,
+    ) -> list[DetectionEvent]:
         """Get events suitable for clustering.
 
         Args:
@@ -279,7 +280,7 @@ class PatternCollector:
 
         return events
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get collector statistics.
 
         Returns:

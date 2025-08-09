@@ -4,14 +4,16 @@ This module provides dependency injection functions for authentication,
 supporting multiple auth modes and bypass rules.
 """
 
-from typing import Optional, Annotated
+from typing import Annotated
+
+import structlog
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import APIKeyHeader
 
-import structlog
 from prompt_sentinel.config.settings import settings
-from .models import Client, AuthMethod, AuthMode, UsageTier, AuthConfig, ClientPermission
+
 from .api_key_manager import APIKeyManager
+from .models import AuthConfig, AuthMethod, AuthMode, Client, ClientPermission, UsageTier
 
 logger = structlog.get_logger()
 
@@ -64,7 +66,7 @@ def get_api_key_manager(config: Annotated[AuthConfig, Depends(get_auth_config)])
 
 async def get_current_client(
     request: Request,
-    api_key: Annotated[Optional[str], Depends(api_key_header)],
+    api_key: Annotated[str | None, Depends(api_key_header)],
     config: Annotated[AuthConfig, Depends(get_auth_config)],
     manager: Annotated[APIKeyManager, Depends(get_api_key_manager)],
 ) -> Client:
@@ -101,7 +103,7 @@ async def get_current_client(
     # Check localhost bypass
     if config.allow_localhost and client_host in ["127.0.0.1", "::1", "localhost"]:
         return Client(
-            client_id=f"localhost",
+            client_id="localhost",
             client_name="Localhost",
             auth_method=AuthMethod.BYPASS,
             usage_tier=UsageTier.INTERNAL,
@@ -122,7 +124,7 @@ async def get_current_client(
     headers = dict(request.headers)
     if manager.check_header_bypass(headers):
         return Client(
-            client_id=f"header_bypass",
+            client_id="header_bypass",
             client_name="Header Bypass",
             auth_method=AuthMethod.BYPASS,
             usage_tier=UsageTier.INTERNAL,
@@ -161,10 +163,10 @@ async def get_current_client(
 
 async def get_optional_client(
     request: Request,
-    api_key: Annotated[Optional[str], Depends(api_key_header)],
+    api_key: Annotated[str | None, Depends(api_key_header)],
     config: Annotated[AuthConfig, Depends(get_auth_config)],
     manager: Annotated[APIKeyManager, Depends(get_api_key_manager)],
-) -> Optional[Client]:
+) -> Client | None:
     """Get client if authenticated, None otherwise.
 
     This dependency never raises exceptions, useful for endpoints

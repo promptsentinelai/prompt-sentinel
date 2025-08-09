@@ -6,30 +6,28 @@ requirements with performance by routing simple prompts through fast paths
 and complex prompts through comprehensive analysis.
 """
 
-import time
 import asyncio
-from typing import Dict, List, Optional, Tuple, Any
+import time
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 import structlog
 
-from prompt_sentinel.models.schemas import (
-    Message,
-    DetectionResponse,
-    DetectionReason,
-    Verdict,
-    DetectionCategory,
-)
-from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.cache.cache_manager import cache_manager
 from prompt_sentinel.config.settings import settings
-from .complexity_analyzer import ComplexityAnalyzer, ComplexityLevel, ComplexityScore
+from prompt_sentinel.detection.detector import PromptDetector
 
 # Import experiment components
 from prompt_sentinel.experiments import ExperimentManager
 from prompt_sentinel.experiments.assignments import AssignmentContext
+from prompt_sentinel.models.schemas import (
+    DetectionResponse,
+    Message,
+    Verdict,
+)
 
+from .complexity_analyzer import ComplexityAnalyzer, ComplexityLevel, ComplexityScore
 
 logger = structlog.get_logger()
 
@@ -53,8 +51,8 @@ class RoutingDecision:
     estimated_latency_ms: float
     cache_eligible: bool
     reasoning: str
-    experiment_id: Optional[str] = None
-    variant_id: Optional[str] = None
+    experiment_id: str | None = None
+    variant_id: str | None = None
     experiment_override: bool = False
 
 
@@ -63,10 +61,10 @@ class RoutingMetrics:
     """Metrics for routing performance monitoring."""
 
     total_requests: int = 0
-    strategy_counts: Dict[str, int] = None
+    strategy_counts: dict[str, int] = None
     avg_complexity_score: float = 0.0
     cache_hit_rate: float = 0.0
-    avg_latency_by_strategy: Dict[str, float] = None
+    avg_latency_by_strategy: dict[str, float] = None
 
     def __post_init__(self):
         if self.strategy_counts is None:
@@ -89,8 +87,8 @@ class IntelligentRouter:
 
     def __init__(
         self,
-        detector: Optional[PromptDetector] = None,
-        experiment_manager: Optional[ExperimentManager] = None,
+        detector: PromptDetector | None = None,
+        experiment_manager: ExperimentManager | None = None,
     ):
         """Initialize the intelligent router.
 
@@ -117,13 +115,13 @@ class IntelligentRouter:
 
     async def route_detection(
         self,
-        messages: List[Message],
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        user_context: Optional[Dict[str, Any]] = None,
-        override_strategy: Optional[DetectionStrategy] = None,
+        messages: list[Message],
+        user_id: str | None = None,
+        session_id: str | None = None,
+        user_context: dict[str, Any] | None = None,
+        override_strategy: DetectionStrategy | None = None,
         performance_mode: bool = False,
-    ) -> Tuple[DetectionResponse, RoutingDecision]:
+    ) -> tuple[DetectionResponse, RoutingDecision]:
         """Route detection request through optimal strategy.
 
         Args:
@@ -242,7 +240,7 @@ class IntelligentRouter:
 
     def _determine_strategy(
         self, complexity_score: ComplexityScore, performance_mode: bool
-    ) -> Tuple[DetectionStrategy, str]:
+    ) -> tuple[DetectionStrategy, str]:
         """Determine optimal detection strategy.
 
         Args:
@@ -347,7 +345,7 @@ class IntelligentRouter:
         ]
 
     async def _execute_strategy(
-        self, messages: List[Message], strategy: DetectionStrategy, use_cache: bool
+        self, messages: list[Message], strategy: DetectionStrategy, use_cache: bool
     ) -> DetectionResponse:
         """Execute detection with specified strategy.
 
@@ -398,7 +396,7 @@ class IntelligentRouter:
 
         return response
 
-    async def _execute_heuristic_only(self, messages: List[Message]) -> DetectionResponse:
+    async def _execute_heuristic_only(self, messages: list[Message]) -> DetectionResponse:
         """Execute heuristic detection only.
 
         Args:
@@ -412,7 +410,7 @@ class IntelligentRouter:
             messages, use_heuristics=True, use_llm=False, check_pii=False
         )
 
-    async def _execute_heuristic_llm(self, messages: List[Message]) -> DetectionResponse:
+    async def _execute_heuristic_llm(self, messages: list[Message]) -> DetectionResponse:
         """Execute heuristic + LLM detection.
 
         Args:
@@ -426,7 +424,7 @@ class IntelligentRouter:
         )
 
     async def _execute_comprehensive(
-        self, messages: List[Message], include_pii: bool = True
+        self, messages: list[Message], include_pii: bool = True
     ) -> DetectionResponse:
         """Execute comprehensive detection.
 
@@ -441,7 +439,7 @@ class IntelligentRouter:
             messages, use_heuristics=True, use_llm=True, check_pii=include_pii
         )
 
-    async def _execute_full_analysis(self, messages: List[Message]) -> DetectionResponse:
+    async def _execute_full_analysis(self, messages: list[Message]) -> DetectionResponse:
         """Execute full analysis with all detection methods.
 
         Args:
@@ -527,7 +525,7 @@ class IntelligentRouter:
                 self.metrics.avg_latency_by_strategy[strategy_key] * (count - 1) + latency_ms
             ) / count
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get current routing metrics.
 
         Returns:
@@ -543,7 +541,7 @@ class IntelligentRouter:
             "cache_hit_rate": self.metrics.cache_hit_rate,
         }
 
-    def _load_strategy_config(self) -> Dict:
+    def _load_strategy_config(self) -> dict:
         """Load strategy configuration from settings.
 
         Returns:
@@ -564,11 +562,11 @@ class IntelligentRouter:
     async def _check_experiments(
         self,
         user_id: str,
-        session_id: Optional[str],
-        user_context: Optional[Dict[str, Any]],
-        messages: List[Message],
+        session_id: str | None,
+        user_context: dict[str, Any] | None,
+        messages: list[Message],
         complexity_score: ComplexityScore,
-    ) -> Optional[Tuple[DetectionStrategy, str, str, str]]:
+    ) -> tuple[DetectionStrategy, str, str, str] | None:
         """Check if user is part of any active routing experiments.
 
         Args:
@@ -702,7 +700,7 @@ class IntelligentRouter:
         self.experiment_manager = experiment_manager
         logger.info("Experiment manager set for intelligent router")
 
-    async def get_experiment_routing_stats(self) -> Dict[str, Any]:
+    async def get_experiment_routing_stats(self) -> dict[str, Any]:
         """Get routing statistics related to experiments.
 
         Returns:

@@ -1,14 +1,13 @@
 """API routes for ML pattern discovery and management."""
 
-import uuid
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, HTTPException, Depends, Query, Path, Body
-from pydantic import BaseModel, Field
-import structlog
+from typing import Any
 
-from prompt_sentinel.models.schemas import Verdict
-from prompt_sentinel.ml.collector import EventType, pattern_collector
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from pydantic import BaseModel, Field
+
+from prompt_sentinel.ml.collector import pattern_collector
 from prompt_sentinel.ml.manager import PatternStatus
 
 logger = structlog.get_logger()
@@ -25,7 +24,7 @@ class FeedbackRequest(BaseModel):
     user_label: str = Field(..., description="User's label for the event")
     is_false_positive: bool = Field(False, description="Whether this was a false positive")
     is_false_negative: bool = Field(False, description="Whether this was a false negative")
-    comments: Optional[str] = Field(None, description="Additional comments")
+    comments: str | None = Field(None, description="Additional comments")
 
 
 class FeedbackResponse(BaseModel):
@@ -39,8 +38,8 @@ class FeedbackResponse(BaseModel):
 class PatternDiscoveryRequest(BaseModel):
     """Request model for triggering pattern discovery."""
 
-    min_events: Optional[int] = Field(100, description="Minimum events for clustering")
-    algorithm: Optional[str] = Field("dbscan", description="Clustering algorithm")
+    min_events: int | None = Field(100, description="Minimum events for clustering")
+    algorithm: str | None = Field("dbscan", description="Clustering algorithm")
     force: bool = Field(False, description="Force discovery even if not enough events")
 
 
@@ -48,7 +47,7 @@ class PatternPromotionRequest(BaseModel):
     """Request model for pattern promotion."""
 
     pattern_id: str = Field(..., description="Pattern ID to promote")
-    reason: Optional[str] = Field(None, description="Reason for promotion")
+    reason: str | None = Field(None, description="Reason for promotion")
 
 
 class PatternRetirementRequest(BaseModel):
@@ -73,8 +72,8 @@ class CollectorStatsResponse(BaseModel):
     unique_prompts: int
     false_positives: int
     false_negatives: int
-    verdict_distribution: Dict[str, int]
-    category_distribution: Dict[str, int]
+    verdict_distribution: dict[str, int]
+    category_distribution: dict[str, int]
     ready_for_clustering: bool
 
 
@@ -88,10 +87,10 @@ class PatternResponse(BaseModel):
     cluster_id: int
     category: str
     description: str
-    examples: List[str]
+    examples: list[str]
     created_at: str
-    status: Optional[str] = None
-    performance: Optional[Dict[str, Any]] = None
+    status: str | None = None
+    performance: dict[str, Any] | None = None
 
 
 class ClusterResponse(BaseModel):
@@ -102,7 +101,7 @@ class ClusterResponse(BaseModel):
     density: float
     avg_confidence: float
     dominant_category: str
-    top_patterns: List[str]
+    top_patterns: list[str]
     created_at: str
 
 
@@ -176,7 +175,7 @@ async def get_collector_stats():
 
 
 @router.post(
-    "/patterns/discover", response_model=List[PatternResponse], summary="Trigger pattern discovery"
+    "/patterns/discover", response_model=list[PatternResponse], summary="Trigger pattern discovery"
 )
 async def discover_patterns(request: PatternDiscoveryRequest, manager=Depends(get_pattern_manager)):
     """Manually trigger pattern discovery.
@@ -231,10 +230,10 @@ async def discover_patterns(request: PatternDiscoveryRequest, manager=Depends(ge
         raise HTTPException(status_code=500, detail="Pattern discovery failed")
 
 
-@router.get("/patterns", response_model=List[PatternResponse], summary="List discovered patterns")
+@router.get("/patterns", response_model=list[PatternResponse], summary="List discovered patterns")
 async def list_patterns(
-    status: Optional[PatternStatus] = Query(None, description="Filter by status"),
-    category: Optional[str] = Query(None, description="Filter by category"),
+    status: PatternStatus | None = Query(None, description="Filter by status"),
+    category: str | None = Query(None, description="Filter by category"),
     min_confidence: float = Query(0.0, ge=0.0, le=1.0, description="Minimum confidence"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum patterns to return"),
     manager=Depends(get_pattern_manager),
@@ -446,7 +445,7 @@ async def retire_pattern(
         raise HTTPException(status_code=404, detail="Pattern not found")
 
 
-@router.get("/clusters", response_model=List[ClusterResponse], summary="Get current clusters")
+@router.get("/clusters", response_model=list[ClusterResponse], summary="Get current clusters")
 async def get_clusters(manager=Depends(get_pattern_manager)):
     """Get information about current clusters.
 

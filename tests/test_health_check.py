@@ -1,9 +1,9 @@
 """Tests for enhanced health check endpoints."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock, AsyncMock
-import json
 
 from prompt_sentinel.main import app
 
@@ -46,7 +46,7 @@ class TestBasicHealthCheck:
                 assert response.status_code == 200
 
                 data = response.json()
-                assert data["redis_connected"] == True
+                assert data["redis_connected"]
                 assert "redis_latency_ms" in data
                 assert "cache_stats" in data
 

@@ -1,9 +1,8 @@
 """Heuristic-based detection engine for prompt injection attacks."""
 
-import re
 import base64
-import json
-from typing import Dict, List, Optional, Tuple
+import re
+
 from prompt_sentinel.models.schemas import (
     DetectionCategory,
     DetectionReason,
@@ -101,7 +100,7 @@ class HeuristicDetector:
         # Adjust thresholds based on detection mode
         self.threshold_adjustments = {"strict": 0.0, "moderate": 0.1, "permissive": 0.2}
 
-    def detect(self, messages: List[Message]) -> Tuple[Verdict, List[DetectionReason], float]:
+    def detect(self, messages: list[Message]) -> tuple[Verdict, list[DetectionReason], float]:
         """Perform heuristic detection on messages using pattern matching.
 
         Analyzes messages for suspicious patterns across multiple categories
@@ -143,7 +142,7 @@ class HeuristicDetector:
 
         return verdict, all_reasons, adjusted_confidence
 
-    def _analyze_message(self, message: Message) -> List[DetectionReason]:
+    def _analyze_message(self, message: Message) -> list[DetectionReason]:
         """Analyze a single message for injection patterns.
 
         Applies all pattern categories to the message content and
@@ -312,7 +311,7 @@ class HeuristicDetector:
             # Silently fail to not break detection
             pass
 
-    def _check_ml_patterns(self, content: str) -> List[Tuple[str, float, str]]:
+    def _check_ml_patterns(self, content: str) -> list[tuple[str, float, str]]:
         """Check content against ML-discovered patterns."""
         matches = []
 
@@ -350,7 +349,7 @@ class HeuristicDetector:
         content_lower = content.lower()
         return any(keyword in content_lower for keyword in leak_keywords)
 
-    def _determine_verdict(self, confidence: float, reasons: List[DetectionReason]) -> Verdict:
+    def _determine_verdict(self, confidence: float, reasons: list[DetectionReason]) -> Verdict:
         """Determine verdict based on confidence and detection mode."""
         if not reasons:
             return Verdict.ALLOW
@@ -373,7 +372,7 @@ class HeuristicDetector:
         else:
             return Verdict.ALLOW
 
-    def get_statistics(self, messages: List[Message]) -> Dict:
+    def get_statistics(self, messages: list[Message]) -> dict:
         """Get detection statistics for messages."""
         stats = {
             "total_messages": len(messages),

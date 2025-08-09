@@ -18,8 +18,8 @@ Providers are responsible for:
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Tuple
-from prompt_sentinel.models.schemas import Message, DetectionCategory
+
+from prompt_sentinel.models.schemas import DetectionCategory, Message
 
 
 class LLMProvider(ABC):
@@ -37,7 +37,7 @@ class LLMProvider(ABC):
         timeout: Request timeout in seconds
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         """Initialize the provider with configuration.
 
         Args:
@@ -62,8 +62,8 @@ class LLMProvider(ABC):
 
     @abstractmethod
     async def classify(
-        self, messages: List[Message], system_prompt: Optional[str] = None
-    ) -> Tuple[DetectionCategory, float, str]:
+        self, messages: list[Message], system_prompt: str | None = None
+    ) -> tuple[DetectionCategory, float, str]:
         """Classify messages for potential injection attempts.
 
         Analyzes the provided messages using the LLM to detect
@@ -99,7 +99,7 @@ class LLMProvider(ABC):
         """
         pass
 
-    def get_classification_prompt(self, messages: List[Message]) -> str:
+    def get_classification_prompt(self, messages: list[Message]) -> str:
         """Generate the classification prompt for LLM analysis.
 
         Creates a structured prompt that instructs the LLM to analyze

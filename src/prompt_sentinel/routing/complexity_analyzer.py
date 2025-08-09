@@ -7,10 +7,8 @@ detection strategy.
 """
 
 import re
-import math
-from typing import Dict, List, Tuple, Optional
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 
 from prompt_sentinel.models.schemas import Message, Role
 
@@ -44,8 +42,8 @@ class ComplexityScore:
 
     level: ComplexityLevel
     score: float  # 0.0 to 1.0
-    risk_indicators: List[RiskIndicator]
-    metrics: Dict[str, float]
+    risk_indicators: list[RiskIndicator]
+    metrics: dict[str, float]
     reasoning: str
     recommended_strategy: str
 
@@ -76,7 +74,7 @@ class ComplexityAnalyzer:
         "semantic_score": 0.20,
     }
 
-    def analyze(self, messages: List[Message]) -> ComplexityScore:
+    def analyze(self, messages: list[Message]) -> ComplexityScore:
         """Perform comprehensive complexity analysis on messages.
 
         Args:
@@ -217,7 +215,7 @@ class ComplexityAnalyzer:
 
         return min(1.0, base_score + pattern_boost)
 
-    def _calculate_encoding_complexity(self, content: str) -> Tuple[float, List[RiskIndicator]]:
+    def _calculate_encoding_complexity(self, content: str) -> tuple[float, list[RiskIndicator]]:
         """Calculate complexity based on encoding patterns.
 
         Args:
@@ -262,7 +260,7 @@ class ComplexityAnalyzer:
 
         return min(1.0, score), risks
 
-    def _calculate_pattern_complexity(self, content: str) -> Tuple[float, List[RiskIndicator]]:
+    def _calculate_pattern_complexity(self, content: str) -> tuple[float, list[RiskIndicator]]:
         """Calculate complexity based on suspicious patterns.
 
         Args:
@@ -319,8 +317,8 @@ class ComplexityAnalyzer:
         return min(1.0, score), risks
 
     def _calculate_semantic_complexity(
-        self, messages: List[Message]
-    ) -> Tuple[float, List[RiskIndicator]]:
+        self, messages: list[Message]
+    ) -> tuple[float, list[RiskIndicator]]:
         """Calculate complexity based on semantic analysis.
 
         Args:
@@ -410,7 +408,7 @@ class ComplexityAnalyzer:
 
         return suspicious_substitutions > 3
 
-    def _detect_multiple_languages(self, messages: List[Message]) -> bool:
+    def _detect_multiple_languages(self, messages: list[Message]) -> bool:
         """Detect if multiple languages are used (simplified).
 
         Args:
@@ -460,7 +458,7 @@ class ComplexityAnalyzer:
             return ComplexityLevel.CRITICAL
 
     def _generate_reasoning(
-        self, level: ComplexityLevel, metrics: Dict[str, float], risks: List[RiskIndicator]
+        self, level: ComplexityLevel, metrics: dict[str, float], risks: list[RiskIndicator]
     ) -> str:
         """Generate human-readable reasoning for complexity assessment.
 
@@ -496,7 +494,7 @@ class ComplexityAnalyzer:
 
         return ". ".join(reasoning_parts)
 
-    def _recommend_strategy(self, level: ComplexityLevel, risks: List[RiskIndicator]) -> str:
+    def _recommend_strategy(self, level: ComplexityLevel, risks: list[RiskIndicator]) -> str:
         """Recommend detection strategy based on analysis.
 
         Args:

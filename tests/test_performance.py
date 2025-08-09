@@ -1,14 +1,14 @@
 """Performance and load testing for PromptSentinel."""
 
-import pytest
-import asyncio
-import time
 import statistics
-from typing import List, Dict, Any
-from fastapi.testclient import TestClient
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any
+
+import pytest
+from fastapi.testclient import TestClient
+
 from prompt_sentinel.main import app
-from prompt_sentinel.models.schemas import Message, Role
 
 
 class TestPerformanceBenchmarks:
@@ -30,8 +30,8 @@ class TestPerformanceBenchmarks:
         }
 
     def benchmark_endpoint(
-        self, endpoint: str, payload: Dict[str, Any], iterations: int = 100
-    ) -> Dict[str, float]:
+        self, endpoint: str, payload: dict[str, Any], iterations: int = 100
+    ) -> dict[str, float]:
         """Benchmark an endpoint with multiple iterations."""
         response_times = []
 
@@ -152,7 +152,7 @@ class TestLoadTesting:
         """Setup test client."""
         self.client = TestClient(app)
 
-    def make_concurrent_requests(self, num_requests: int, num_workers: int = 10) -> Dict[str, Any]:
+    def make_concurrent_requests(self, num_requests: int, num_workers: int = 10) -> dict[str, Any]:
         """Make concurrent requests to test load handling."""
         success_count = 0
         error_count = 0
@@ -233,7 +233,7 @@ class TestLoadTesting:
         rate_limited = results.count(429)
         successful = results.count(200)
 
-        print(f"\nRate Limiting Test:")
+        print("\nRate Limiting Test:")
         print(f"  Successful: {successful}")
         print(f"  Rate limited: {rate_limited}")
 
@@ -265,7 +265,7 @@ class TestLoadTesting:
                     try:
                         response = future.result()
                         results.append(response.status_code == 200)
-                    except:
+                    except Exception:
                         results.append(False)
 
             # Wait for next second
@@ -293,8 +293,9 @@ class TestMemoryAndResourceUsage:
     def test_memory_leak_detection(self):
         """Test for memory leaks with repeated requests."""
         import gc
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
@@ -313,7 +314,7 @@ class TestMemoryAndResourceUsage:
         final_memory = process.memory_info().rss / 1024 / 1024  # MB
         memory_increase = final_memory - initial_memory
 
-        print(f"\nMemory Usage Test:")
+        print("\nMemory Usage Test:")
         print(f"  Initial: {initial_memory:.2f} MB")
         print(f"  Final: {final_memory:.2f} MB")
         print(f"  Increase: {memory_increase:.2f} MB")

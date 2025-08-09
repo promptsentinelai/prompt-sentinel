@@ -6,29 +6,26 @@ with the detection routing system.
 """
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple, Callable
+from collections.abc import Callable
 from dataclasses import dataclass, field
-import json
+from datetime import datetime
+from typing import Any
 
 import structlog
-from prompt_sentinel.cache.cache_manager import cache_manager
-from prompt_sentinel.models.schemas import Message, DetectionResponse
 
+from prompt_sentinel.models.schemas import DetectionResponse
+
+from .analyzer import ExperimentResult, StatisticalAnalyzer
+from .assignments import AssignmentContext, AssignmentService, BucketingStrategy
+from .collectors import MetricsCollector
 from .config import (
-    ExperimentConfig,
-    ExperimentVariant,
-    ExperimentStatus,
     ExperimentAssignment,
-    ExperimentMetadata,
+    ExperimentConfig,
+    ExperimentStatus,
     ExperimentType,
 )
-from .assignments import AssignmentService, AssignmentContext, BucketingStrategy
-from .analyzer import StatisticalAnalyzer, ExperimentResult, MetricData
-from .safety import SafetyControls, GuardrailViolation
-from .collectors import MetricsCollector
 from .database import ExperimentDatabase
-
+from .safety import GuardrailViolation, SafetyControls
 
 logger = structlog.get_logger()
 
@@ -38,10 +35,10 @@ class ExperimentExecution:
     """Runtime state for experiment execution."""
 
     experiment_id: str
-    variant_configs: Dict[str, Dict[str, Any]]
-    assignment_cache: Dict[str, str]  # user_id -> variant_id
-    metrics_buffer: List[Dict[str, Any]] = field(default_factory=list)
-    last_analysis: Optional[datetime] = None
+    variant_configs: dict[str, dict[str, Any]]
+    assignment_cache: dict[str, str]  # user_id -> variant_id
+    metrics_buffer: list[dict[str, Any]] = field(default_factory=list)
+    last_analysis: datetime | None = None
     active_assignments: int = 0
 
 
@@ -64,11 +61,11 @@ class ExperimentManager:
 
     def __init__(
         self,
-        database: Optional[ExperimentDatabase] = None,
-        assignment_service: Optional[AssignmentService] = None,
-        analyzer: Optional[StatisticalAnalyzer] = None,
-        safety_controls: Optional[SafetyControls] = None,
-        metrics_collector: Optional[MetricsCollector] = None,
+        database: ExperimentDatabase | None = None,
+        assignment_service: AssignmentService | None = None,
+        analyzer: StatisticalAnalyzer | None = None,
+        safety_controls: SafetyControls | None = None,
+        metrics_collector: MetricsCollector | None = None,
     ):
         """Initialize experiment manager.
 
@@ -86,17 +83,17 @@ class ExperimentManager:
         self.metrics_collector = metrics_collector or MetricsCollector()
 
         # Runtime state
-        self.active_experiments: Dict[str, ExperimentExecution] = {}
-        self.experiment_configs: Dict[str, ExperimentConfig] = {}
+        self.active_experiments: dict[str, ExperimentExecution] = {}
+        self.experiment_configs: dict[str, ExperimentConfig] = {}
 
         # Background tasks
-        self.analysis_task: Optional[asyncio.Task] = None
-        self.metrics_flush_task: Optional[asyncio.Task] = None
+        self.analysis_task: asyncio.Task | None = None
+        self.metrics_flush_task: asyncio.Task | None = None
 
         # Event handlers
-        self.experiment_started_handlers: List[Callable] = []
-        self.experiment_completed_handlers: List[Callable] = []
-        self.assignment_handlers: List[Callable] = []
+        self.experiment_started_handlers: list[Callable] = []
+        self.experiment_completed_handlers: list[Callable] = []
+        self.assignment_handlers: list[Callable] = []
 
     async def initialize(self):
         """Initialize the experiment manager."""
@@ -259,8 +256,8 @@ class ExperimentManager:
         return True
 
     async def assign_user(
-        self, user_id: str, experiment_id: str, context: Optional[AssignmentContext] = None
-    ) -> Optional[ExperimentAssignment]:
+        self, user_id: str, experiment_id: str, context: AssignmentContext | None = None
+    ) -> ExperimentAssignment | None:
         """Assign user to experiment variant.
 
         Args:
@@ -310,7 +307,7 @@ class ExperimentManager:
 
     async def get_variant_config(
         self, user_id: str, experiment_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get variant configuration for user.
 
         Args:
@@ -337,7 +334,7 @@ class ExperimentManager:
         user_id: str,
         metric_name: str,
         value: float,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Record a metric value for an experiment.
 
@@ -381,7 +378,7 @@ class ExperimentManager:
         experiment_id: str,
         user_id: str,
         detection_response: DetectionResponse,
-        routing_metadata: Optional[Dict[str, Any]] = None,
+        routing_metadata: dict[str, Any] | None = None,
     ):
         """Record detection result for experiment analysis.
 
@@ -419,7 +416,7 @@ class ExperimentManager:
                     routing_metadata.get("routing_latency_ms", 0),
                 )
 
-    async def get_experiment_results(self, experiment_id: str) -> List[ExperimentResult]:
+    async def get_experiment_results(self, experiment_id: str) -> list[ExperimentResult]:
         """Get statistical analysis results for experiment.
 
         Args:
@@ -458,7 +455,7 @@ class ExperimentManager:
 
         return results
 
-    async def get_experiment_status(self, experiment_id: str) -> Optional[Dict[str, Any]]:
+    async def get_experiment_status(self, experiment_id: str) -> dict[str, Any] | None:
         """Get comprehensive experiment status.
 
         Args:
@@ -521,9 +518,9 @@ class ExperimentManager:
 
     async def list_experiments(
         self,
-        status_filter: Optional[ExperimentStatus] = None,
-        type_filter: Optional[ExperimentType] = None,
-    ) -> List[Dict[str, Any]]:
+        status_filter: ExperimentStatus | None = None,
+        type_filter: ExperimentType | None = None,
+    ) -> list[dict[str, Any]]:
         """List experiments with optional filtering.
 
         Args:
@@ -679,7 +676,7 @@ class ExperimentManager:
         except Exception as e:
             logger.error("Failed to analyze experiment", experiment_id=experiment_id, error=str(e))
 
-    async def _check_auto_promotion(self, experiment_id: str, results: List[ExperimentResult]):
+    async def _check_auto_promotion(self, experiment_id: str, results: list[ExperimentResult]):
         """Check if winning variant should be auto-promoted."""
         # Find significant results with positive effect
         significant_improvements = [

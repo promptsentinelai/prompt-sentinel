@@ -17,9 +17,10 @@ Environment variables override default values, and all settings
 are validated at startup.
 """
 
-from typing import List, Literal, Optional
+from typing import Literal
+
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -52,19 +53,19 @@ class Settings(BaseSettings):
     llm_provider_order: str = Field(default="anthropic,openai,gemini")
 
     # Anthropic Configuration
-    anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
+    anthropic_api_key: str | None = Field(default=None, env="ANTHROPIC_API_KEY")
     anthropic_model: str = Field(default="claude-3-haiku-20240307", env="ANTHROPIC_MODEL")
     anthropic_max_tokens: int = Field(default=1000, env="ANTHROPIC_MAX_TOKENS")
     anthropic_temperature: float = Field(default=0.3, env="ANTHROPIC_TEMPERATURE")
 
     # OpenAI Configuration
-    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+    openai_api_key: str | None = Field(default=None, env="OPENAI_API_KEY")
     openai_model: str = Field(default="gpt-4-turbo-preview", env="OPENAI_MODEL")
     openai_max_tokens: int = Field(default=1000, env="OPENAI_MAX_TOKENS")
     openai_temperature: float = Field(default=0.3, env="OPENAI_TEMPERATURE")
 
     # Gemini Configuration
-    gemini_api_key: Optional[str] = Field(default=None, env="GEMINI_API_KEY")
+    gemini_api_key: str | None = Field(default=None, env="GEMINI_API_KEY")
     gemini_model: str = Field(default="gemini-1.5-flash", env="GEMINI_MODEL")
     gemini_max_tokens: int = Field(default=1000, env="GEMINI_MAX_TOKENS")
     gemini_temperature: float = Field(default=0.3, env="GEMINI_TEMPERATURE")
@@ -74,7 +75,7 @@ class Settings(BaseSettings):
     redis_host: str = Field(default="localhost", env="REDIS_HOST")
     redis_port: int = Field(default=6379, env="REDIS_PORT")
     redis_db: int = Field(default=0, env="REDIS_DB")
-    redis_password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
+    redis_password: str | None = Field(default=None, env="REDIS_PASSWORD")
     redis_ttl: int = Field(default=3600, env="REDIS_TTL")  # Default TTL
 
     # Cache TTLs for different types (seconds)
@@ -130,17 +131,17 @@ class Settings(BaseSettings):
     pii_confidence_threshold: float = Field(default=0.7, env="PII_CONFIDENCE_THRESHOLD")
 
     @property
-    def llm_providers(self) -> List[str]:
+    def llm_providers(self) -> list[str]:
         """Get list of LLM providers from comma-separated string."""
         return [p.strip() for p in self.llm_provider_order.split(",") if p.strip()]
 
     @property
-    def allowed_charset_list(self) -> List[str]:
+    def allowed_charset_list(self) -> list[str]:
         """Get list of allowed charsets from comma-separated string."""
         return [c.strip() for c in self.allowed_charsets.split(",") if c.strip()]
 
     @property
-    def auth_bypass_networks_list(self) -> List[str]:
+    def auth_bypass_networks_list(self) -> list[str]:
         """Get list of bypass networks from comma-separated string."""
         if not self.auth_bypass_networks:
             return []
@@ -159,14 +160,14 @@ class Settings(BaseSettings):
         return result
 
     @property
-    def corpus_sources_list(self) -> List[str]:
+    def corpus_sources_list(self) -> list[str]:
         """Get list of corpus sources from comma-separated string."""
         if not self.corpus_sources:
             return []
         return [s.strip() for s in self.corpus_sources.split(",") if s.strip()]
 
     @property
-    def pii_types_list(self) -> List[str]:
+    def pii_types_list(self) -> list[str]:
         """Get list of PII types from comma-separated string."""
         if self.pii_types_to_detect.lower() == "all":
             return ["all"]

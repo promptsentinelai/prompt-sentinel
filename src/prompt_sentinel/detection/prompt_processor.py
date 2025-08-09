@@ -14,12 +14,11 @@ and input styles.
 """
 
 import re
-from typing import Dict, List, Optional, Tuple, Union
+
 from prompt_sentinel.models.schemas import (
+    FormatRecommendation,
     Message,
     Role,
-    FormatRecommendation,
-    UnifiedDetectionRequest,
 )
 
 
@@ -35,9 +34,9 @@ class PromptProcessor:
 
     @staticmethod
     def normalize_input(
-        input_data: Union[str, List[Dict[str, str]], List[Message]],
-        role_hint: Optional[Role] = None,
-    ) -> List[Message]:
+        input_data: str | list[dict[str, str]] | list[Message],
+        role_hint: Role | None = None,
+    ) -> list[Message]:
         """Convert any input format to standardized message format.
 
         Handles various input formats including:
@@ -86,8 +85,8 @@ class PromptProcessor:
 
     @staticmethod
     def validate_role_separation(
-        messages: List[Message],
-    ) -> Tuple[bool, List[FormatRecommendation]]:
+        messages: list[Message],
+    ) -> tuple[bool, list[FormatRecommendation]]:
         """Check if system and user prompts are properly separated.
 
         Validates message structure against security best practices,
@@ -159,7 +158,7 @@ class PromptProcessor:
         return properly_formatted, recommendations
 
     @staticmethod
-    def detect_role_confusion(messages: List[Message]) -> List[str]:
+    def detect_role_confusion(messages: list[Message]) -> list[str]:
         """
         Detect attempts to confuse or manipulate roles.
 
@@ -197,7 +196,7 @@ class PromptProcessor:
         return issues
 
     @staticmethod
-    def extract_prompt_segments(messages: List[Message]) -> Dict[str, List[str]]:
+    def extract_prompt_segments(messages: list[Message]) -> dict[str, list[str]]:
         """
         Extract and categorize prompt segments by role.
 
@@ -216,7 +215,7 @@ class PromptProcessor:
         return segments
 
     @staticmethod
-    def calculate_complexity_metrics(content: str) -> Dict[str, float]:
+    def calculate_complexity_metrics(content: str) -> dict[str, float]:
         """
         Calculate complexity metrics for a prompt.
 

@@ -4,15 +4,16 @@ This module provides enhanced metrics collection specifically for experiment
 analysis, building on the existing monitoring infrastructure.
 """
 
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
-from collections import defaultdict
 import json
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any
 
 import structlog
+
 from prompt_sentinel.cache.cache_manager import cache_manager
-from prompt_sentinel.monitoring.usage_tracker import UsageTracker, Provider
+from prompt_sentinel.monitoring.usage_tracker import UsageTracker
 
 logger = structlog.get_logger()
 
@@ -27,7 +28,7 @@ class ExperimentMetric:
     metric_name: str
     value: float
     timestamp: datetime
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -42,7 +43,7 @@ class AggregatedMetrics:
     min_value: float
     max_value: float
     std_dev: float
-    percentiles: Dict[int, float]  # {50: median, 95: p95, etc.}
+    percentiles: dict[int, float]  # {50: median, 95: p95, etc.}
 
 
 class MetricsCollector:
@@ -52,15 +53,15 @@ class MetricsCollector:
     functionality for detailed A/B testing analysis.
     """
 
-    def __init__(self, usage_tracker: Optional[UsageTracker] = None):
+    def __init__(self, usage_tracker: UsageTracker | None = None):
         """Initialize metrics collector.
 
         Args:
             usage_tracker: Base usage tracking service
         """
         self.usage_tracker = usage_tracker
-        self.experiment_metrics: Dict[str, List[ExperimentMetric]] = defaultdict(list)
-        self.aggregation_cache: Dict[str, Dict[str, AggregatedMetrics]] = {}
+        self.experiment_metrics: dict[str, list[ExperimentMetric]] = defaultdict(list)
+        self.aggregation_cache: dict[str, dict[str, AggregatedMetrics]] = {}
         self.cache_ttl = 300  # 5 minutes
 
     async def record_experiment_metric(
@@ -69,8 +70,8 @@ class MetricsCollector:
         variant_id: str,
         metric_name: str,
         value: float,
-        user_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        user_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Record a metric for experiment analysis.
 
@@ -115,10 +116,10 @@ class MetricsCollector:
     async def get_experiment_metrics(
         self,
         experiment_id: str,
-        time_window_hours: Optional[int] = None,
-        variant_ids: Optional[List[str]] = None,
-        metric_names: Optional[List[str]] = None,
-    ) -> Dict[str, Dict[str, List[float]]]:
+        time_window_hours: int | None = None,
+        variant_ids: list[str] | None = None,
+        metric_names: list[str] | None = None,
+    ) -> dict[str, dict[str, list[float]]]:
         """Get raw metrics for experiment analysis.
 
         Args:
@@ -180,8 +181,8 @@ class MetricsCollector:
         experiment_id: str,
         variant_id: str,
         metric_name: str,
-        time_window_hours: Optional[int] = None,
-    ) -> Optional[AggregatedMetrics]:
+        time_window_hours: int | None = None,
+    ) -> AggregatedMetrics | None:
         """Get aggregated metrics for a variant.
 
         Args:
@@ -225,7 +226,7 @@ class MetricsCollector:
 
     async def get_variant_performance(
         self, experiment_id: str, variant_id: str, time_window_hours: int = 24
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get comprehensive performance metrics for a variant.
 
         Args:
@@ -425,11 +426,10 @@ class MetricsCollector:
         logger.info("Experiment data cleared", experiment_id=experiment_id)
 
     def _calculate_aggregations(
-        self, variant_id: str, metric_name: str, values: List[float]
+        self, variant_id: str, metric_name: str, values: list[float]
     ) -> AggregatedMetrics:
         """Calculate aggregated statistics for metric values."""
         import statistics
-        import math
 
         if not values:
             return AggregatedMetrics(
@@ -467,7 +467,7 @@ class MetricsCollector:
             },
         )
 
-    def _percentile(self, sorted_values: List[float], percentile: int) -> float:
+    def _percentile(self, sorted_values: list[float], percentile: int) -> float:
         """Calculate percentile from sorted values."""
         if not sorted_values:
             return 0.0
@@ -486,11 +486,11 @@ class MetricsCollector:
 
     def _filter_metrics_data(
         self,
-        data: Dict[str, Dict[str, List[float]]],
-        variant_ids: Optional[List[str]],
-        metric_names: Optional[List[str]],
-        time_window_hours: Optional[int],
-    ) -> Dict[str, Dict[str, List[float]]]:
+        data: dict[str, dict[str, list[float]]],
+        variant_ids: list[str] | None,
+        metric_names: list[str] | None,
+        time_window_hours: int | None,
+    ) -> dict[str, dict[str, list[float]]]:
         """Filter metrics data based on criteria."""
         filtered = {}
 

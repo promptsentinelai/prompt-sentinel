@@ -1,7 +1,5 @@
 """Tests for prompt processor."""
 
-import pytest
-from prompt_sentinel.detection.prompt_processor import PromptProcessor
 from prompt_sentinel.models.schemas import Message, Role
 
 

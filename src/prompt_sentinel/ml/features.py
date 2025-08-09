@@ -3,14 +3,12 @@
 Extracts various features from prompts for ML clustering and pattern analysis.
 """
 
-import re
 import math
-import hashlib
-from typing import Dict, List, Optional, Any, Tuple
+import re
 from collections import Counter
 from dataclasses import dataclass
-import numpy as np
 
+import numpy as np
 import structlog
 
 logger = structlog.get_logger()
@@ -47,11 +45,11 @@ class FeatureVector:
     max_repetition: int
 
     # N-gram features
-    char_ngrams: Dict[str, int]
-    word_ngrams: Dict[str, int]
+    char_ngrams: dict[str, int]
+    word_ngrams: dict[str, int]
 
     # Semantic features (optional, requires embeddings)
-    embedding: Optional[List[float]] = None
+    embedding: list[float] | None = None
 
     def to_array(self) -> np.ndarray:
         """Convert to numpy array for ML algorithms."""
@@ -92,8 +90,8 @@ class FeatureExtractor:
     def __init__(
         self,
         use_embeddings: bool = False,
-        embedding_model: Optional[str] = None,
-        ngram_range: Tuple[int, int] = (2, 3),
+        embedding_model: str | None = None,
+        ngram_range: tuple[int, int] = (2, 3),
         max_ngrams: int = 100,
     ):
         """Initialize the feature extractor.
@@ -230,7 +228,7 @@ class FeatureExtractor:
             embedding=embedding,
         )
 
-    def extract_batch(self, texts: List[str]) -> List[FeatureVector]:
+    def extract_batch(self, texts: list[str]) -> list[FeatureVector]:
         """Extract features from multiple texts.
 
         Args:
@@ -276,7 +274,7 @@ class FeatureExtractor:
 
         return max_rep
 
-    def _extract_char_ngrams(self, text: str) -> Dict[str, int]:
+    def _extract_char_ngrams(self, text: str) -> dict[str, int]:
         """Extract character n-grams."""
         ngrams = Counter()
         text_lower = text.lower()
@@ -290,7 +288,7 @@ class FeatureExtractor:
         # Keep only top N ngrams
         return dict(ngrams.most_common(self.max_ngrams))
 
-    def _extract_word_ngrams(self, words: List[str]) -> Dict[str, int]:
+    def _extract_word_ngrams(self, words: list[str]) -> dict[str, int]:
         """Extract word n-grams."""
         ngrams = Counter()
         words_lower = [w.lower() for w in words]
@@ -337,7 +335,7 @@ class FeatureExtractor:
         # Cosine similarity
         return np.dot(vec1_norm, vec2_norm)
 
-    def get_feature_importance(self, features: List[FeatureVector]) -> Dict[str, float]:
+    def get_feature_importance(self, features: list[FeatureVector]) -> dict[str, float]:
         """Calculate feature importance scores.
 
         Args:

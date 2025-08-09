@@ -1,29 +1,24 @@
 """WebSocket support for streaming detection and real-time monitoring."""
 
 import asyncio
-import json
 import uuid
 from datetime import datetime
-from typing import Dict, Optional, Set, Any
-from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import WebSocket, WebSocketDisconnect, status
-from fastapi.websockets import WebSocketState
 import structlog
+from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocketState
 from pydantic import ValidationError
 
+from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.models.schemas import (
-    Message,
-    DetectionRequest,
-    DetectionResponse,
     AnalysisRequest,
     AnalysisResponse,
+    DetectionResponse,
+    Message,
 )
-from prompt_sentinel.detection.detector import PromptDetector
-from prompt_sentinel.routing.router import IntelligentRouter
 from prompt_sentinel.monitoring.usage_tracker import UsageTracker
-from prompt_sentinel.cache.cache_manager import cache_manager
-from prompt_sentinel.config.settings import settings
+from prompt_sentinel.routing.router import IntelligentRouter
 
 logger = structlog.get_logger()
 
@@ -33,9 +28,9 @@ class ConnectionManager:
 
     def __init__(self):
         """Initialize the connection manager."""
-        self.active_connections: Dict[str, WebSocket] = {}
-        self.connection_metadata: Dict[str, Dict[str, Any]] = {}
-        self.message_queues: Dict[str, asyncio.Queue] = {}
+        self.active_connections: dict[str, WebSocket] = {}
+        self.connection_metadata: dict[str, dict[str, Any]] = {}
+        self.message_queues: dict[str, asyncio.Queue] = {}
         self.usage_tracker = UsageTracker()
 
     async def connect(self, websocket: WebSocket, client_id: str) -> bool:
@@ -136,7 +131,7 @@ class ConnectionManager:
             await self.disconnect(client_id)
             return False
 
-    async def broadcast(self, data: dict, exclude: Optional[Set[str]] = None):
+    async def broadcast(self, data: dict, exclude: set[str] | None = None):
         """Broadcast message to all connected clients.
 
         Args:
@@ -192,7 +187,7 @@ class ConnectionManager:
 class StreamingDetector:
     """Handles streaming detection for WebSocket connections."""
 
-    def __init__(self, detector: PromptDetector, router: Optional[IntelligentRouter] = None):
+    def __init__(self, detector: PromptDetector, router: IntelligentRouter | None = None):
         """Initialize the streaming detector.
 
         Args:
@@ -378,9 +373,9 @@ connection_manager = ConnectionManager()
 async def handle_websocket_connection(
     websocket: WebSocket,
     detector: PromptDetector,
-    router: Optional[IntelligentRouter] = None,
-    client: Optional[Any] = None,
-    client_id: Optional[str] = None,
+    router: IntelligentRouter | None = None,
+    client: Any | None = None,
+    client_id: str | None = None,
 ):
     """Handle a WebSocket connection for streaming detection.
 

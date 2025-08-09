@@ -7,18 +7,13 @@ This module provides rate limiting functionality including:
 - Priority-based request handling
 """
 
-import time
 import asyncio
-from datetime import datetime, timedelta
-from typing import Dict, Optional, Tuple
-from dataclasses import dataclass
-from enum import Enum, IntEnum
+import time
 from collections import defaultdict
+from dataclasses import dataclass
+from enum import IntEnum
 
 import structlog
-
-from prompt_sentinel.cache.cache_manager import cache_manager
-
 
 logger = structlog.get_logger()
 
@@ -161,8 +156,8 @@ class RateLimiter:
         )
 
         # Per-client buckets
-        self.client_request_buckets: Dict[str, TokenBucket] = {}
-        self.client_token_buckets: Dict[str, TokenBucket] = {}
+        self.client_request_buckets: dict[str, TokenBucket] = {}
+        self.client_token_buckets: dict[str, TokenBucket] = {}
 
         # Metrics
         self.total_requests = 0
@@ -171,7 +166,7 @@ class RateLimiter:
         self.total_tokens = 0
 
         # Priority queue for pending requests
-        self.pending_requests: Dict[Priority, list] = defaultdict(list)
+        self.pending_requests: dict[Priority, list] = defaultdict(list)
 
         # Adaptive rate adjustment
         self.current_load = 0.0
@@ -186,7 +181,7 @@ class RateLimiter:
         """Initialize background tasks."""
         if self._initialized:
             return
-            
+
         # Start background tasks
         self._cleanup_task = asyncio.create_task(self._cleanup_old_clients())
         if self.config.enable_adaptive:
@@ -194,8 +189,8 @@ class RateLimiter:
         self._initialized = True
 
     async def check_rate_limit(
-        self, client_id: Optional[str] = None, tokens: int = 0, priority: Priority = Priority.NORMAL
-    ) -> Tuple[bool, Optional[float]]:
+        self, client_id: str | None = None, tokens: int = 0, priority: Priority = Priority.NORMAL
+    ) -> tuple[bool, float | None]:
         """Check if request is within rate limits.
 
         Args:
@@ -286,7 +281,7 @@ class RateLimiter:
         self.accepted_requests += 1
         return True, None
 
-    async def consume_tokens(self, client_id: Optional[str] = None, tokens: int = 0) -> bool:
+    async def consume_tokens(self, client_id: str | None = None, tokens: int = 0) -> bool:
         """Consume tokens from rate limit buckets.
 
         Args:
@@ -333,7 +328,7 @@ class RateLimiter:
 
     async def wait_if_needed(
         self,
-        client_id: Optional[str] = None,
+        client_id: str | None = None,
         tokens: int = 0,
         priority: Priority = Priority.NORMAL,
         max_wait: float = 5.0,
@@ -432,7 +427,7 @@ class RateLimiter:
             except Exception as e:
                 logger.error("Rate adjustment error", error=str(e))
 
-    def get_metrics(self) -> Dict:
+    def get_metrics(self) -> dict:
         """Get rate limiter metrics.
 
         Returns:

@@ -1,20 +1,19 @@
 """Tests for authentication system with multiple deployment modes."""
 
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
-import json
 
-from prompt_sentinel.main import app
 from prompt_sentinel.auth import (
-    AuthMode,
-    AuthMethod,
-    UsageTier,
-    ClientPermission,
     APIKeyManager,
     AuthConfig,
+    AuthMode,
+    ClientPermission,
     CreateAPIKeyRequest,
+    UsageTier,
 )
+from prompt_sentinel.main import app
 
 
 @pytest.fixture
@@ -190,9 +189,9 @@ class TestAPIKeyManagement:
         with patch.object(manager, "_get_api_key_by_id") as mock_get:
             # Mock storing new key
             with patch.object(manager, "_store_api_key") as mock_store:
-                from prompt_sentinel.auth.models import APIKey, APIKeyStatus
-                import uuid
                 from datetime import datetime
+
+                from prompt_sentinel.auth.models import APIKey, APIKeyStatus
 
                 old_key = APIKey(
                     key_id="old_key_id",

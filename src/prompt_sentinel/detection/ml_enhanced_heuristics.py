@@ -1,12 +1,11 @@
 """ML-enhanced heuristic detector that incorporates discovered patterns."""
 
-import re
-from typing import Dict, List, Optional, Tuple
-from prompt_sentinel.models.schemas import DetectionCategory, DetectionReason, Message, Verdict
+import structlog
+
 from prompt_sentinel.detection.heuristics import HeuristicDetector
 from prompt_sentinel.ml.manager import PatternManager
 from prompt_sentinel.ml.patterns import ExtractedPattern
-import structlog
+from prompt_sentinel.models.schemas import DetectionCategory, DetectionReason, Message, Verdict
 
 logger = structlog.get_logger()
 
@@ -15,7 +14,7 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
     """Heuristic detector enhanced with ML-discovered patterns."""
 
     def __init__(
-        self, detection_mode: str = "strict", pattern_manager: Optional[PatternManager] = None
+        self, detection_mode: str = "strict", pattern_manager: PatternManager | None = None
     ):
         """Initialize ML-enhanced detector.
 
@@ -25,7 +24,7 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
         """
         super().__init__(detection_mode)
         self.pattern_manager = pattern_manager
-        self._ml_patterns: List[ExtractedPattern] = []
+        self._ml_patterns: list[ExtractedPattern] = []
         self._last_pattern_refresh = None
 
     async def refresh_ml_patterns(self):
@@ -39,7 +38,7 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
         except Exception as e:
             logger.error("Failed to refresh ML patterns", error=str(e))
 
-    def detect(self, messages: List[Message]) -> Tuple[Verdict, List[DetectionReason], float]:
+    def detect(self, messages: list[Message]) -> tuple[Verdict, list[DetectionReason], float]:
         """Enhanced detection with ML patterns.
 
         Performs standard heuristic detection plus ML-discovered patterns.
@@ -74,7 +73,7 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
 
         return verdict, reasons, confidence
 
-    def _detect_ml_patterns(self, messages: List[Message]) -> Tuple[List[DetectionReason], float]:
+    def _detect_ml_patterns(self, messages: list[Message]) -> tuple[list[DetectionReason], float]:
         """Detect using ML-discovered patterns.
 
         Args:
@@ -158,8 +157,9 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
             confidence: Pattern confidence
             description: Pattern description
         """
-        from prompt_sentinel.ml.patterns import ExtractedPattern
         from datetime import datetime
+
+        from prompt_sentinel.ml.patterns import ExtractedPattern
 
         pattern = ExtractedPattern(
             pattern_id=pattern_id,
@@ -177,7 +177,7 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
         self._ml_patterns.append(pattern)
         logger.info("Custom pattern added", pattern_id=pattern_id)
 
-    def get_pattern_statistics(self) -> Dict[str, any]:
+    def get_pattern_statistics(self) -> dict[str, any]:
         """Get statistics about loaded patterns.
 
         Returns:

@@ -104,7 +104,7 @@ class GeminiProvider(LLMProvider):
             True if API is healthy
         """
         try:
-            response = await asyncio.wait_for(
+            await asyncio.wait_for(
                 asyncio.to_thread(
                     self.model_instance.generate_content,
                     "test",
@@ -113,7 +113,7 @@ class GeminiProvider(LLMProvider):
                 timeout=5.0,
             )
             return True
-        except:
+        except Exception:
             return False
 
     def _parse_response(self, content: str) -> tuple[DetectionCategory, float, str]:

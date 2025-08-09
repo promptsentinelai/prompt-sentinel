@@ -104,7 +104,7 @@ async def create_experiment(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Failed to create experiment", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to create experiment")
+        raise HTTPException(status_code=500, detail="Failed to create experiment") from e
 
 
 @router.get("/", response_model=list[ExperimentSummary], summary="List experiments")
@@ -184,7 +184,7 @@ async def list_experiments(
 
     except Exception as e:
         logger.error("Failed to list experiments", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to list experiments")
+        raise HTTPException(status_code=500, detail="Failed to list experiments") from e
 
 
 @router.get("/{experiment_id}", response_model=dict, summary="Get experiment details")
@@ -209,7 +209,7 @@ async def get_experiment(
     try:
         status = await manager.get_experiment_status(experiment_id)
         if not status:
-            raise HTTPException(status_code=404, detail="Experiment not found")
+            raise HTTPException(status_code=404, detail="Experiment not found") from e
 
         return status
 
@@ -217,7 +217,7 @@ async def get_experiment(
         raise
     except Exception as e:
         logger.error("Failed to get experiment", experiment_id=experiment_id, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to get experiment")
+        raise HTTPException(status_code=500, detail="Failed to get experiment") from e
 
 
 @router.patch("/{experiment_id}", response_model=dict, summary="Update experiment")
@@ -243,7 +243,7 @@ async def update_experiment(
     """
     # Note: Full implementation would require getting the existing config,
     # updating fields, validating changes, and saving back
-    raise HTTPException(status_code=501, detail="Update not implemented yet")
+    raise HTTPException(status_code=501, detail="Update not implemented yet") from e
 
 
 @router.post("/{experiment_id}/status", response_model=dict, summary="Change experiment status")
@@ -302,7 +302,7 @@ async def change_experiment_status(
         logger.error(
             "Failed to change experiment status", experiment_id=experiment_id, error=str(e)
         )
-        raise HTTPException(status_code=500, detail="Failed to change experiment status")
+        raise HTTPException(status_code=500, detail="Failed to change experiment status") from e
 
 
 @router.post(
@@ -366,7 +366,7 @@ async def assign_user_to_experiment(
             user_id=request.user_id,
             error=str(e),
         )
-        raise HTTPException(status_code=500, detail="Failed to assign user")
+        raise HTTPException(status_code=500, detail="Failed to assign user") from e
 
 
 @router.post("/{experiment_id}/metrics", response_model=dict, summary="Record experiment metric")
@@ -403,7 +403,7 @@ async def record_experiment_metric(
         logger.error(
             "Failed to record experiment metric", experiment_id=experiment_id, error=str(e)
         )
-        raise HTTPException(status_code=500, detail="Failed to record metric")
+        raise HTTPException(status_code=500, detail="Failed to record metric") from e
 
 
 @router.post(
@@ -443,7 +443,7 @@ async def record_experiment_metrics_batch(
 
     except Exception as e:
         logger.error("Failed to record batch metrics", experiment_id=experiment_id, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to record batch metrics")
+        raise HTTPException(status_code=500, detail="Failed to record batch metrics") from e
 
 
 @router.get("/{experiment_id}/results", response_model=dict, summary="Get experiment results")
@@ -480,7 +480,7 @@ async def get_experiment_results(
 
     except Exception as e:
         logger.error("Failed to get experiment results", experiment_id=experiment_id, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to get experiment results")
+        raise HTTPException(status_code=500, detail="Failed to get experiment results") from e
 
 
 @router.delete("/{experiment_id}", response_model=dict, summary="Delete experiment")
@@ -506,7 +506,7 @@ async def delete_experiment(
         # Check if experiment exists and is not running
         status = await manager.get_experiment_status(experiment_id)
         if not status:
-            raise HTTPException(status_code=404, detail="Experiment not found")
+            raise HTTPException(status_code=404, detail="Experiment not found") from e
 
         if status.get("is_active", False):
             raise HTTPException(
@@ -528,7 +528,7 @@ async def delete_experiment(
         raise
     except Exception as e:
         logger.error("Failed to delete experiment", experiment_id=experiment_id, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to delete experiment")
+        raise HTTPException(status_code=500, detail="Failed to delete experiment") from e
 
 
 @router.get(
@@ -556,4 +556,4 @@ async def get_experiment_stats(manager=Depends(get_experiment_manager)):
 
     except Exception as e:
         logger.error("Failed to get experiment stats", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to get experiment statistics")
+        raise HTTPException(status_code=500, detail="Failed to get experiment statistics") from e

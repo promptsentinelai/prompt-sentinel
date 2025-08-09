@@ -99,14 +99,14 @@ class OpenAIProvider(LLMProvider):
             True if API is healthy
         """
         try:
-            response = await asyncio.wait_for(
+            await asyncio.wait_for(
                 self.client.chat.completions.create(
                     model=self.model, messages=[{"role": "user", "content": "test"}], max_tokens=10
                 ),
                 timeout=5.0,
             )
             return True
-        except:
+        except Exception:
             return False
 
     def _parse_response(self, content: str) -> tuple[DetectionCategory, float, str]:

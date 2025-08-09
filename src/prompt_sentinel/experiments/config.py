@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any
 
 import structlog
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 logger = structlog.get_logger()
 
@@ -44,10 +44,11 @@ class TrafficAllocation(BaseModel):
     control: float = Field(ge=0.0, le=1.0, description="Control group percentage")
     treatment: float = Field(ge=0.0, le=1.0, description="Treatment group percentage")
 
-    @validator("treatment")
-    def validate_total_allocation(cls, v, values):
+    @field_validator("treatment")
+    @classmethod
+    def validate_total_allocation(cls, v, info):
         """Ensure total allocation doesn't exceed 100%."""
-        control = values.get("control", 0.0)
+        control = info.data.get("control", 0.0)
         if control + v > 1.0:
             raise ValueError("Total traffic allocation cannot exceed 100%")
         return v
@@ -85,14 +86,16 @@ class GuardrailConfig(BaseModel):
     window_minutes: int = Field(default=5, description="Monitoring window")
     action: str = Field(description="Action to take (pause/terminate)")
 
-    @validator("threshold_type")
+    @field_validator("threshold_type")
+    @classmethod
     def validate_threshold_type(cls, v):
         """Validate threshold type."""
         if v not in ["min", "max"]:
             raise ValueError("threshold_type must be 'min' or 'max'")
         return v
 
-    @validator("action")
+    @field_validator("action")
+    @classmethod
     def validate_action(cls, v):
         """Validate guardrail action."""
         if v not in ["pause", "terminate"]:
@@ -150,7 +153,8 @@ class ExperimentConfig(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     tags: list[str] = Field(default_factory=list, description="Experiment tags")
 
-    @validator("variants")
+    @field_validator("variants")
+    @classmethod
     def validate_variants(cls, v):
         """Validate experiment variants configuration."""
         if len(v) < 2:
@@ -173,15 +177,17 @@ class ExperimentConfig(BaseModel):
 
         return v
 
-    @validator("end_time")
-    def validate_end_time(cls, v, values):
+    @field_validator("end_time")
+    @classmethod 
+    def validate_end_time(cls, v, info):
         """Validate end time is after start time."""
-        start_time = values.get("start_time")
+        start_time = info.data.get("start_time")
         if v and start_time and v <= start_time:
             raise ValueError("End time must be after start time")
         return v
 
-    @validator("duration_hours")
+    @field_validator("duration_hours")
+    @classmethod
     def validate_duration(cls, v):
         """Validate experiment duration."""
         if v is not None and v <= 0:

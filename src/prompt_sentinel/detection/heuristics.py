@@ -42,7 +42,11 @@ class HeuristicDetector:
             (r"new instructions?:?", 0.8, "New instruction injection"),
             (r"update.{0,20}(instruction|directive|command)", 0.8, "Instruction update attempt"),
             # Role play and impersonation
-            (r"(you are|you're) (now |going to be )(a |an |the )?(evil|malicious|hacker|admin|developer|dan|unrestricted|unfiltered)", 0.85, "Role manipulation"),
+            (
+                r"(you are|you're) (now |going to be )(a |an |the )?(evil|malicious|hacker|admin|developer|dan|unrestricted|unfiltered)",
+                0.85,
+                "Role manipulation",
+            ),
             (r"act (as|like) (a|an)", 0.8, "Role playing request"),
             (r"pretend (to be|you)", 0.85, "Impersonation attempt"),
             (r"roleplay as", 0.85, "Role playing request"),

@@ -44,9 +44,7 @@ class Settings(BaseSettings):
     # API Configuration
     api_host: str = Field(default="0.0.0.0")
     api_port: int = Field(default=8080)
-    api_env: Literal["development", "staging", "production"] = Field(
-        default="development"
-    )
+    api_env: Literal["development", "staging", "production"] = Field(default="development")
     debug: bool = Field(default=False)
 
     # LLM Provider Configuration
@@ -85,9 +83,7 @@ class Settings(BaseSettings):
     cache_ttl_health: int = Field(default=60)  # 1 min for health checks
 
     # Detection Configuration
-    detection_mode: Literal["strict", "moderate", "permissive"] = Field(
-        default="strict"
-    )
+    detection_mode: Literal["strict", "moderate", "permissive"] = Field(default="strict")
     detection_timeout: float = Field(default=10.0)
     heuristic_enabled: bool = Field(default=True)
     llm_classification_enabled: bool = Field(default=True)
@@ -219,3 +215,15 @@ class Settings(BaseSettings):
 
 # Create global settings instance
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Get the global settings instance.
+
+    This function is used for dependency injection in FastAPI
+    and provides a single point of configuration access.
+
+    Returns:
+        The global Settings instance
+    """
+    return settings

@@ -141,7 +141,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize detector with pattern manager
     detector = PromptDetector(pattern_manager=pattern_manager)
-    
+
     # Initialize prompt processor
     processor = PromptProcessor()
 
@@ -899,8 +899,14 @@ async def batch_detect(request: dict) -> JSONResponse:
                     "id": prompt_id,
                     "verdict": response.verdict.value,
                     "confidence": response.confidence,
-                    "pii_detected": [p.model_dump() for p in response.pii_detected] if response.pii_detected else [],
-                    "reasons": [r.model_dump() for r in response.reasons] if response.reasons else [],
+                    "pii_detected": (
+                        [p.model_dump() for p in response.pii_detected]
+                        if response.pii_detected
+                        else []
+                    ),
+                    "reasons": (
+                        [r.model_dump() for r in response.reasons] if response.reasons else []
+                    ),
                 }
             )
         except Exception as e:
@@ -917,6 +923,7 @@ async def batch_detect(request: dict) -> JSONResponse:
 
 class FormatAssistRequest(BaseModel):
     """Request body for format assistance endpoint."""
+
     raw_prompt: str = Field(..., description="Unformatted prompt text to analyze")
     intent: str | None = Field(None, description="Optional intent category")
 
@@ -958,7 +965,9 @@ async def format_assist(request: FormatAssistRequest):
     complexity = processor.calculate_complexity_metrics(request.raw_prompt)
 
     # Detect if there are implicit role indicators
-    role_issues = processor.detect_role_confusion([Message(role=Role.USER, content=request.raw_prompt)])
+    role_issues = processor.detect_role_confusion(
+        [Message(role=Role.USER, content=request.raw_prompt)]
+    )
 
     # Generate formatted version
     formatted_messages = []
@@ -1566,9 +1575,7 @@ async def get_complexity_metrics(prompt: str | None = None, include_distribution
     summary="API usage",
     description="Get API usage statistics, costs, and performance metrics",
 )
-async def get_usage_metrics(
-    time_window_hours: int | None = None, include_breakdown: bool = True
-):
+async def get_usage_metrics(time_window_hours: int | None = None, include_breakdown: bool = True):
     """Get API usage metrics and statistics.
 
     Provides comprehensive usage tracking including costs, tokens,

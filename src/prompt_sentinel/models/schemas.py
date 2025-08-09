@@ -149,9 +149,7 @@ class StructuredPromptRequest(BaseModel):
 class UnifiedDetectionRequest(BaseModel):
     """Unified request format supporting multiple input types."""
 
-    input: str | list[dict[str, str]] = Field(
-        ..., description="Prompt as string or message array"
-    )
+    input: str | list[dict[str, str]] = Field(..., description="Prompt as string or message array")
     role: Role | None = Field(default=None, description="Role hint for string inputs")
     config: dict | None = Field(
         default=None, description="Optional detection configuration overrides"
@@ -220,9 +218,7 @@ class DetectionResponse(BaseModel):
     processing_time_ms: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-    model_config = ConfigDict(
-        json_encoders={datetime: lambda v: v.isoformat()}
-    )
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
 
 
 class AnalysisRequest(BaseModel):
@@ -275,6 +271,4 @@ class CorpusEntry(BaseModel):
     created_at: datetime
     metadata: dict | None = None
 
-    model_config = ConfigDict(
-        json_encoders={datetime: lambda v: v.isoformat()}
-    )
+    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})

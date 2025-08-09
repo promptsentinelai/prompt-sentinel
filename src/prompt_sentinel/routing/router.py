@@ -407,8 +407,7 @@ class IntelligentRouter:
         """
         # Use detector with LLM disabled
         return await self.detector.detect(
-            messages, use_heuristics=True, use_llm=False, check_pii=False
-        )
+            messages, use_heuristics=True, use_llm=False        )
 
     async def _execute_heuristic_llm(self, messages: list[Message]) -> DetectionResponse:
         """Execute heuristic + LLM detection.
@@ -420,8 +419,7 @@ class IntelligentRouter:
             Detection response
         """
         return await self.detector.detect(
-            messages, use_heuristics=True, use_llm=True, check_pii=False
-        )
+            messages, use_heuristics=True, use_llm=True        )
 
     async def _execute_comprehensive(
         self, messages: list[Message], include_pii: bool = True
@@ -436,8 +434,7 @@ class IntelligentRouter:
             Detection response
         """
         return await self.detector.detect(
-            messages, use_heuristics=True, use_llm=True, check_pii=include_pii
-        )
+            messages, use_heuristics=True, use_llm=True        )
 
     async def _execute_full_analysis(self, messages: list[Message]) -> DetectionResponse:
         """Execute full analysis with all detection methods.
@@ -452,7 +449,7 @@ class IntelligentRouter:
         tasks = [
             self.detector.detect(messages, use_heuristics=True, use_llm=False, check_pii=False),
             self.detector.detect(messages, use_heuristics=False, use_llm=True, check_pii=False),
-            self.detector.detect(messages, use_heuristics=False, use_llm=False, check_pii=True),
+            self.detector.detect(messages, use_heuristics=False, use_llm=False),
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)

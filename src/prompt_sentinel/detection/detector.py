@@ -55,14 +55,21 @@ class PromptDetector:
         pii_detector: Optional PII detection and redaction system
     """
     
-    def __init__(self):
+    def __init__(self, pattern_manager=None):
         """Initialize the detector with configured components.
         
         Sets up all detection subsystems based on configuration settings.
         Initializes PII detector only if enabled in settings.
+        
+        Args:
+            pattern_manager: Optional ML pattern manager for discovered patterns
         """
         self.processor = PromptProcessor()
-        self.heuristic_detector = HeuristicDetector(settings.detection_mode)
+        self.pattern_manager = pattern_manager
+        self.heuristic_detector = HeuristicDetector(
+            settings.detection_mode,
+            pattern_manager=pattern_manager
+        )
         self.llm_classifier = LLMClassifierManager()
         
         # Initialize PII detector if enabled
@@ -234,6 +241,33 @@ class PromptDetector:
         
         # Calculate processing time
         processing_time_ms = (time.time() - start_time) * 1000
+        
+        # Collect event for ML pattern discovery (if enabled)
+        if self.pattern_manager and self.pattern_manager.collector:
+            try:
+                if final_verdict in [Verdict.BLOCK, Verdict.FLAG]:
+                    # Extract categories and patterns from reasons
+                    categories = list(set(r.category.value for r in all_reasons if hasattr(r, 'category')))
+                    patterns = []
+                    for r in all_reasons:
+                        if hasattr(r, 'patterns_matched') and r.patterns_matched:
+                            patterns.extend(r.patterns_matched)
+                    
+                    # Collect event asynchronously (fire and forget)
+                    import asyncio
+                    asyncio.create_task(self.pattern_manager.collector.collect_event(
+                        prompt="\n".join([msg.content for msg in messages]),
+                        verdict=final_verdict,
+                        confidence=final_confidence,
+                        categories=categories,
+                        patterns_matched=patterns,
+                        provider_used=metadata.get("providers_used", ["heuristic"])[0] if metadata.get("providers_used") else "heuristic",
+                        processing_time_ms=processing_time_ms,
+                        metadata=metadata
+                    ))
+            except Exception as e:
+                # Don't let ML collection errors affect detection
+                pass
         
         # Build metadata
         metadata = {

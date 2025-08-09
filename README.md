@@ -1,6 +1,7 @@
 # 🛡️ PromptSentinel
 
 [![CI/CD Pipeline](https://github.com/rhoska/prompt-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/rhoska/prompt-sentinel/actions)
+[![Docker Pulls](https://img.shields.io/docker/pulls/promptsentinel/prompt-sentinel)](https://hub.docker.com/r/promptsentinel/prompt-sentinel)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116+-green.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,9 +11,17 @@ A production-ready defensive security microservice for detecting and mitigating 
 ## 🚀 Key Features
 
 - **🎯 Multi-Layer Detection**: Combines heuristic patterns, LLM classification, and PII detection
+- **🚀 Intelligent Routing**: Automatically routes prompts to optimal detection strategy based on complexity
+- **🔐 Flexible Authentication**: Multiple deployment modes - no auth (sidecar), optional (mixed), or required (SaaS)
+- **🤖 ML Pattern Discovery**: Self-learning system that discovers new attack patterns from real threats
+- **💰 API Usage Monitoring**: Track costs, usage, and performance with budget controls and alerts
 - **🔄 Multi-Provider LLM Support**: Anthropic (Claude), OpenAI (GPT), and Google (Gemini) with automatic failover
 - **🛡️ PII Protection**: Detects and redacts 15+ PII types including SSNs, credit cards, API keys
 - **⚡ High Performance**: 98% faster responses with Redis caching (12ms vs 700ms)
+- **🔌 WebSocket Support**: Real-time streaming detection for continuous monitoring
+- **🧪 A/B Testing**: Built-in experimentation framework for optimizing detection strategies
+- **🤖 ML Pattern Discovery**: Automated discovery of new attack patterns using clustering and machine learning
+- **🚦 Rate Limiting**: Token bucket algorithm with per-client and global limits
 - **🔧 Flexible Deployment**: Works with or without Redis, Docker, Kubernetes ready
 - **📊 Production Ready**: OpenTelemetry monitoring, structured logging, health checks
 - **🎛️ Configurable Modes**: Strict, moderate, or permissive detection based on your needs
@@ -25,6 +34,7 @@ A production-ready defensive security microservice for detecting and mitigating 
 - [Installation](#-installation) 
 - [API Documentation](#-api-documentation)
 - [Configuration](#️-configuration)
+- [WebSocket Support](#-websocket-support)
 - [Redis Caching](#-redis-caching-optional)
 - [PII Detection](#-pii-detection)
 - [Detection Strategies](#️-detection-strategies)
@@ -35,7 +45,23 @@ A production-ready defensive security microservice for detecting and mitigating 
 
 ## 🚀 Quick Start
 
-### Using Docker (Recommended)
+### Using Docker Hub (Fastest)
+
+```bash
+# Pull from Docker Hub
+docker pull promptsentinel/prompt-sentinel:latest
+
+# Run with your API keys
+docker run -p 8080:8080 \
+  -e ANTHROPIC_API_KEY=your-key \
+  promptsentinel/prompt-sentinel:latest
+
+# Or use docker-compose
+wget https://raw.githubusercontent.com/rhoska/prompt-sentinel/main/docker-compose.yml
+docker-compose up
+```
+
+### Using Docker (Build Locally)
 
 ```bash
 # Clone the repository
@@ -46,11 +72,8 @@ cd prompt-sentinel
 cp .env.example .env
 # Edit .env with your API keys (at least one provider required)
 
-# Start with Redis caching (recommended for production)
+# Build and run
 make up  # or: docker-compose -f docker-compose.redis.yml up
-
-# Or start without Redis
-docker-compose up
 
 # Test the service
 curl -X POST http://localhost:8080/v1/detect \
@@ -149,6 +172,101 @@ curl -X POST http://localhost:8080/v2/detect \
 #### `POST /v2/analyze` - Comprehensive Analysis
 Provides detailed analysis including PII detection, format validation, and security recommendations.
 
+#### `POST /v3/detect` - Intelligent Routing Detection (NEW)
+Automatically analyzes prompt complexity and routes to optimal detection strategy:
+```bash
+curl -X POST http://localhost:8080/v3/detect \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "Simple greeting"}
+    ],
+    "config": {"performance_mode": true}
+  }'
+```
+
+**Features:**
+- Automatic complexity analysis (trivial → critical)
+- Adaptive detection strategy selection
+- Performance optimization for simple prompts
+- Comprehensive analysis for complex/risky prompts
+- Risk indicator detection (encoding, role manipulation, etc.)
+
+#### `GET /v3/routing/complexity` - Complexity Analysis
+Analyze prompt complexity without detection:
+```bash
+curl "http://localhost:8080/v3/routing/complexity?prompt=Hello%20world"
+```
+
+#### `GET /v3/routing/metrics` - Routing Metrics
+Get intelligent routing performance statistics.
+
+#### `GET /v2/metrics/complexity` - Complexity Metrics
+Comprehensive prompt complexity metrics and distribution:
+```bash
+# Analyze specific prompt
+curl "http://localhost:8080/v2/metrics/complexity?prompt=Your%20test%20prompt"
+
+# Get system-wide complexity distribution
+curl "http://localhost:8080/v2/metrics/complexity"
+```
+
+### Monitoring & Budget Control (NEW - FR12)
+
+#### `GET /v2/monitoring/usage` - API Usage Metrics
+Track API usage, costs, and performance:
+```bash
+# Get last 24 hours of usage
+curl "http://localhost:8080/v2/monitoring/usage?time_window_hours=24"
+```
+
+**Returns:**
+- Request counts and success rates
+- Token usage and costs
+- Provider breakdown
+- Performance metrics
+
+#### `GET /v2/monitoring/budget` - Budget Status
+Monitor spending against configured limits:
+```bash
+curl "http://localhost:8080/v2/monitoring/budget"
+```
+
+**Features:**
+- Hourly, daily, and monthly budget tracking
+- Automatic alerts at 75% and 90% thresholds
+- Cost projections
+- Optimization recommendations
+
+#### `GET /v2/monitoring/rate-limits` - Rate Limit Status
+Check current rate limiting status:
+```bash
+# Check global limits
+curl "http://localhost:8080/v2/monitoring/rate-limits"
+
+# Check specific client
+curl "http://localhost:8080/v2/monitoring/rate-limits?client_id=user123"
+```
+
+#### `GET /v2/monitoring/usage/trend` - Usage Trends
+Historical usage data for analysis:
+```bash
+curl "http://localhost:8080/v2/monitoring/usage/trend?period=hour&limit=24"
+```
+
+#### `POST /v2/monitoring/budget/configure` - Configure Budget
+Dynamically update budget limits:
+```bash
+curl -X POST "http://localhost:8080/v2/monitoring/budget/configure" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hourly_limit": 10.0,
+    "daily_limit": 100.0,
+    "monthly_limit": 1000.0,
+    "block_on_exceeded": true
+  }'
+```
+
 #### `GET /cache/stats` - Cache Statistics
 ```json
 {
@@ -168,6 +286,91 @@ Provides detailed analysis including PII detection, format validation, and secur
 When running, visit:
 - Swagger UI: `http://localhost:8080/docs`
 - ReDoc: `http://localhost:8080/redoc`
+
+## 🔐 Authentication & API Keys
+
+PromptSentinel supports flexible authentication to fit different deployment scenarios:
+
+### Authentication Modes
+
+| Mode | Use Case | Description |
+|------|----------|-------------|
+| `none` | Sidecar/Internal | No authentication required - for trusted environments |
+| `optional` | Development/Mixed | API keys improve rate limits but aren't required |
+| `required` | SaaS/Public | API keys mandatory for all requests |
+
+### Deployment Scenarios
+
+#### 1. Sidecar Container (No Auth)
+```bash
+# Docker Compose
+services:
+  app:
+    image: myapp:latest
+  
+  prompt-sentinel:
+    image: promptsentinel:latest
+    environment:
+      AUTH_MODE: none
+    network_mode: "service:app"  # Share network namespace
+```
+
+#### 2. Internal Microservice (Optional Auth)
+```bash
+# Behind API gateway
+AUTH_MODE=optional
+AUTH_BYPASS_NETWORKS=10.0.0.0/8,172.16.0.0/12
+AUTH_BYPASS_HEADERS=X-Internal-Service:true
+```
+
+#### 3. Public SaaS (Required Auth)
+```bash
+AUTH_MODE=required
+AUTH_ENFORCE_HTTPS=true
+RATE_LIMIT_UNAUTHENTICATED=10
+```
+
+### API Key Management
+
+#### Generate API Key (Admin)
+```bash
+curl -X POST http://localhost:8080/api/v1/admin/api-keys \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: admin-key" \
+  -d '{
+    "client_name": "My Application",
+    "usage_tier": "pro",
+    "permissions": ["detect:read", "detect:write"]
+  }'
+```
+
+#### Using API Keys
+```python
+# Python SDK
+from promptsentinel import PromptSentinel
+
+client = PromptSentinel(
+    base_url="https://api.promptsentinel.ai",
+    api_key="psk_live_xxxxxxxxxxx"
+)
+```
+
+```bash
+# HTTP Request
+curl -X POST http://localhost:8080/v1/detect \
+  -H "X-API-Key: psk_live_xxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Hello world"}'
+```
+
+### Rate Limiting
+
+| Client Type | Requests/Min | Tokens/Min |
+|-------------|--------------|------------|
+| Anonymous | 10 | 1,000 |
+| Free Tier | 60 | 10,000 |
+| Pro Tier | 300 | 50,000 |
+| Enterprise | Unlimited | Unlimited |
 
 ## ⚙️ Configuration
 
@@ -207,6 +410,15 @@ REDIS_PORT=6379
 REDIS_PASSWORD=changeme-in-production
 CACHE_TTL_LLM=3600                 # 1 hour for LLM results
 CACHE_TTL_DETECTION=600            # 10 min for detections
+
+# API Monitoring & Budget (NEW)
+BUDGET_HOURLY_USD=10.0             # Hourly spending limit
+BUDGET_DAILY_USD=100.0             # Daily spending limit
+BUDGET_MONTHLY_USD=1000.0          # Monthly spending limit
+BUDGET_BLOCK_ON_EXCEEDED=true      # Block requests when budget exceeded
+RATE_LIMIT_RPM=60                  # Global requests per minute
+RATE_LIMIT_TPM=10000               # Global tokens per minute
+RATE_LIMIT_CLIENT_RPM=20           # Per-client requests per minute
 ```
 
 ### Detection Modes
@@ -216,6 +428,181 @@ CACHE_TTL_DETECTION=600            # 10 min for detections
 | **Strict** | Maximum security | Higher | Lower | Financial, Healthcare |
 | **Moderate** | Balanced approach | Medium | Medium | General applications |
 | **Permissive** | Minimize false positives | Lower | Higher | Content creation tools |
+
+## 🤖 ML Pattern Discovery
+
+PromptSentinel includes an advanced ML-based pattern discovery system that automatically learns from detected threats:
+
+### Features
+- **Automatic Clustering**: Uses DBSCAN/HDBSCAN to find groups of similar attacks
+- **Pattern Extraction**: Extracts regex patterns from clustered threats
+- **Self-Learning**: Continuously improves detection based on real-world attacks
+- **Performance Tracking**: Monitors pattern effectiveness with precision/recall metrics
+- **Lifecycle Management**: Automatically promotes high-performing patterns and retires ineffective ones
+
+### API Endpoints
+
+```bash
+# Submit feedback on detection
+curl -X POST http://localhost:8080/api/v1/ml/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_id": "evt_123",
+    "user_label": "false_positive",
+    "is_false_positive": true
+  }'
+
+# Trigger pattern discovery
+curl -X POST http://localhost:8080/api/v1/ml/patterns/discover \
+  -H "Content-Type: application/json" \
+  -d '{"min_events": 100}'
+
+# List discovered patterns
+curl http://localhost:8080/api/v1/ml/patterns?status=active
+
+# Get ML metrics
+curl http://localhost:8080/api/v1/ml/metrics
+```
+
+### How It Works
+
+1. **Event Collection**: Detection events are collected in a circular buffer
+2. **Feature Extraction**: Multi-dimensional features extracted from prompts
+3. **Clustering**: Similar attacks grouped using density-based clustering
+4. **Pattern Mining**: Common patterns extracted using multiple techniques:
+   - Common substring analysis
+   - N-gram pattern matching
+   - Template-based extraction
+   - Differential analysis
+5. **Evaluation**: Patterns tested and scored for precision/recall
+6. **Promotion**: High-performing patterns automatically activated
+7. **Integration**: Discovered patterns seamlessly integrated with heuristic detection
+
+### Installation with ML Features
+
+```bash
+# Install with ML dependencies
+uv pip install -e ".[ml]"
+
+# Required packages:
+# - scikit-learn: Clustering algorithms
+# - numpy/pandas: Data processing
+# - hdbscan: Advanced clustering (optional)
+# - sentence-transformers: Embeddings (optional)
+```
+
+## 🤖 ML Pattern Discovery
+
+PromptSentinel includes an advanced machine learning system that automatically discovers new attack patterns from blocked requests:
+
+### Features
+- **Automatic Clustering**: Uses DBSCAN/HDBSCAN to find groups of similar attacks
+- **Pattern Extraction**: Generates regex patterns from clustered samples
+- **Performance Tracking**: Monitors pattern precision/recall and auto-promotes successful patterns
+- **Feedback Loop**: Learn from false positives/negatives to improve accuracy
+- **Self-Learning**: Continuously adapts to new attack techniques
+
+### API Endpoints
+
+```bash
+# Submit feedback on a detection
+curl -X POST http://localhost:8080/api/v1/ml/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_id": "evt_123",
+    "user_label": "false_positive",
+    "is_false_positive": true
+  }'
+
+# Trigger pattern discovery
+curl -X POST http://localhost:8080/api/v1/ml/discover \
+  -H "Content-Type: application/json" \
+  -d '{"min_events": 100, "algorithm": "dbscan"}'
+
+# View discovered patterns
+curl http://localhost:8080/api/v1/ml/patterns?status=active
+
+# Get ML statistics
+curl http://localhost:8080/api/v1/ml/statistics
+```
+
+### Installation with ML Features
+
+```bash
+# Install with ML dependencies
+uv pip install -e ".[ml]"
+
+# Required for advanced features:
+# - scikit-learn: Clustering algorithms
+# - hdbscan: Hierarchical clustering
+# - sentence-transformers: Semantic embeddings (optional)
+```
+
+## 🔌 WebSocket Support
+
+PromptSentinel provides WebSocket support for real-time streaming detection and continuous monitoring:
+
+### WebSocket Features
+- **Real-time Detection**: Stream prompts for instant analysis
+- **Bidirectional Communication**: Receive alerts and updates
+- **Batch Processing**: Process multiple prompts with progress updates
+- **Connection Management**: Automatic reconnection and heartbeat
+- **Low Latency**: Direct streaming without HTTP overhead
+
+### WebSocket Client Example
+
+```javascript
+// JavaScript WebSocket client
+const ws = new WebSocket('ws://localhost:8080/ws');
+
+ws.onopen = () => {
+    // Send detection request
+    ws.send(JSON.stringify({
+        type: 'detection',
+        prompt: 'Analyze this prompt',
+        use_intelligent_routing: true,
+        request_id: '123'
+    }));
+};
+
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log('Detection result:', data.response);
+};
+```
+
+### Python WebSocket Client
+
+```python
+# Use the provided example client
+python examples/websocket_client.py --interactive
+
+# Or in your code:
+import asyncio
+import websockets
+
+async def detect_streaming():
+    async with websockets.connect('ws://localhost:8080/ws') as ws:
+        await ws.send(json.dumps({
+            'type': 'detection',
+            'prompt': 'Test prompt'
+        }))
+        response = await ws.recv()
+        print(json.loads(response))
+```
+
+### WebSocket Message Types
+
+| Type | Direction | Description |
+|------|-----------|-------------|
+| `detection` | Client→Server | Single prompt detection |
+| `analysis` | Client→Server | Comprehensive analysis |
+| `batch_detection` | Client→Server | Multiple prompts |
+| `ping` | Client→Server | Heartbeat check |
+| `stats` | Client→Server | Get connection stats |
+| `detection_response` | Server→Client | Detection result |
+| `analysis_response` | Server→Client | Analysis result |
+| `system_message` | Server→Client | System notifications |
 
 ## 💾 Redis Caching (Optional)
 
@@ -424,13 +811,52 @@ This is a defensive security tool. Please:
 
 ### Health Checks
 
-```bash
-# Basic health
-curl http://localhost:8080/health
+PromptSentinel provides comprehensive health check endpoints for monitoring and orchestration:
 
-# Detailed health with provider status
+#### Basic Health Check
+```bash
+# Basic health status with provider information
 curl http://localhost:8080/health | jq
 ```
+
+Returns:
+- Overall service status (healthy/degraded/unhealthy)
+- LLM provider health status
+- Redis connection status and latency
+- Cache statistics (hits, misses, hit rate)
+- System metrics (memory, CPU, connections)
+- Detection methods status
+- Service uptime
+
+#### Detailed Component Health
+```bash
+# Component-level health information
+curl http://localhost:8080/health/detailed | jq
+```
+
+Returns detailed status for:
+- Detector (heuristic, LLM, PII detection methods)
+- Cache (Redis connection, statistics)
+- LLM Providers (individual provider health)
+- Authentication (mode, bypass rules)
+- Rate Limiter (global limits)
+- ML Patterns (enabled/disabled)
+- WebSocket (active connections, message count)
+- Monitoring (budget status)
+
+#### Kubernetes Probes
+```bash
+# Liveness probe - always returns 200 if service is alive
+curl http://localhost:8080/health/live
+
+# Readiness probe - returns 503 if critical dependencies are unhealthy
+curl http://localhost:8080/health/ready
+```
+
+The readiness probe checks:
+- Detector initialization
+- At least one healthy LLM provider (if classification enabled)
+- Critical service dependencies
 
 ### Metrics
 
@@ -476,13 +902,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📊 Project Status
 
 - ✅ **Production Ready**: Core detection engine with multi-provider support
+- ✅ **Docker Hub**: Official images available at `promptsentinel/prompt-sentinel`
+- ✅ **Intelligent Routing**: Complexity-based optimization with 98% performance gain
+- ✅ **API Monitoring**: Usage tracking, budget controls, and rate limiting
 - ✅ **PII Detection**: 15+ PII types with multiple redaction modes
 - ✅ **Redis Caching**: 98% performance improvement
-- ✅ **Docker Support**: Multi-stage builds with security hardening
-- ✅ **Comprehensive Testing**: Unit and integration tests
-- ✅ **API Documentation**: OpenAPI/Swagger included
-- 🚧 **GitHub Actions CI/CD**: Coming next
-- 📋 **Future**: SDK libraries, Web UI dashboard, ML pattern discovery
+- ✅ **Comprehensive Testing**: Unit, integration, and performance tests
+- ✅ **API Documentation**: Full OpenAPI/Swagger support
+- ✅ **Performance Benchmarks**: Detailed performance documentation
+- 🚧 **Coming Soon**: SDK libraries (Python, JS, Go), WebSocket support
+- 📋 **Future**: A/B testing framework, ML pattern discovery, Grafana dashboards
 
 ---
 

@@ -60,7 +60,7 @@ jobs:
         run: |
           uv venv --python python${{ matrix.python-version }}
           source .venv/bin/activate
-          uv pip install -e ".[dev,ml,test]"
+          uv pip install -e ".[dev,test]"
 
       - name: Run unit tests
         run: |
@@ -112,7 +112,7 @@ jobs:
         run: |
           uv venv
           source .venv/bin/activate
-          uv pip install -e ".[dev,ml,test]"
+          uv pip install -e ".[dev,test]"
 
       - name: Run Black formatter check
         run: |

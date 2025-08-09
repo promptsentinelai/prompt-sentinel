@@ -2,7 +2,7 @@
 
 import pytest
 from prompt_sentinel.detection.heuristics import HeuristicDetector
-from prompt_sentinel.detection.pii_detector import PIIDetector
+from prompt_sentinel.detection.pii_detector import PIIDetector, PIIType
 from prompt_sentinel.detection.prompt_processor import PromptProcessor
 from prompt_sentinel.models.schemas import Message, Role, Verdict
 from prompt_sentinel.routing.complexity_analyzer import ComplexityAnalyzer, ComplexityLevel
@@ -77,7 +77,7 @@ class TestPIIDetector:
         matches = detector.detect(text)
         
         assert len(matches) > 0
-        assert matches[0].type == "ssn"
+        assert matches[0].pii_type == PIIType.SSN
         
     def test_email_detection(self):
         """Test email detection."""
@@ -86,7 +86,7 @@ class TestPIIDetector:
         matches = detector.detect(text)
         
         assert len(matches) > 0
-        assert matches[0].type == "email"
+        assert matches[0].pii_type == PIIType.EMAIL
         
     def test_redaction_modes(self):
         """Test different redaction modes."""
@@ -192,11 +192,16 @@ class TestBudgetManager:
     
     def test_budget_tracking(self):
         """Test budget usage tracking."""
-        manager = BudgetManager(
+        from prompt_sentinel.monitoring.budget_manager import BudgetConfig
+        from prompt_sentinel.monitoring.usage_tracker import UsageTracker
+        
+        config = BudgetConfig(
             hourly_limit=1.0,
             daily_limit=10.0,
             monthly_limit=100.0
         )
+        usage_tracker = UsageTracker()
+        manager = BudgetManager(config, usage_tracker)
         
         # Add usage
         manager.add_usage(0.5)
@@ -212,11 +217,16 @@ class TestBudgetManager:
         
     def test_budget_alerts(self):
         """Test budget alert generation."""
-        manager = BudgetManager(
+        from prompt_sentinel.monitoring.budget_manager import BudgetConfig
+        from prompt_sentinel.monitoring.usage_tracker import UsageTracker
+        
+        config = BudgetConfig(
             hourly_limit=1.0,
             daily_limit=10.0,
             monthly_limit=100.0
         )
+        usage_tracker = UsageTracker()
+        manager = BudgetManager(config, usage_tracker)
         
         # No alerts initially
         alerts = manager.check_alerts()
@@ -239,11 +249,14 @@ class TestRateLimiter:
     
     def test_token_bucket(self):
         """Test token bucket algorithm."""
-        limiter = RateLimiter(
+        from prompt_sentinel.monitoring.rate_limiter import RateLimitConfig
+        
+        config = RateLimitConfig(
             global_rpm=60,
             global_tpm=1000,
             client_rpm=20
         )
+        limiter = RateLimiter(config)
         
         client_id = "test_client"
         
@@ -267,11 +280,14 @@ class TestRateLimiter:
         
     def test_client_isolation(self):
         """Test that clients are rate limited independently."""
-        limiter = RateLimiter(
+        from prompt_sentinel.monitoring.rate_limiter import RateLimitConfig
+        
+        config = RateLimitConfig(
             global_rpm=100,
             global_tpm=10000,
             client_rpm=10
         )
+        limiter = RateLimiter(config)
         
         # Exhaust client1's limit
         for _ in range(15):

@@ -16,15 +16,21 @@ from prompt_sentinel.models.schemas import (
 class HeuristicDetector:
     """Pattern-based detection for common injection techniques."""
     
-    def __init__(self, detection_mode: str = "strict"):
+    def __init__(self, detection_mode: str = "strict", pattern_manager=None):
         """
         Initialize the heuristic detector.
         
         Args:
             detection_mode: One of "strict", "moderate", "permissive"
+            pattern_manager: Optional ML pattern manager for discovered patterns
         """
         self.detection_mode = detection_mode
+        self.pattern_manager = pattern_manager
         self._init_patterns()
+        
+        # ML-discovered patterns cache
+        self.ml_patterns = []
+        self.ml_patterns_last_update = None
     
     def _init_patterns(self):
         """Initialize detection patterns based on mode."""
@@ -195,6 +201,17 @@ class HeuristicDetector:
                     patterns_matched=[pattern]
                 ))
         
+        # Check ML-discovered patterns
+        ml_matches = self._check_ml_patterns(content)
+        for pattern_id, confidence, description in ml_matches:
+            reasons.append(DetectionReason(
+                category=DetectionCategory.DIRECT_INJECTION,
+                description=description,
+                confidence=confidence,
+                source="ml_pattern",
+                patterns_matched=[pattern_id]
+            ))
+        
         # Special checks for system prompts in user messages
         if message.role == Role.USER:
             if self._check_role_manipulation(content):
@@ -247,6 +264,48 @@ class HeuristicDetector:
         
         content_lower = content.lower()
         return any(keyword in content_lower for keyword in role_keywords)
+    
+    def _update_ml_patterns(self):
+        """Update ML-discovered patterns from pattern manager."""
+        if not self.pattern_manager:
+            return
+        
+        try:
+            # Get active patterns from manager
+            from datetime import datetime, timedelta
+            
+            # Update every 5 minutes
+            if (not self.ml_patterns_last_update or 
+                datetime.utcnow() - self.ml_patterns_last_update > timedelta(minutes=5)):
+                
+                self.ml_patterns = self.pattern_manager.get_active_patterns()
+                self.ml_patterns_last_update = datetime.utcnow()
+                
+        except Exception:
+            # Silently fail to not break detection
+            pass
+    
+    def _check_ml_patterns(self, content: str) -> List[Tuple[str, float, str]]:
+        """Check content against ML-discovered patterns."""
+        matches = []
+        
+        # Update patterns if needed
+        self._update_ml_patterns()
+        
+        # Check each ML pattern
+        for pattern in self.ml_patterns:
+            try:
+                if pattern.test(content):
+                    matches.append((
+                        pattern.pattern_id,
+                        pattern.confidence,
+                        f"ML Pattern: {pattern.description}"
+                    ))
+            except Exception:
+                # Skip failed patterns
+                continue
+        
+        return matches
     
     def _check_prompt_leak(self, content: str) -> bool:
         """Check for prompt leak attempts."""

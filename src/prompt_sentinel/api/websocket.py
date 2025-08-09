@@ -12,8 +12,6 @@ from pydantic import ValidationError
 
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.models.schemas import (
-    AnalysisRequest,
-    AnalysisResponse,
     DetectionResponse,
     Message,
 )
@@ -48,9 +46,9 @@ class ConnectionManager:
             self.active_connections[client_id] = websocket
             self.message_queues[client_id] = asyncio.Queue()
             self.connection_metadata[client_id] = {
-                "connected_at": datetime.utcnow(),
+                "connected_at": datetime.utcnow().isoformat(),
                 "messages_processed": 0,
-                "last_activity": datetime.utcnow(),
+                "last_activity": datetime.utcnow().isoformat(),
                 "authenticated": False,
                 "auth_method": None,
                 "rate_limits": {},
@@ -118,11 +116,16 @@ class ConnectionManager:
 
         try:
             websocket = self.active_connections[client_id]
+
+            # Check if WebSocket is still connected
+            if websocket.client_state != WebSocketState.CONNECTED:
+                return False
+
             await websocket.send_json(data)
 
             # Update activity timestamp
             if client_id in self.connection_metadata:
-                self.connection_metadata[client_id]["last_activity"] = datetime.utcnow()
+                self.connection_metadata[client_id]["last_activity"] = datetime.utcnow().isoformat()
 
             return True
 
@@ -167,17 +170,9 @@ class ConnectionManager:
             "connections": [
                 {
                     "client_id": client_id,
-                    "connected_at": (
-                        meta.get("connected_at", "").isoformat()
-                        if meta.get("connected_at")
-                        else None
-                    ),
+                    "connected_at": meta.get("connected_at"),
                     "messages_processed": meta.get("messages_processed", 0),
-                    "last_activity": (
-                        meta.get("last_activity", "").isoformat()
-                        if meta.get("last_activity")
-                        else None
-                    ),
+                    "last_activity": meta.get("last_activity"),
                 }
                 for client_id, meta in self.connection_metadata.items()
             ],
@@ -225,10 +220,10 @@ class StreamingDetector:
                 raise ValueError("Request must contain either 'prompt' or 'messages'")
 
             # Determine detection method
-            if self.router and request_data.get("use_intelligent_routing", False):
+            if self.router and request_data.get("use_router", False):
                 # Use intelligent routing
-                response = await self.router.route_detection(
-                    messages=messages, user_id=client_id, check_format=check_format
+                response, routing_decision = await self.router.route_detection(
+                    messages=messages, user_id=client_id
                 )
             else:
                 # Direct detection
@@ -240,22 +235,25 @@ class StreamingDetector:
                 for provider in providers_used:
                     await self.usage_tracker.track_api_call(
                         provider=provider,
-                        tokens_used=response.metadata.get("tokens_used", 0),
-                        request_type="websocket_detection",
-                        client_id=client_id,
+                        model="websocket",
+                        prompt_tokens=response.metadata.get("prompt_tokens", 0),
+                        completion_tokens=response.metadata.get("completion_tokens", 0),
+                        latency_ms=response.processing_time_ms or 0,
+                        success=True,
+                        endpoint="websocket_detection",
                     )
 
             return {
                 "type": "detection_response",
                 "request_id": request_data.get("request_id", str(uuid.uuid4())),
-                "response": response.dict(),
+                "response": response.model_dump(mode="json"),
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
-        except ValidationError as e:
+        except (ValidationError, ValueError) as e:
             return {
                 "type": "error",
-                "error": "validation_error",
+                "error": "invalid_request",
                 "details": str(e),
                 "timestamp": datetime.utcnow().isoformat(),
             }
@@ -263,7 +261,7 @@ class StreamingDetector:
             logger.error("Detection processing error", client_id=client_id, error=str(e))
             return {
                 "type": "error",
-                "error": "processing_error",
+                "error": "detection_failed",
                 "details": str(e),
                 "timestamp": datetime.utcnow().isoformat(),
             }
@@ -279,38 +277,35 @@ class StreamingDetector:
             Analysis response data
         """
         try:
-            # Create analysis request
-            request = AnalysisRequest(**request_data)
+            # Extract messages from request
+            messages = []
+            if "messages" in request_data:
+                for msg in request_data["messages"]:
+                    messages.append(Message(role=msg["role"], content=msg["content"]))
 
-            # Perform comprehensive analysis
-            messages = [Message(role=msg.role, content=msg.content) for msg in request.messages]
-
+            # Perform detection
             detection_response = await self.detector.detect(messages=messages, check_format=True)
 
             # Build analysis response
-            response = AnalysisResponse(
-                verdict=detection_response.verdict,
-                confidence=detection_response.confidence,
-                reasons=detection_response.reasons,
-                categories=detection_response.categories,
-                pii_detected=detection_response.pii_detected,
-                pii_types=detection_response.pii_types,
-                format_issues=detection_response.format_issues,
-                recommendations=detection_response.recommendations,
-                processing_time_ms=detection_response.processing_time_ms,
-                timestamp=detection_response.timestamp,
-                metadata=detection_response.metadata,
-                analysis={
+            analysis_result = {
+                "verdict": detection_response.verdict,
+                "confidence": detection_response.confidence,
+                "reasons": [reason.model_dump() for reason in detection_response.reasons],
+                "processing_time_ms": detection_response.processing_time_ms,
+                "metadata": detection_response.metadata or {},
+                "overall_risk_assessment": {
                     "threat_level": self._calculate_threat_level(detection_response),
                     "confidence_breakdown": self._get_confidence_breakdown(detection_response),
                     "mitigation_suggestions": self._get_mitigation_suggestions(detection_response),
                 },
-            )
+                "overall_risk_score": detection_response.confidence,
+                "recommendations": self._get_mitigation_suggestions(detection_response),
+            }
 
             return {
-                "type": "analysis_response",
+                "type": "analysis_result",
                 "request_id": request_data.get("request_id", str(uuid.uuid4())),
-                "response": response.dict(),
+                **analysis_result,
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
@@ -318,50 +313,62 @@ class StreamingDetector:
             logger.error("Analysis processing error", client_id=client_id, error=str(e))
             return {
                 "type": "error",
-                "error": "analysis_error",
+                "error": "analysis_failed",
                 "details": str(e),
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
     def _calculate_threat_level(self, response: DetectionResponse) -> str:
         """Calculate threat level from detection response."""
-        if response.verdict == "block":
-            return "critical"
-        elif response.verdict == "redact":
+        from prompt_sentinel.models.schemas import Verdict
+
+        if response.verdict == Verdict.BLOCK:
             return "high"
-        elif response.verdict in ["flag", "strip"]:
+        elif response.verdict == Verdict.STRIP:
             return "medium"
-        else:
+        elif response.verdict == Verdict.FLAG:
             return "low"
+        else:
+            return "none"
 
     def _get_confidence_breakdown(self, response: DetectionResponse) -> dict:
         """Get confidence breakdown by detection method."""
-        breakdown = {}
+        breakdown = {"overall": response.confidence}
+
+        source_confidences = {}
         if response.reasons:
             for reason in response.reasons:
-                source = reason.source if hasattr(reason, "source") else "unknown"
-                if source not in breakdown:
-                    breakdown[source] = []
-                breakdown[source].append(
-                    {
-                        "category": reason.category if hasattr(reason, "category") else "unknown",
-                        "confidence": reason.confidence if hasattr(reason, "confidence") else 0.0,
-                    }
-                )
+                source = reason.source
+                if source not in source_confidences:
+                    source_confidences[source] = []
+                source_confidences[source].append(reason.confidence)
+
+        # Calculate average confidence per source
+        for source, confidences in source_confidences.items():
+            breakdown[source] = sum(confidences) / len(confidences) if confidences else 0.0
+
         return breakdown
 
     def _get_mitigation_suggestions(self, response: DetectionResponse) -> list:
         """Get mitigation suggestions based on detection results."""
+        from prompt_sentinel.models.schemas import DetectionCategory
+
         suggestions = []
 
-        if "instruction_override" in response.categories:
+        # Check categories in reasons
+        reason_categories = (
+            [reason.category for reason in response.reasons] if response.reasons else []
+        )
+
+        if DetectionCategory.DIRECT_INJECTION in reason_categories:
             suggestions.append("Use strict role separation between system and user messages")
-        if "jailbreak" in response.categories:
+        if DetectionCategory.JAILBREAK in reason_categories:
             suggestions.append("Implement additional context validation")
-        if response.pii_detected:
+        if DetectionCategory.PII_DETECTED in reason_categories:
             suggestions.append("Enable automatic PII redaction before processing")
-        if response.format_issues:
-            suggestions.extend(response.recommendations)
+
+        if not suggestions:
+            suggestions.append("Consider reviewing prompt content for security best practices")
 
         return suggestions
 

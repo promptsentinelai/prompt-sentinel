@@ -8,6 +8,10 @@ import pytest
 # Skip all tests in this file - feature not implemented
 pytestmark = pytest.mark.skip(reason="Feature not yet implemented")
 
+# Skip all tests in this file - feature not implemented
+pytestmark = pytest.mark.skip(reason="Feature not yet implemented")
+
+
 
 class TestAPIVersioning:
     """Test API versioning strategies."""

@@ -5,6 +5,7 @@ analysis, building on the existing monitoring infrastructure.
 """
 
 import json
+import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -255,12 +256,24 @@ class MetricsCollector:
             },
         }
 
-        all_metrics = []
+        # Get all metrics for the variant within the time window
+        all_experiment_metrics = self.experiment_metrics.get(experiment_id, [])
+        
+        # Apply time window filter if specified
+        if time_window_hours:
+            cutoff_time = datetime.utcnow() - timedelta(hours=time_window_hours)
+            filtered_metrics = [
+                m for m in all_experiment_metrics 
+                if m.timestamp > cutoff_time and m.variant_id == variant_id
+            ]
+        else:
+            filtered_metrics = [
+                m for m in all_experiment_metrics 
+                if m.variant_id == variant_id
+            ]
+
         for metric_name, variant_data in metrics_data.items():
             if variant_id in variant_data:
-                values = variant_data[variant_id]
-                all_metrics.extend(self.experiment_metrics[experiment_id])
-
                 # Get aggregated metrics
                 aggregated = await self.get_aggregated_metrics(
                     experiment_id, variant_id, metric_name, time_window_hours
@@ -276,12 +289,8 @@ class MetricsCollector:
                         "percentiles": aggregated.percentiles,
                     }
 
-        # Calculate summary statistics
-        variant_metrics = [
-            m
-            for m in all_metrics
-            if m.experiment_id == experiment_id and m.variant_id == variant_id
-        ]
+        # Calculate summary statistics using filtered metrics
+        variant_metrics = filtered_metrics
 
         if variant_metrics:
             performance["summary"]["total_events"] = len(variant_metrics)

@@ -64,8 +64,8 @@ class ExperimentVariant(BaseModel):
     traffic_percentage: float = Field(ge=0.0, le=1.0, description="Traffic allocation")
     is_control: bool = Field(default=False, description="Whether this is the control variant")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "fast_strategy",
                 "name": "Fast Detection Strategy",
@@ -75,6 +75,7 @@ class ExperimentVariant(BaseModel):
                 "is_control": False,
             }
         }
+    )
 
 
 class GuardrailConfig(BaseModel):
@@ -229,10 +230,10 @@ class ExperimentConfig(BaseModel):
                 return variant
         return None
 
-    class Config:
-        use_enum_values = True
-        json_encoders = {datetime: lambda dt: dt.isoformat()}
-        schema_extra = {
+    model_config = ConfigDict(
+        use_enum_values=True,
+        json_encoders={datetime: lambda dt: dt.isoformat()},
+        json_schema_extra={
             "example": {
                 "id": "detection_strategy_test_001",
                 "name": "Detection Strategy Optimization",
@@ -263,6 +264,7 @@ class ExperimentConfig(BaseModel):
                 "created_by": "data_team",
             }
         }
+    )
 
 
 @dataclass
@@ -297,5 +299,6 @@ class ExperimentMetadata(BaseModel):
     experiment_overhead_ms: float = Field(default=0.0, description="Average experiment overhead")
     assignment_cache_hit_rate: float = Field(default=0.0, description="Assignment cache hit rate")
 
-    class Config:
-        json_encoders = {datetime: lambda dt: dt.isoformat()}
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda dt: dt.isoformat()}
+    )

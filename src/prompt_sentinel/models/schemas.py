@@ -220,8 +220,9 @@ class DetectionResponse(BaseModel):
     processing_time_ms: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
 
 
 class AnalysisRequest(BaseModel):
@@ -274,5 +275,6 @@ class CorpusEntry(BaseModel):
     created_at: datetime
     metadata: dict | None = None
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )

@@ -12,7 +12,7 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, IntEnum
 from collections import defaultdict
 
 import structlog
@@ -23,7 +23,7 @@ from prompt_sentinel.cache.cache_manager import cache_manager
 logger = structlog.get_logger()
 
 
-class Priority(Enum):
+class Priority(IntEnum):
     """Request priority levels."""
 
     LOW = 0
@@ -177,10 +177,21 @@ class RateLimiter:
         self.current_load = 0.0
         self.load_history: list = []
 
+        # Background tasks (started in initialize)
+        self._cleanup_task = None
+        self._adjust_task = None
+        self._initialized = False
+
+    async def initialize(self):
+        """Initialize background tasks."""
+        if self._initialized:
+            return
+            
         # Start background tasks
-        asyncio.create_task(self._cleanup_old_clients())
-        if config.enable_adaptive:
-            asyncio.create_task(self._adjust_rates())
+        self._cleanup_task = asyncio.create_task(self._cleanup_old_clients())
+        if self.config.enable_adaptive:
+            self._adjust_task = asyncio.create_task(self._adjust_rates())
+        self._initialized = True
 
     async def check_rate_limit(
         self, client_id: Optional[str] = None, tokens: int = 0, priority: Priority = Priority.NORMAL

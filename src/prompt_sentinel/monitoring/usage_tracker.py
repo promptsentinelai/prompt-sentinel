@@ -151,8 +151,9 @@ class UsageTracker:
 
         # Load persisted metrics if available
         # Only create task if event loop is running (not in sync contexts like tests)
+        self._load_task = None
         try:
-            asyncio.create_task(self._load_persisted_metrics())
+            self._load_task = asyncio.create_task(self._load_persisted_metrics())
         except RuntimeError:
             # No event loop running - this is fine for sync contexts
             pass

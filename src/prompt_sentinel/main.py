@@ -28,6 +28,7 @@ import structlog
 from fastapi import FastAPI, HTTPException, Request, WebSocket, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from prompt_sentinel import __version__
 from prompt_sentinel.api.experiments import experiment_router
@@ -97,7 +98,7 @@ logger = structlog.get_logger()
 # Global instances
 detector: PromptDetector | None = None
 router: IntelligentRouter | None = None
-processor: PromptProcessor = PromptProcessor()
+processor: PromptProcessor | None = None
 usage_tracker: UsageTracker | None = None
 budget_manager: BudgetManager | None = None
 rate_limiter: RateLimiter | None = None
@@ -120,7 +121,7 @@ async def lifespan(app: FastAPI):
     Yields:
         Control back to FastAPI after startup tasks complete
     """
-    global detector, router, usage_tracker, budget_manager, rate_limiter, experiment_manager, pattern_manager
+    global detector, router, usage_tracker, budget_manager, rate_limiter, experiment_manager, pattern_manager, processor
 
     # Startup
     logger.info("Starting PromptSentinel", version=__version__)
@@ -140,6 +141,9 @@ async def lifespan(app: FastAPI):
 
     # Initialize detector with pattern manager
     detector = PromptDetector(pattern_manager=pattern_manager)
+    
+    # Initialize prompt processor
+    processor = PromptProcessor()
 
     # Initialize experiment manager
     try:
@@ -887,7 +891,7 @@ async def batch_detect(request: dict) -> JSONResponse:
 
         try:
             # Process each prompt
-            messages = prompt_processor.normalize_input(prompt_text)
+            messages = processor.normalize_input(prompt_text)
             response = await detector.detect(messages, check_format=False)
 
             results.append(
@@ -895,8 +899,8 @@ async def batch_detect(request: dict) -> JSONResponse:
                     "id": prompt_id,
                     "verdict": response.verdict.value,
                     "confidence": response.confidence,
-                    "pii_detected": response.pii_detected,
-                    "categories": response.categories,
+                    "pii_detected": [p.model_dump() for p in response.pii_detected] if response.pii_detected else [],
+                    "reasons": [r.model_dump() for r in response.reasons] if response.reasons else [],
                 }
             )
         except Exception as e:
@@ -911,13 +915,19 @@ async def batch_detect(request: dict) -> JSONResponse:
     )
 
 
+class FormatAssistRequest(BaseModel):
+    """Request body for format assistance endpoint."""
+    raw_prompt: str = Field(..., description="Unformatted prompt text to analyze")
+    intent: str | None = Field(None, description="Optional intent category")
+
+
 @app.post(
     "/v2/format-assist",
     tags=["Analysis"],
     summary="Format assistance",
     description="Validate prompt format and provide security recommendations",
 )
-async def format_assist(raw_prompt: str, intent: str | None = None):
+async def format_assist(request: FormatAssistRequest):
     """Help developers format prompts with proper role separation for security.
 
     Analyzes raw prompt text and generates properly formatted message structures
@@ -945,23 +955,23 @@ async def format_assist(raw_prompt: str, intent: str | None = None):
         [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
     """
     # Analyze the raw prompt
-    complexity = processor.calculate_complexity_metrics(raw_prompt)
+    complexity = processor.calculate_complexity_metrics(request.raw_prompt)
 
     # Detect if there are implicit role indicators
-    role_issues = processor.detect_role_confusion([Message(role=Role.USER, content=raw_prompt)])
+    role_issues = processor.detect_role_confusion([Message(role=Role.USER, content=request.raw_prompt)])
 
     # Generate formatted version
     formatted_messages = []
 
     # Add system prompt based on intent
-    if intent:
+    if request.intent:
         system_prompts = {
             "customer_service": "You are a helpful customer service assistant. Be polite and professional.",
             "code_assistant": "You are a coding assistant. Provide clear, well-documented code examples.",
             "creative_writing": "You are a creative writing assistant. Help with storytelling and writing.",
             "general": "You are a helpful assistant. Provide accurate and useful information.",
         }
-        system_content = system_prompts.get(intent, system_prompts["general"])
+        system_content = system_prompts.get(request.intent, system_prompts["general"])
         formatted_messages.append({"role": "system", "content": system_content})
     else:
         formatted_messages.append(
@@ -972,7 +982,7 @@ async def format_assist(raw_prompt: str, intent: str | None = None):
         )
 
     # Add user prompt
-    formatted_messages.append({"role": "user", "content": raw_prompt})
+    formatted_messages.append({"role": "user", "content": request.raw_prompt})
 
     # Generate recommendations
     recommendations = []
@@ -1005,7 +1015,7 @@ async def format_assist(raw_prompt: str, intent: str | None = None):
         )
 
     return {
-        "original": raw_prompt,
+        "original": request.raw_prompt,
         "formatted": formatted_messages,
         "recommendations": recommendations,
         "complexity_metrics": complexity,

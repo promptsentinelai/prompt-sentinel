@@ -542,12 +542,16 @@ class TestFormatValidation:
         """Setup test client."""
         self.client = TestClient(app)
         
-        # Initialize detector for testing
+        # Initialize detector and processor for testing
         from prompt_sentinel.detection.detector import PromptDetector
+        from prompt_sentinel.detection.prompt_processor import PromptProcessor
         from prompt_sentinel import main
         
         if not main.detector:
             main.detector = PromptDetector(pattern_manager=None)
+        
+        if not main.processor:
+            main.processor = PromptProcessor()
 
     def test_format_assist_endpoint(self):
         """Test format assistance endpoint."""

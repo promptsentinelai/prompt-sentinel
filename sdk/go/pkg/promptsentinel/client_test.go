@@ -14,7 +14,7 @@ func setupTestServer() *httptest.Server {
 	mux := http.NewServeMux()
 	
 	// V1 detect endpoint
-	mux.HandleFunc("/v1/detect", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/detect", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{
@@ -33,7 +33,7 @@ func setupTestServer() *httptest.Server {
 	})
 	
 	// V2 detect endpoint
-	mux.HandleFunc("/v2/detect", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/detect", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{
@@ -52,7 +52,7 @@ func setupTestServer() *httptest.Server {
 	})
 	
 	// V3 detect endpoint
-	mux.HandleFunc("/v3/detect", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/detect/intelligent", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{
@@ -75,7 +75,7 @@ func setupTestServer() *httptest.Server {
 	})
 	
 	// Batch detect endpoint
-	mux.HandleFunc("/v2/batch", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/batch", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{
@@ -105,7 +105,7 @@ func setupTestServer() *httptest.Server {
 	})
 	
 	// Health check endpoint
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/v1/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{

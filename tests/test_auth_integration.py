@@ -57,7 +57,7 @@ class TestAPIKeyAuthentication:
             mock_validate.return_value = mock_client
             
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": "test"},
                 headers=headers
             )
@@ -73,7 +73,7 @@ class TestAPIKeyAuthentication:
             mock_validate.return_value = {"valid": False, "reason": "Invalid key"}
             
             response = self.client.post(
-                "/v1/detect", 
+                "/api/v1/detect", 
                 json={"prompt": "test"},
                 headers=headers
             )
@@ -87,7 +87,7 @@ class TestAPIKeyAuthentication:
     
     def test_missing_api_key_handling(self):
         """Test handling of missing API key."""
-        response = self.client.post("/v1/detect", json={"prompt": "test"})
+        response = self.client.post("/api/v1/detect", json={"prompt": "test"})
         
         # Should either work (public access) or require authentication
         assert response.status_code in [200, 401, 403]
@@ -108,7 +108,7 @@ class TestAPIKeyAuthentication:
             }
             
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": "test"}, 
                 headers=headers
             )
@@ -130,7 +130,7 @@ class TestAPIKeyAuthentication:
             
             # Read operation should work
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": "test"},
                 headers=headers
             )
@@ -138,7 +138,7 @@ class TestAPIKeyAuthentication:
             
             # Write operations might be restricted (depends on implementation)
             response = self.client.post(
-                "/cache/clear",
+                "/api/v1/cache/clear",
                 headers=headers
             )
             # Should either work or be forbidden based on scopes
@@ -172,7 +172,7 @@ class TestRateLimiting:
         responses = []
         for i in range(5):
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": f"test {i}"},
                 headers=headers
             )
@@ -188,7 +188,7 @@ class TestRateLimiting:
         headers = {"X-API-Key": "header-test-key"}
         
         response = self.client.post(
-            "/v1/detect",
+            "/api/v1/detect",
             json={"prompt": "test"},
             headers=headers
         )
@@ -212,9 +212,9 @@ class TestRateLimiting:
         
         # Test different endpoints
         endpoints = [
-            ("/v1/detect", {"prompt": "test"}),
-            ("/v2/detect", {"input": "test"}),
-            ("/health", None)
+            ("/api/v1/detect", {"prompt": "test"}),
+            ("/api/v1/detect", {"input": "test"}),
+            ("/api/v1/health", None)
         ]
         
         for endpoint, payload in endpoints:
@@ -236,7 +236,7 @@ class TestRateLimiting:
         
         # Make initial request
         response = self.client.post(
-            "/v1/detect",
+            "/api/v1/detect",
             json={"prompt": "test"},
             headers=headers
         )
@@ -248,7 +248,7 @@ class TestRateLimiting:
         
         # Make another request
         response = self.client.post(
-            "/v1/detect",
+            "/api/v1/detect",
             json={"prompt": "test2"},
             headers=headers
         )
@@ -265,7 +265,7 @@ class TestRateLimiting:
         for i, key in enumerate(keys):
             headers = {"X-API-Key": key}
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": f"global test {i}"},
                 headers=headers
             )
@@ -294,7 +294,7 @@ class TestAuthenticationMiddleware:
         
         for headers in header_variants:
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": "middleware test"},
                 headers=headers
             )
@@ -305,7 +305,7 @@ class TestAuthenticationMiddleware:
     def test_security_headers_injection(self):
         """Test that security headers are added."""
         response = self.client.post(
-            "/v1/detect",
+            "/api/v1/detect",
             json={"prompt": "security test"}
         )
         
@@ -329,7 +329,7 @@ class TestAuthenticationMiddleware:
     def test_cors_headers(self):
         """Test CORS headers configuration."""
         # Test preflight request
-        response = self.client.options("/v1/detect")
+        response = self.client.options("/api/v1/detect")
         
         cors_headers = [
             "Access-Control-Allow-Origin",
@@ -344,7 +344,7 @@ class TestAuthenticationMiddleware:
     def test_request_id_generation(self):
         """Test request ID generation and tracking."""
         response = self.client.post(
-            "/v1/detect",
+            "/api/v1/detect",
             json={"prompt": "request id test"}
         )
         
@@ -367,11 +367,11 @@ class TestPermissionSystem:
         """Test permission checks for different endpoints."""
         # Test various permission levels
         test_cases = [
-            ("/health", "GET", None, [200]),  # Public endpoint
-            ("/v1/detect", "POST", {"prompt": "test"}, [200, 401, 403]),
-            ("/v2/detect", "POST", {"input": "test"}, [200, 401, 403]),
-            ("/cache/stats", "GET", None, [200, 401, 403, 404]),
-            ("/cache/clear", "POST", None, [200, 401, 403, 404, 405]),
+            ("/api/v1/health", "GET", None, [200]),  # Public endpoint
+            ("/api/v1/detect", "POST", {"prompt": "test"}, [200, 401, 403]),
+            ("/api/v1/detect", "POST", {"input": "test"}, [200, 401, 403]),
+            ("/api/v1/cache/stats", "GET", None, [200, 401, 403, 404]),
+            ("/api/v1/cache/clear", "POST", None, [200, 401, 403, 404, 405]),
         ]
         
         headers = {"X-API-Key": "permission-test-key"}
@@ -422,8 +422,8 @@ class TestPermissionSystem:
             
             # Read operations should work
             read_endpoints = [
-                ("/health", "GET"),
-                ("/v1/detect", "POST"),  # Detection is considered read
+                ("/api/v1/health", "GET"),
+                ("/api/v1/detect", "POST"),  # Detection is considered read
             ]
             
             for endpoint, method in read_endpoints:
@@ -455,7 +455,7 @@ class TestSecurityFeatures:
         }
         
         response = self.client.post(
-            "/v1/detect",
+            "/api/v1/detect",
             json={"prompt": "test"},
             headers=malicious_headers
         )
@@ -468,7 +468,7 @@ class TestSecurityFeatures:
         xss_payload = "<script>alert('xss')</script>"
         
         response = self.client.post(
-            "/v1/detect",
+            "/api/v1/detect",
             json={"prompt": xss_payload}
         )
         
@@ -483,7 +483,7 @@ class TestSecurityFeatures:
         large_prompt = "A" * (10 * 1024 * 1024)  # 10MB
         
         response = self.client.post(
-            "/v1/detect",
+            "/api/v1/detect",
             json={"prompt": large_prompt}
         )
         
@@ -505,7 +505,7 @@ class TestSecurityFeatures:
             headers = {"X-Custom-Header": injection}
             
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": "test"},
                 headers=headers
             )
@@ -526,7 +526,7 @@ class TestAuthenticationIntegration:
     def test_full_authentication_flow(self):
         """Test complete authentication flow."""
         # Step 1: Access without auth
-        response = self.client.post("/v1/detect", json={"prompt": "test"})
+        response = self.client.post("/api/v1/detect", json={"prompt": "test"})
         initial_status = response.status_code
         
         # Step 2: Access with valid key
@@ -540,7 +540,7 @@ class TestAuthenticationIntegration:
             }
             
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": "authenticated test"},
                 headers=valid_headers
             )
@@ -557,7 +557,7 @@ class TestAuthenticationIntegration:
         
         for headers in test_methods:
             response = self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": "method test"},
                 headers=headers
             )
@@ -572,7 +572,7 @@ class TestAuthenticationIntegration:
         def make_authenticated_request(i):
             headers = {"X-API-Key": f"concurrent-key-{i}"}
             return self.client.post(
-                "/v1/detect",
+                "/api/v1/detect",
                 json={"prompt": f"concurrent test {i}"},
                 headers=headers
             )

@@ -105,10 +105,10 @@ services:
 
 ## API Endpoints
 
-- `POST /v1/detect` - Simple string detection
-- `POST /v2/detect` - Advanced detection with role support
-- `POST /v3/detect` - Intelligent routing based on complexity
-- `GET /health` - Health check
+- `POST /api/v1/detect` - Simple string detection
+- `POST /api/v1/detect` - Advanced detection with role support
+- `POST /api/v1/detect` - Intelligent routing based on complexity
+- `GET /api/v1/health` - Health check
 - `GET /docs` - Swagger UI documentation
 
 ## Example Usage

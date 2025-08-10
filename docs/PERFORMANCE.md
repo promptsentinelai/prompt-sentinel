@@ -259,10 +259,10 @@ sum by (complexity) (
 ### 1. Use Intelligent Routing (V3 API)
 ```python
 # Optimal - uses intelligent routing
-POST /v3/detect
+POST /api/v1/detect
 
 # Suboptimal - always uses full analysis
-POST /v2/detect
+POST /api/v1/detect
 ```
 
 ### 2. Enable Caching
@@ -283,7 +283,7 @@ POST /v2/detect
 ### 3. Batch Requests
 ```python
 # Optimal - batch processing
-POST /v2/batch
+POST /api/v1/batch
 {
   "prompts": [
     {"id": "1", "prompt": "..."},
@@ -294,7 +294,7 @@ POST /v2/batch
 
 # Suboptimal - individual requests
 for prompt in prompts:
-    POST /v1/detect {"prompt": prompt}
+    POST /api/v1/detect {"prompt": prompt}
 ```
 
 ### 4. Use Role Separation

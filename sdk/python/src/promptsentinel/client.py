@@ -118,7 +118,7 @@ class PromptSentinel(BaseClient):
             check_format: Whether to check format security
             use_cache: Whether to use cached results
             detection_mode: Override default detection mode
-            use_intelligent_routing: Use v3 intelligent routing
+            use_intelligent_routing: Use intelligent routing based on prompt complexity
             
         Returns:
             DetectionResponse with verdict and details
@@ -131,12 +131,12 @@ class PromptSentinel(BaseClient):
         
         # Determine endpoint and prepare request
         if prompt:
-            # Use v1 simple API
-            endpoint = "/v1/detect"
+            # Use unified API
+            endpoint = "/api/v1/detect"
             data = {"prompt": prompt}
         else:
-            # Use v2 or v3 API
-            endpoint = "/v3/detect" if use_intelligent_routing else "/v2/detect"
+            # Use unified API with optional intelligent routing
+            endpoint = "/api/v1/detect/intelligent" if use_intelligent_routing else "/api/v1/detect"
             data = {
                 "messages": [msg.model_dump() for msg in messages],
                 "check_format": check_format,
@@ -177,7 +177,7 @@ class PromptSentinel(BaseClient):
         Returns:
             BatchDetectionResponse with results for each prompt
         """
-        url = urljoin(self.base_url, "/v2/batch")
+        url = urljoin(self.base_url, "/api/v1/batch")
         response = self.client.post(url, json={"prompts": prompts})
         result = self._handle_response(response)
         return BatchDetectionResponse(**result)
@@ -197,7 +197,7 @@ class PromptSentinel(BaseClient):
         Returns:
             ComplexityAnalysis with metrics and risk indicators
         """
-        url = urljoin(self.base_url, "/v2/metrics/complexity")
+        url = urljoin(self.base_url, "/api/v1/metrics/complexity")
         params = {}
         
         if prompt:
@@ -224,21 +224,21 @@ class PromptSentinel(BaseClient):
         Returns:
             UsageMetrics with usage statistics
         """
-        url = urljoin(self.base_url, "/v2/monitoring/usage")
+        url = urljoin(self.base_url, "/api/v1/monitoring/usage")
         response = self.client.get(url, params={"time_window_hours": time_window_hours})
         result = self._handle_response(response)
         return UsageMetrics(**result)
     
     def get_budget_status(self) -> BudgetStatus:
         """Get current budget status and alerts."""
-        url = urljoin(self.base_url, "/v2/monitoring/budget")
+        url = urljoin(self.base_url, "/api/v1/monitoring/budget")
         response = self.client.get(url)
         result = self._handle_response(response)
         return BudgetStatus(**result)
     
     def health_check(self) -> HealthStatus:
         """Check service health status."""
-        url = urljoin(self.base_url, "/health")
+        url = urljoin(self.base_url, "/api/v1/health")
         response = self.client.get(url)
         result = self._handle_response(response)
         return HealthStatus(**result)
@@ -302,7 +302,7 @@ class AsyncPromptSentinel(BaseClient):
             check_format: Whether to check format security
             use_cache: Whether to use cached results
             detection_mode: Override default detection mode
-            use_intelligent_routing: Use v3 intelligent routing
+            use_intelligent_routing: Use intelligent routing based on prompt complexity
             
         Returns:
             DetectionResponse with verdict and details
@@ -351,7 +351,7 @@ class AsyncPromptSentinel(BaseClient):
         prompts: List[Dict[str, str]]
     ) -> BatchDetectionResponse:
         """Process multiple prompts in batch (async)."""
-        url = urljoin(self.base_url, "/v2/batch")
+        url = urljoin(self.base_url, "/api/v1/batch")
         response = await self.client.post(url, json={"prompts": prompts})
         result = self._handle_response(response)
         return BatchDetectionResponse(**result)
@@ -362,7 +362,7 @@ class AsyncPromptSentinel(BaseClient):
         messages: Optional[List[Message]] = None
     ) -> ComplexityAnalysis:
         """Analyze prompt complexity without detection (async)."""
-        url = urljoin(self.base_url, "/v2/metrics/complexity")
+        url = urljoin(self.base_url, "/api/v1/metrics/complexity")
         params = {}
         
         if prompt:
@@ -380,21 +380,21 @@ class AsyncPromptSentinel(BaseClient):
         time_window_hours: int = 24
     ) -> UsageMetrics:
         """Get API usage metrics (async)."""
-        url = urljoin(self.base_url, "/v2/monitoring/usage")
+        url = urljoin(self.base_url, "/api/v1/monitoring/usage")
         response = await self.client.get(url, params={"time_window_hours": time_window_hours})
         result = self._handle_response(response)
         return UsageMetrics(**result)
     
     async def get_budget_status(self) -> BudgetStatus:
         """Get current budget status and alerts (async)."""
-        url = urljoin(self.base_url, "/v2/monitoring/budget")
+        url = urljoin(self.base_url, "/api/v1/monitoring/budget")
         response = await self.client.get(url)
         result = self._handle_response(response)
         return BudgetStatus(**result)
     
     async def health_check(self) -> HealthStatus:
         """Check service health status (async)."""
-        url = urljoin(self.base_url, "/health")
+        url = urljoin(self.base_url, "/api/v1/health")
         response = await self.client.get(url)
         result = self._handle_response(response)
         return HealthStatus(**result)

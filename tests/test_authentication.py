@@ -49,11 +49,11 @@ class TestAuthModes:
             mock_config.return_value = AuthConfig(mode=AuthMode.NONE)
 
             # Should work without any authentication
-            response = client.get("/health")
+            response = client.get("/api/v1/health")
             assert response.status_code == 200
 
             # Detection should work without auth
-            response = client.post("/v1/detect", json={"prompt": "Hello world"})
+            response = client.post("/api/v1/detect", json={"prompt": "Hello world"})
             assert response.status_code in [200, 503]  # 503 if detector not initialized
 
     def test_auth_mode_optional(self, client):
@@ -62,11 +62,11 @@ class TestAuthModes:
             mock_config.return_value = AuthConfig(mode=AuthMode.OPTIONAL)
 
             # Should work without authentication
-            response = client.get("/health")
+            response = client.get("/api/v1/health")
             assert response.status_code == 200
 
             # Should also work with invalid API key (just ignored)
-            response = client.get("/health", headers={"X-API-Key": "invalid_key"})
+            response = client.get("/api/v1/health", headers={"X-API-Key": "invalid_key"})
             assert response.status_code == 200
 
     def test_auth_mode_required(self, client):
@@ -75,7 +75,7 @@ class TestAuthModes:
             mock_config.return_value = AuthConfig(mode=AuthMode.REQUIRED)
 
             # Health check should still work (bypassed)
-            response = client.get("/health")
+            response = client.get("/api/v1/health")
             assert response.status_code == 200
 
             # Admin endpoints should require auth
@@ -103,7 +103,7 @@ class TestBypassRules:
                 mock_request.client.host = "127.0.0.1"
 
                 # Should bypass auth for localhost
-                response = client.get("/health")
+                response = client.get("/api/v1/health")
                 assert response.status_code == 200
 
     def test_network_bypass(self):

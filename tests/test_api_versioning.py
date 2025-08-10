@@ -38,7 +38,7 @@ class TestAPIVersioning:
         # URL path versioning
         request_with_path = {
             "headers": {},
-            "path": "/v2/detect"
+            "path": "/api/v1/detect"
         }
         version_path = await version_manager.detect_version(request_with_path)
         assert version_path == "2.0"
@@ -390,13 +390,13 @@ class TestVersionedEndpoints:
         # Create alias for backward compatibility
         await endpoint_manager.create_alias(
             from_path="/old/detect",
-            to_path="/v2/detect",
+            to_path="/api/v1/detect",
             versions=["1.0", "1.5"]
         )
         
         # Request to alias should route to new endpoint
         result = await endpoint_manager.resolve_endpoint("/old/detect", "1.0")
-        assert result["actual_path"] == "/v2/detect"
+        assert result["actual_path"] == "/api/v1/detect"
         assert result["is_alias"] is True
 
 

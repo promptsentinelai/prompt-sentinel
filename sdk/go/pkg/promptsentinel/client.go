@@ -137,7 +137,7 @@ func (c *Client) DetectSimple(prompt string, opts ...func(*DetectionRequest)) (*
 	_, err := c.http.R().
 		SetBody(req).
 		SetResult(&response).
-		Post("/v1/detect")
+		Post("/api/v1/detect")
 	
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func (c *Client) DetectMessages(messages []Message, opts ...func(*DetectionReque
 	_, err := c.http.R().
 		SetBody(req).
 		SetResult(&response).
-		Post("/v2/detect")
+		Post("/api/v1/detect")
 	
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func (c *Client) detectV3(opts *detectOptions) (*DetectionResponse, error) {
 	_, err := c.http.R().
 		SetBody(req).
 		SetResult(&response).
-		Post("/v3/detect")
+		Post("/api/v1/detect/intelligent")
 	
 	if err != nil {
 		return nil, err
@@ -233,7 +233,7 @@ func (c *Client) BatchDetect(prompts []BatchPrompt) (*BatchDetectionResponse, er
 	_, err := c.http.R().
 		SetBody(req).
 		SetResult(&response).
-		Post("/v2/batch")
+		Post("/api/v1/batch")
 	
 	if err != nil {
 		return nil, err
@@ -299,7 +299,7 @@ func (c *Client) HealthCheck() (*HealthStatus, error) {
 	var response HealthStatus
 	_, err := c.http.R().
 		SetResult(&response).
-		Get("/health")
+		Get("/api/v1/health")
 	
 	if err != nil {
 		return nil, err

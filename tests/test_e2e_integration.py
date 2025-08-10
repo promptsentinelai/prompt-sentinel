@@ -115,7 +115,7 @@ class TestEndToEndDetectionFlow:
                 if data.get("type") == "connection":
                     data = websocket.receive_json()
                 
-                assert data["type"] == "detection"
+                assert data["type"] == "detection_response"
                 assert "verdict" in data
                 assert "confidence" in data
 
@@ -164,20 +164,20 @@ class TestEndToEndAnalysisFlow:
         assert "reasons" in data
         assert "metadata" in data
         
-        # Check metadata details
+        # Check metadata details that actually exist
         metadata = data["metadata"]
-        assert "patterns_found" in metadata
-        assert "pii_detected" in metadata
-        assert "llm_classification" in metadata
-        assert "processing_details" in metadata
+        assert "detection_mode" in metadata
+        assert "heuristics_used" in metadata
+        assert "llm_used" in metadata
+        assert metadata["llm_used"] == True  # We requested LLM
 
     def test_e2e_format_assistance(self, client):
         """Test end-to-end format assistance."""
         response = client.post(
             "/v2/format-assist",
             json={
-                "prompt": "System: You are helpful. User: What's 2+2?",
-                "target_format": "messages"
+                "raw_prompt": "System: You are helpful. User: What's 2+2?",
+                "intent": "assistant"
             }
         )
         

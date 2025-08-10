@@ -136,7 +136,7 @@ class TestUsageTrackerActual:
         """Test tracking API requests."""
         # Track a request
         await usage_tracker.track_request(
-            endpoint="/v1/detect",
+            endpoint="/api/v1/detect",
             method="POST",
             response_time_ms=150,
             status_code=200,
@@ -396,14 +396,14 @@ class TestMonitoringIntegration:
             if await rate_limiter.allow_request(client_id):
                 allowed_count += 1
                 await usage_tracker.track_request(
-                    endpoint="/v1/detect",
+                    endpoint="/api/v1/detect",
                     method="POST",
                     response_time_ms=100,
                     status_code=200,
                 )
             else:
                 await usage_tracker.track_request(
-                    endpoint="/v1/detect",
+                    endpoint="/api/v1/detect",
                     method="POST",
                     response_time_ms=0,
                     status_code=429,  # Rate limited

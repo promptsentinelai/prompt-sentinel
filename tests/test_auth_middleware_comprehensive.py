@@ -63,7 +63,7 @@ class TestAuthenticationMiddleware:
     def mock_request(self):
         """Create a mock request."""
         request = MagicMock(spec=Request)
-        request.url.path = "/v1/detect"
+        request.url.path = "/api/v1/detect"
         request.url.scheme = "http"
         request.client = MagicMock()
         request.client.host = "192.168.1.1"
@@ -110,7 +110,7 @@ class TestAuthenticationMiddleware:
     @pytest.mark.asyncio
     async def test_dispatch_system_endpoints(self, middleware, mock_call_next):
         """Test dispatch for system endpoints (health, docs)."""
-        for path in ["/health", "/docs", "/redoc", "/openapi.json"]:
+        for path in ["/api/v1/health", "/docs", "/redoc", "/openapi.json"]:
             request = MagicMock(spec=Request)
             request.url.path = path
             request.state = MagicMock()
@@ -365,7 +365,7 @@ class TestAuthenticationMiddleware:
     async def test_dispatch_system_client_no_header(self, middleware, mock_call_next):
         """Test that system client ID is not added to response headers."""
         request = MagicMock(spec=Request)
-        request.url.path = "/health"
+        request.url.path = "/api/v1/health"
         request.state = MagicMock()
         
         response = await middleware.dispatch(request, mock_call_next)

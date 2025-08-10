@@ -298,7 +298,7 @@ class TestUsageTracker:
     @pytest.mark.asyncio
     async def test_track_cache_hit(self, tracker):
         """Test tracking cache hits."""
-        await tracker.track_cache_hit(endpoint="/v1/detect", latency_ms=5.0)
+        await tracker.track_cache_hit(endpoint="/api/v1/detect", latency_ms=5.0)
         
         assert len(tracker.api_calls) == 1
         api_call = tracker.api_calls[0]
@@ -383,7 +383,7 @@ class TestUsageTracker:
         )
         
         # Track cache hit
-        await tracker.track_cache_hit(endpoint="/v1/detect", latency_ms=5.0)
+        await tracker.track_cache_hit(endpoint="/api/v1/detect", latency_ms=5.0)
         
         assert tracker.metrics.total_requests == 2
         assert tracker.metrics.cache_hits == 1
@@ -739,7 +739,7 @@ class TestUsageTracker:
     @pytest.mark.asyncio
     async def test_cache_not_included_in_provider_metrics(self, tracker):
         """Test that cache hits are not included in provider metrics."""
-        await tracker.track_cache_hit(endpoint="/v1/detect", latency_ms=5.0)
+        await tracker.track_cache_hit(endpoint="/api/v1/detect", latency_ms=5.0)
         
         provider_metrics = tracker.get_provider_breakdown()
         
@@ -797,7 +797,7 @@ class TestUsageTrackerIntegration:
             )
         
         # Add cache hits
-        await tracker.track_cache_hit("/v1/detect", 5.0)
+        await tracker.track_cache_hit("/api/v1/detect", 5.0)
         await tracker.track_cache_hit("/v1/analyze", 3.0)
         
         # Verify aggregated metrics

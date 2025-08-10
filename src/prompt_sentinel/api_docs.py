@@ -4,7 +4,7 @@ from typing import Any
 
 # API metadata
 API_TITLE = "PromptSentinel API"
-API_VERSION = "3.0.0"
+API_VERSION = "1.0.0"
 API_DESCRIPTION = """
 # 🛡️ PromptSentinel API Documentation
 
@@ -22,11 +22,11 @@ PII exposure, and other security threats in LLM-based systems.
 - 🔄 **Multi-Provider Support**: Anthropic, OpenAI, and Gemini with failover
 - ⚡ **High Performance**: Sub-100ms response times with caching
 
-## API Versions
+## API Version
 
-- **v1**: Simple string-based detection (legacy)
-- **v2**: Advanced detection with role support
-- **v3**: Intelligent routing with complexity analysis
+- **v1.0.0**: Unified API with comprehensive detection capabilities
+- Single endpoint handles all detection formats (simple strings and role-based messages)
+- Intelligent routing available via optional parameters
 
 ## Authentication
 
@@ -53,16 +53,8 @@ TAGS_METADATA = [
         "description": "Health check and monitoring endpoints",
     },
     {
-        "name": "Detection v1",
-        "description": "Legacy detection API - simple string analysis",
-    },
-    {
-        "name": "Detection v2",
-        "description": "Advanced detection with role separation and comprehensive analysis",
-    },
-    {
-        "name": "Detection v3",
-        "description": "Intelligent routing with automatic complexity-based optimization",
+        "name": "Detection",
+        "description": "Unified detection API with support for multiple input formats and intelligent routing",
     },
     {
         "name": "Analysis",
@@ -227,8 +219,8 @@ def custom_openapi_schema(app) -> dict[str, Any]:
 
     # Add server information
     openapi_schema["servers"] = [
-        {"url": "http://localhost:8080", "description": "Local development server"},
-        {"url": "https://api.promptsentinel.ai", "description": "Production server (example)"},
+        {"url": "http://localhost:8080/api/v1", "description": "Local development server"},
+        {"url": "https://api.promptsentinel.ai/api/v1", "description": "Production server (example)"},
     ]
 
     # Add external documentation

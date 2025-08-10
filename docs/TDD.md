@@ -64,9 +64,9 @@ As a developer, I want to submit role-separated prompts (system/user messages) f
 
 **Technical Requirements**:
 - Endpoints: 
-  - `POST /v1/detect` - Simple string detection
-  - `POST /v2/detect` - Advanced detection with role support
-  - `POST /v2/analyze` - Comprehensive analysis
+  - `POST /api/v1/detect` - Simple string detection
+  - `POST /api/v1/detect` - Advanced detection with role support
+  - `POST /api/v1/analyze` - Comprehensive analysis
 - Input formats:
   - Simple: `{ "prompt": str }`
   - Advanced: `{ "messages": [{"role": "system"|"user", "content": str}] }`
@@ -258,15 +258,15 @@ class PIIMatch(BaseModel):
 ### 3.5 API Endpoints
 
 #### V1 API (Simple Detection)
-- `POST /v1/detect` - Basic string-based detection
-- `GET /health` - Health check
+- `POST /api/v1/detect` - Basic string-based detection
+- `GET /api/v1/health` - Health check
 
 #### V2 API (Advanced Features)
-- `POST /v2/detect` - Role-based message detection
-- `POST /v2/analyze` - Comprehensive analysis with all detectors
-- `POST /v2/format-assist` - Format validation and recommendations
-- `POST /v2/batch` - Batch prompt analysis
-- `GET /v2/recommendations` - Security best practices
+- `POST /api/v1/detect` - Role-based message detection
+- `POST /api/v1/analyze` - Comprehensive analysis with all detectors
+- `POST /api/v1/format-assist` - Format validation and recommendations
+- `POST /api/v1/batch` - Batch prompt analysis
+- `GET /api/v1/recommendations` - Security best practices
 
 #### Cache Management
 - `GET /cache/stats` - Cache statistics and hit rates
@@ -274,7 +274,7 @@ class PIIMatch(BaseModel):
 
 #### Monitoring
 - `GET /metrics` - Prometheus-compatible metrics
-- `GET /health/providers` - LLM provider health status
+- `GET /api/v1/health/providers` - LLM provider health status
 
 ## 🚀 4. Development & Deployment
 

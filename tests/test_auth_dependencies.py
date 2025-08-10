@@ -397,7 +397,7 @@ class TestAuthDependencies:
             await check_authenticated(anonymous_client)
         
         assert exc_info.value.status_code == 401
-        assert exc_info.value.detail == "API key required"
+        assert exc_info.value.detail == "Authentication required"
 
     @pytest.mark.asyncio
     async def test_require_admin_success(self, authenticated_client):

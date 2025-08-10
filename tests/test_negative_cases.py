@@ -25,10 +25,21 @@ class TestInvalidInputs:
 
     def test_empty_string_detection(self):
         """Test detection with empty string."""
+        from pydantic import ValidationError
         detector = HeuristicDetector("strict")
         
-        # Empty string should not crash - but needs Message list
-        messages = [Message(role=Role.USER, content="")]
+        # Message model doesn't allow empty content - test validation
+        with pytest.raises(ValidationError) as exc_info:
+            Message(role=Role.USER, content="")
+        assert "cannot be empty" in str(exc_info.value)
+        
+        # Test with whitespace-only content (also not allowed)
+        with pytest.raises(ValidationError) as exc_info:
+            Message(role=Role.USER, content=" ")
+        assert "cannot be empty" in str(exc_info.value)
+        
+        # Test with minimal valid content
+        messages = [Message(role=Role.USER, content="a")]
         verdict, reasons, confidence = detector.detect(messages)
         assert verdict == Verdict.ALLOW
         assert len(reasons) == 0

@@ -167,19 +167,19 @@ async def lifespan(app: FastAPI):
 
     # Configure budget from environment
     budget_config = BudgetConfig(
-        hourly_limit=10.0,  # Default $10/hour
-        daily_limit=100.0,  # Default $100/day
-        monthly_limit=1000.0,  # Default $1000/month
-        block_on_exceeded=True,
-        prefer_cache=True,
+        hourly_limit=settings.budget_hourly_limit,
+        daily_limit=settings.budget_daily_limit,
+        monthly_limit=settings.budget_monthly_limit,
+        block_on_exceeded=settings.budget_block_on_exceeded,
+        prefer_cache=settings.budget_prefer_cache,
     )
     budget_manager = BudgetManager(budget_config, usage_tracker)
 
     # Configure rate limiting
     rate_config = RateLimitConfig(
-        requests_per_minute=60,  # Default 60 rpm
-        tokens_per_minute=10000,  # Default 10k tpm
-        client_requests_per_minute=20,  # Default 20 rpm per client
+        requests_per_minute=settings.rate_limit_requests_per_minute,
+        tokens_per_minute=settings.rate_limit_tokens_per_minute,
+        client_requests_per_minute=settings.rate_limit_client_requests_per_minute,
     )
     rate_limiter = RateLimiter(rate_config)
 
@@ -529,8 +529,8 @@ async def detailed_health_check():
         components["rate_limiter"] = {
             "status": "healthy",
             "global_limits": {
-                "rpm": 60,  # Default from RateLimitConfig
-                "tpm": 10000,  # Default from RateLimitConfig
+                "rpm": settings.rate_limit_requests_per_minute,
+                "tpm": settings.rate_limit_tokens_per_minute,
                 "per_ip": settings.rate_limit_per_ip,
                 "per_key": settings.rate_limit_per_key,
             },

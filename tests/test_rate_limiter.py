@@ -40,9 +40,9 @@ class TestRateLimitConfig:
         """Test default configuration values."""
         config = RateLimitConfig()
         
-        assert config.requests_per_minute == 60
+        assert config.requests_per_minute == 60  # Default from RateLimitConfig
         assert config.requests_per_hour == 1000
-        assert config.tokens_per_minute == 10000
+        assert config.tokens_per_minute == 10000  # Default from RateLimitConfig
         assert config.tokens_per_hour == 100000
         assert config.client_requests_per_minute == 20
         assert config.client_tokens_per_minute == 5000

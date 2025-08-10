@@ -110,9 +110,9 @@ class TestBudgetConfig:
     def test_custom_config(self):
         """Test custom budget configuration."""
         config = BudgetConfig(
-            hourly_limit=10.0,
-            daily_limit=100.0,
-            monthly_limit=1000.0,
+            hourly_limit=10.0,  # Test value
+            daily_limit=100.0,  # Test value
+            monthly_limit=1000.0,  # Test value
             warning_threshold=0.8,
             critical_threshold=0.95,
             block_on_exceeded=False,
@@ -120,9 +120,9 @@ class TestBudgetConfig:
             provider_limits={"openai": 500.0, "anthropic": 300.0}
         )
         
-        assert config.hourly_limit == 10.0
-        assert config.daily_limit == 100.0
-        assert config.monthly_limit == 1000.0
+        assert config.hourly_limit == 10.0  # Test value
+        assert config.daily_limit == 100.0  # Test value
+        assert config.monthly_limit == 1000.0  # Test value
         assert config.warning_threshold == 0.8
         assert config.critical_threshold == 0.95
         assert config.block_on_exceeded is False
@@ -216,9 +216,9 @@ class TestBudgetManager:
     def budget_config(self):
         """Create test budget configuration."""
         return BudgetConfig(
-            hourly_limit=10.0,
-            daily_limit=100.0,
-            monthly_limit=1000.0,
+            hourly_limit=10.0,  # Test value
+            daily_limit=100.0,  # Test value
+            monthly_limit=1000.0,  # Test value
             warning_threshold=0.75,
             critical_threshold=0.90,
             block_on_exceeded=True,
@@ -658,9 +658,9 @@ class TestIntegrationScenarios:
         tracker.get_provider_breakdown.return_value = {}
         
         config = BudgetConfig(
-            hourly_limit=10.0,
-            daily_limit=100.0,
-            monthly_limit=1000.0,
+            hourly_limit=10.0,  # Test value
+            daily_limit=100.0,  # Test value
+            monthly_limit=1000.0,  # Test value
             warning_threshold=0.75,
         )
         

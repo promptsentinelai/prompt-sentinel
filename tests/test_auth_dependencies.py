@@ -226,7 +226,7 @@ class TestAuthDependencies:
         )
         
         assert client.is_authenticated == True
-        assert client.auth_method == AuthMethod.LOCALHOST
+        assert client.auth_method == AuthMethod.BYPASS
 
     @pytest.mark.asyncio
     async def test_get_current_client_network_bypass(
@@ -245,7 +245,7 @@ class TestAuthDependencies:
         )
         
         assert client.is_authenticated == True
-        assert client.auth_method == AuthMethod.NETWORK_BYPASS
+        assert client.auth_method == AuthMethod.BYPASS
         mock_api_key_manager.check_network_bypass.assert_called_once_with("10.0.0.5")
 
     @pytest.mark.asyncio
@@ -265,7 +265,7 @@ class TestAuthDependencies:
         )
         
         assert client.is_authenticated == True
-        assert client.auth_method == AuthMethod.HEADER_BYPASS
+        assert client.auth_method == AuthMethod.BYPASS
 
     @pytest.mark.asyncio
     async def test_get_current_client_required_mode_no_auth(
@@ -285,7 +285,7 @@ class TestAuthDependencies:
             )
         
         assert exc_info.value.status_code == 401
-        assert exc_info.value.detail == "Authentication required"
+        assert exc_info.value.detail == "API key required"
 
     @pytest.mark.asyncio
     async def test_get_current_client_optional_mode_no_auth(
@@ -397,7 +397,7 @@ class TestAuthDependencies:
             await check_authenticated(anonymous_client)
         
         assert exc_info.value.status_code == 401
-        assert exc_info.value.detail == "Authentication required"
+        assert exc_info.value.detail == "API key required"
 
     @pytest.mark.asyncio
     async def test_require_admin_success(self, authenticated_client):

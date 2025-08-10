@@ -1,0 +1,77 @@
+# Pre-commit hooks for code quality
+# See https://pre-commit.com for more information
+
+repos:
+  # Black - Python code formatter
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        language_version: python3.11
+        args: ['--line-length=100']
+
+  # Ruff - Fast Python linter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.1
+    hooks:
+      - id: ruff
+        args: ['--fix', '--exit-non-zero-on-fix']
+      - id: ruff-format
+
+  # MyPy - Static type checker
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [
+          'pydantic>=2.0',
+          'types-pyyaml>=6.0.0',
+          'types-redis>=4.6.0',
+        ]
+        args: ['--ignore-missing-imports', '--no-strict-optional']
+        exclude: '^tests/'
+
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Security checks with Bandit
+  - repo: https://github.com/PyCQA/bandit
+    rev: '1.7.10'
+    hooks:
+      - id: bandit
+        args: ['-c', 'pyproject.toml', '--severity-level', 'medium']
+        exclude: '^tests/'
+
+# Configuration
+default_language_version:
+  python: python3.11
+
+# Run on these file types
+files: '\.(py|yaml|yml|toml|json)$'
+exclude: |
+  (?x)^(
+    \.git/|
+    \.venv/|
+    __pycache__/|
+    build/|
+    dist/|
+    \.pytest_cache/|
+    \.mypy_cache/|
+    \.ruff_cache/|
+    htmlcov/|
+    node_modules/|
+    \.coverage
+  )

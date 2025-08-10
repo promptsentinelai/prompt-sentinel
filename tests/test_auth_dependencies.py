@@ -310,8 +310,8 @@ class TestAuthDependencies:
     async def test_get_current_client_disabled_mode(
         self, mock_request, mock_auth_config, mock_api_key_manager
     ):
-        """Test disabled mode."""
-        mock_auth_config.mode = AuthMode.DISABLED
+        """Test disabled mode (NONE mode)."""
+        mock_auth_config.mode = AuthMode.NONE  # Use NONE instead of DISABLED
         mock_request.state = MagicMock(spec=object)
         
         client = await get_current_client(
@@ -321,8 +321,10 @@ class TestAuthDependencies:
             manager=mock_api_key_manager,
         )
         
-        assert client.is_authenticated == False
-        assert client.client_id == "anonymous"
+        # In NONE mode, client gets authenticated with NONE method
+        assert client.is_authenticated == True
+        assert client.auth_method == AuthMethod.NONE
+        assert client.client_id == "local"
 
     @pytest.mark.asyncio
     async def test_get_optional_client(

@@ -52,6 +52,7 @@ class TestExperimentConfig:
             metric_name="error_rate",
             threshold_type="max",
             threshold_value=0.05,
+            action="pause",  # Added required field
         )
         assert guardrail.metric_name == "error_rate"
         assert guardrail.threshold_type == "max"
@@ -60,13 +61,17 @@ class TestExperimentConfig:
     def test_experiment_config_creation(self):
         """Test experiment configuration creation."""
         config = ExperimentConfig(
+            id="exp-001",
             name="test_experiment",
             type=ExperimentType.STRATEGY,
             status=ExperimentStatus.DRAFT,
             description="Test experiment",
-            start_date=datetime.utcnow(),
-            end_date=datetime.utcnow() + timedelta(days=7),
+            start_time=datetime.utcnow(),
+            end_time=datetime.utcnow() + timedelta(days=7),
+            duration_hours=168,  # 7 days
             traffic_allocation=TrafficAllocation(control=0.5, treatment=0.5),
+            primary_metrics=["detection_accuracy", "latency"],
+            created_by="test_user",
             variants=[
                 ExperimentVariant(
                     id="control",

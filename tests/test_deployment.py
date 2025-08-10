@@ -345,9 +345,7 @@ class TestRollbackStrategies:
         await rollback_manager.configure_triggers(triggers)
 
         # Simulate deployment with issues
-        await rollback_manager.monitor_deployment(
-            deployment_id="deploy_123", version="v2.0.0"
-        )
+        await rollback_manager.monitor_deployment(deployment_id="deploy_123", version="v2.0.0")
 
         # Simulate metrics exceeding thresholds
         await rollback_manager.record_metric("error_rate", 0.08)

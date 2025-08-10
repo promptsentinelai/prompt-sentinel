@@ -1,6 +1,5 @@
 """Internationalization and multi-language support tests."""
 
-
 import pytest
 
 from prompt_sentinel.models.schemas import Verdict

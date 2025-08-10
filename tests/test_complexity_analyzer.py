@@ -1,6 +1,5 @@
 """Tests for routing complexity analyzer module."""
 
-
 import pytest
 
 from prompt_sentinel.models.schemas import Message, Role

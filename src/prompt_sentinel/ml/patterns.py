@@ -126,19 +126,19 @@ class PatternExtractor:
         # Try different extraction methods
 
         # 1. Common substring extraction
-        substring_patterns = self._extract_common_substrings(prompts)
+        substring_patterns = self._extract_common_substrings(prompts, cluster)
         patterns.extend(substring_patterns)
 
         # 2. Template matching
-        template_patterns = self._match_templates(prompts, cluster.dominant_category)
+        template_patterns = self._match_templates(prompts, cluster.dominant_category, cluster)
         patterns.extend(template_patterns)
 
         # 3. N-gram patterns
-        ngram_patterns = self._extract_ngram_patterns(prompts)
+        ngram_patterns = self._extract_ngram_patterns(prompts, cluster)
         patterns.extend(ngram_patterns)
 
         # 4. Differential analysis
-        diff_patterns = self._extract_diff_patterns(prompts)
+        diff_patterns = self._extract_diff_patterns(prompts, cluster)
         patterns.extend(diff_patterns)
 
         # 5. Genetic algorithm optimization (if enabled)
@@ -152,7 +152,7 @@ class PatternExtractor:
         # Limit number of patterns per cluster
         return patterns[:10]
 
-    def _extract_common_substrings(self, prompts: list[str]) -> list[ExtractedPattern]:
+    def _extract_common_substrings(self, prompts: list[str], cluster: any) -> list[ExtractedPattern]:
         """Extract common substrings from prompts."""
         patterns = []
 
@@ -199,7 +199,7 @@ class PatternExtractor:
 
         return patterns
 
-    def _match_templates(self, prompts: list[str], category: str) -> list[ExtractedPattern]:
+    def _match_templates(self, prompts: list[str], category: str, cluster: any) -> list[ExtractedPattern]:
         """Match prompts against template patterns."""
         patterns = []
 
@@ -234,7 +234,7 @@ class PatternExtractor:
 
         return patterns
 
-    def _extract_ngram_patterns(self, prompts: list[str]) -> list[ExtractedPattern]:
+    def _extract_ngram_patterns(self, prompts: list[str], cluster: any) -> list[ExtractedPattern]:
         """Extract n-gram based patterns."""
         patterns = []
 
@@ -278,7 +278,7 @@ class PatternExtractor:
 
         return patterns
 
-    def _extract_diff_patterns(self, prompts: list[str]) -> list[ExtractedPattern]:
+    def _extract_diff_patterns(self, prompts: list[str], cluster: any) -> list[ExtractedPattern]:
         """Extract patterns using differential analysis."""
         patterns = []
 
@@ -427,7 +427,7 @@ class PatternExtractor:
                     cluster_id=similar_group[0].cluster_id,
                     category=similar_group[0].category,
                     description=f"Merged pattern from {len(similar_group)} similar patterns",
-                    examples=list(set(sum([p.examples for p in similar_group], []))[:5]),
+                    examples=list(set(sum([p.examples for p in similar_group], [])))[:5],
                     created_at=datetime.utcnow(),
                     metadata={"merged_count": len(similar_group)},
                 )

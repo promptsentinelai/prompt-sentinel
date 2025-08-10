@@ -106,14 +106,39 @@ stop: ## Stop all Docker containers
 # ============================================================================
 
 .PHONY: test
-test: ## Run all tests
+test: ## Run all tests without coverage (faster)
 	@echo "$(GREEN)Running tests...$(NC)"
 	$(UV) run pytest -v
+
+.PHONY: test-quick
+test-quick: ## Run only comprehensive tests (fastest, ~5s)
+	@echo "$(GREEN)Running comprehensive tests only...$(NC)"
+	$(UV) run pytest tests/*comprehensive*.py -v
+
+.PHONY: test-parallel
+test-parallel: ## Run tests in parallel using all CPU cores
+	@echo "$(GREEN)Running tests in parallel...$(NC)"
+	$(UV) run pytest -n auto -v
 
 .PHONY: test-coverage
 test-coverage: ## Run tests with coverage report
 	@echo "$(GREEN)Running tests with coverage...$(NC)"
 	$(UV) run pytest --cov=$(SRC_DIR) --cov-report=html --cov-report=term
+
+.PHONY: test-unit
+test-unit: ## Run only unit tests (no integration/e2e)
+	@echo "$(GREEN)Running unit tests...$(NC)"
+	$(UV) run pytest -m "unit" -v
+
+.PHONY: test-integration
+test-integration: ## Run only integration tests
+	@echo "$(GREEN)Running integration tests...$(NC)"
+	$(UV) run pytest -m "integration" -v
+
+.PHONY: test-fast
+test-fast: ## Run tests excluding slow tests
+	@echo "$(GREEN)Running fast tests only...$(NC)"
+	$(UV) run pytest -m "not slow" -v
 
 .PHONY: test-watch
 test-watch: ## Run tests in watch mode

@@ -177,7 +177,7 @@ class TestRateLimiting:
                 headers=headers
             )
             responses.append(response)
-            time.sleep(0.1)  # Small delay
+            # Small delay removed for faster testing
         
         # All should succeed initially (within burst limit)
         success_count = sum(1 for r in responses if r.status_code == 200)
@@ -243,8 +243,7 @@ class TestRateLimiting:
         
         initial_status = response.status_code
         
-        # Wait a bit for any cooldown
-        time.sleep(1)
+        # Cooldown wait removed for faster testing
         
         # Make another request
         response = self.client.post(

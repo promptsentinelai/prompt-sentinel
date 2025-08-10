@@ -105,7 +105,7 @@ class TestExperimentDatabase:
             assert "experiment_metrics" in table_names
             assert "experiment_assignments" in table_names
             assert "experiment_results" in table_names
-            assert "guardrail_violations" in table_names
+            assert "safety_violations" in table_names  # Table is named safety_violations not guardrail_violations
         
         Path(db_path).unlink(missing_ok=True)
 

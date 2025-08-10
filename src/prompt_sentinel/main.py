@@ -771,6 +771,9 @@ async def analyze(request: AnalysisRequest):
     """
     if not detector:
         raise HTTPException(status_code=503, detail="Detector not initialized")
+    
+    if not processor:
+        raise HTTPException(status_code=503, detail="Prompt processor not initialized")
 
     # Validate messages
     if not request.messages:
@@ -863,6 +866,9 @@ async def batch_detect(request: dict) -> JSONResponse:
     """
     if not detector:
         raise HTTPException(status_code=503, detail="Detection service unavailable")
+    
+    if not processor:
+        raise HTTPException(status_code=503, detail="Prompt processor not initialized")
 
     prompts = request.get("prompts", [])
     if not prompts:
@@ -948,6 +954,9 @@ async def format_assist(request: FormatAssistRequest):
         >>> print(response.json()["formatted"])
         [{"role": "system", "content": "..."}, {"role": "user", "content": "..."}]
     """
+    if not processor:
+        raise HTTPException(status_code=503, detail="Prompt processor not initialized")
+    
     # Analyze the raw prompt
     complexity = processor.calculate_complexity_metrics(request.raw_prompt)
 
@@ -1468,6 +1477,8 @@ async def get_complexity_metrics(prompt: str | None = None, include_distribution
     result = {}
 
     if prompt:
+        if not processor:
+            raise HTTPException(status_code=503, detail="Prompt processor not initialized")
         # Analyze specific prompt
         from prompt_sentinel.models.schemas import Message, Role
 

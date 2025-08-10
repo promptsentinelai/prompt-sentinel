@@ -220,7 +220,10 @@ def custom_openapi_schema(app) -> dict[str, Any]:
     # Add server information
     openapi_schema["servers"] = [
         {"url": "http://localhost:8080/api/v1", "description": "Local development server"},
-        {"url": "https://api.promptsentinel.ai/api/v1", "description": "Production server (example)"},
+        {
+            "url": "https://api.promptsentinel.ai/api/v1",
+            "description": "Production server (example)",
+        },
     ]
 
     # Add external documentation

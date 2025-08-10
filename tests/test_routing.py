@@ -1,6 +1,5 @@
 """Tests for intelligent routing system."""
 
-
 from prompt_sentinel.models.schemas import Message, Role
 from prompt_sentinel.routing.complexity_analyzer import (
     ComplexityAnalyzer,

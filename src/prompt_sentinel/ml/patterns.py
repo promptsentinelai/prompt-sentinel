@@ -152,7 +152,9 @@ class PatternExtractor:
         # Limit number of patterns per cluster
         return patterns[:10]
 
-    def _extract_common_substrings(self, prompts: list[str], cluster: any) -> list[ExtractedPattern]:
+    def _extract_common_substrings(
+        self, prompts: list[str], cluster: any
+    ) -> list[ExtractedPattern]:
         """Extract common substrings from prompts."""
         patterns = []
 
@@ -199,7 +201,9 @@ class PatternExtractor:
 
         return patterns
 
-    def _match_templates(self, prompts: list[str], category: str, cluster: any) -> list[ExtractedPattern]:
+    def _match_templates(
+        self, prompts: list[str], category: str, cluster: any
+    ) -> list[ExtractedPattern]:
         """Match prompts against template patterns."""
         patterns = []
 

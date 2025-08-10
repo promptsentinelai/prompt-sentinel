@@ -193,7 +193,7 @@ class TestExperimentAssignments:
     def test_assignment_context_creation(self):
         """Test assignment context creation."""
         from prompt_sentinel.experiments.assignments import AssignmentContext
-        
+
         context = AssignmentContext(
             user_id="user_123",
             experiment_id="exp_456",
@@ -206,7 +206,7 @@ class TestExperimentAssignments:
     def test_bucketing_strategy_enum(self):
         """Test bucketing strategy enumeration."""
         from prompt_sentinel.experiments.assignments import BucketingStrategy
-        
+
         # Test enum values exist
         assert BucketingStrategy.HASH_BASED
         assert BucketingStrategy.RANDOM
@@ -217,7 +217,7 @@ class TestExperimentAssignments:
     async def test_assignment_service_initialization(self):
         """Test assignment service initialization."""
         from prompt_sentinel.experiments.assignments import AssignmentService
-        
+
         with patch("prompt_sentinel.experiments.assignments.ExperimentDatabase"):
             service = AssignmentService()
             assert service is not None
@@ -231,7 +231,7 @@ class TestExperimentDatabase:
     async def test_database_initialization(self):
         """Test database initialization."""
         from prompt_sentinel.experiments.database import ExperimentDatabase
-        
+
         with patch("prompt_sentinel.experiments.database.asyncpg"):
             db = ExperimentDatabase(connection_string="postgresql://test")
             assert db is not None
@@ -244,7 +244,7 @@ class TestExperimentCollectors:
     def test_metric_types(self):
         """Test metric type definitions."""
         from prompt_sentinel.experiments.collectors import MetricType
-        
+
         # Test metric types exist
         assert MetricType.DETECTION_ACCURACY
         assert MetricType.DETECTION_LATENCY
@@ -255,7 +255,7 @@ class TestExperimentCollectors:
     async def test_metrics_collector_initialization(self):
         """Test metrics collector initialization."""
         from prompt_sentinel.experiments.collectors import MetricsCollector
-        
+
         with patch("prompt_sentinel.experiments.collectors.ExperimentDatabase"):
             collector = MetricsCollector()
             assert collector is not None
@@ -268,7 +268,7 @@ class TestExperimentAnalyzer:
     async def test_analyzer_initialization(self):
         """Test analyzer initialization."""
         from prompt_sentinel.experiments.analyzer import ExperimentAnalyzer
-        
+
         with patch("prompt_sentinel.experiments.analyzer.ExperimentDatabase"):
             analyzer = ExperimentAnalyzer()
             assert analyzer is not None
@@ -276,7 +276,7 @@ class TestExperimentAnalyzer:
     def test_statistical_test_types(self):
         """Test statistical test type definitions."""
         from prompt_sentinel.experiments.analyzer import StatisticalTest
-        
+
         # Test statistical test types exist
         assert StatisticalTest.TWO_SAMPLE_T_TEST
         assert StatisticalTest.CHI_SQUARED
@@ -290,7 +290,7 @@ class TestExperimentSafety:
     async def test_safety_monitor_initialization(self):
         """Test safety monitor initialization."""
         from prompt_sentinel.experiments.safety import SafetyMonitor
-        
+
         with patch("prompt_sentinel.experiments.safety.ExperimentDatabase"):
             monitor = SafetyMonitor()
             assert monitor is not None
@@ -298,7 +298,7 @@ class TestExperimentSafety:
     def test_alert_severity_levels(self):
         """Test alert severity definitions."""
         from prompt_sentinel.experiments.safety import AlertSeverity
-        
+
         # Test severity levels exist
         assert AlertSeverity.INFO
         assert AlertSeverity.WARNING
@@ -307,7 +307,7 @@ class TestExperimentSafety:
     def test_safety_violation_types(self):
         """Test safety violation type definitions."""
         from prompt_sentinel.experiments.safety import ViolationType
-        
+
         # Test violation types exist
         assert ViolationType.GUARDRAIL_BREACH
         assert ViolationType.SRM_DETECTED
@@ -321,7 +321,7 @@ class TestExperimentManager:
     async def test_manager_initialization(self):
         """Test manager initialization."""
         from prompt_sentinel.experiments.manager import ExperimentManager
-        
+
         with patch("prompt_sentinel.experiments.manager.ExperimentDatabase"):
             manager = ExperimentManager()
             assert manager is not None

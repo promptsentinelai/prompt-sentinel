@@ -1,6 +1,5 @@
 """Comprehensive tests for the PromptProcessor module."""
 
-
 import pytest
 
 from prompt_sentinel.detection.prompt_processor import PromptProcessor

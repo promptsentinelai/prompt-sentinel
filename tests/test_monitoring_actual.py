@@ -1,6 +1,5 @@
 """Unit tests for actual monitoring modules."""
 
-
 import pytest
 
 from prompt_sentinel.monitoring.budget_manager import BudgetManager

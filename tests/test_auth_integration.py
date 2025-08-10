@@ -214,7 +214,6 @@ class TestRateLimiting:
         # Make initial request
         response = self.client.post("/api/v1/detect", json={"prompt": "test"}, headers=headers)
 
-
         # Cooldown wait removed for faster testing
 
         # Make another request

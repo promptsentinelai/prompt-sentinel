@@ -1,6 +1,5 @@
 """Comprehensive tests for the PII detector module."""
 
-
 import pytest
 
 from prompt_sentinel.detection.pii_detector import PIIDetector, PIIMatch, PIIType

@@ -1,6 +1,5 @@
 """Security-focused test scenarios for PromptSentinel."""
 
-
 import pytest
 
 from prompt_sentinel.detection.heuristics import HeuristicDetector

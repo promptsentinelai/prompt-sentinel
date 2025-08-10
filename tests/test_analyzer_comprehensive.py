@@ -1,8 +1,6 @@
 """Comprehensive tests for the experiments analyzer module."""
 
-import math
-import statistics
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

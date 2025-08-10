@@ -207,9 +207,9 @@ class RateLimiter:
         # Check priority-based allowance
         if self.config.enable_priority and priority >= Priority.HIGH:
             # High priority requests get reserved capacity
-            reserve_factor = 1 - self.config.priority_reserved_percentage
+            1 - self.config.priority_reserved_percentage
         else:
-            reserve_factor = 1.0
+            pass
 
         # Check global request limit
         if not self.global_request_bucket.can_consume(1):

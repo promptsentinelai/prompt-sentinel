@@ -1,7 +1,6 @@
 """Comprehensive tests for ML features module."""
 
-import math
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest

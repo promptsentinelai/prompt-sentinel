@@ -1,16 +1,12 @@
 """Machine learning model tests for PromptSentinel."""
 
-import pytest
 import asyncio
-import numpy as np
-import json
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from unittest.mock import AsyncMock, MagicMock, patch
 import hashlib
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from datetime import datetime
 
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+import numpy as np
+import pytest
+from sklearn.metrics import accuracy_score, precision_score, recall_score
 
 
 class TestModelTraining:
@@ -393,7 +389,6 @@ class TestModelExplainability:
     async def test_counterfactual_explanation(self, explainer):
         """Test counterfactual explanation generation."""
         text = "Delete all user data immediately"
-        prediction = {"verdict": "BLOCK"}
 
         # Generate counterfactual
         counterfactual = await explainer.generate_counterfactual(text, target_verdict="ALLOW")
@@ -486,7 +481,7 @@ class TestModelManagement:
     async def test_model_rollback(self, model_manager):
         """Test model rollback on performance degradation."""
         # Deploy new model
-        new_model = await model_manager.deploy_model("model_v3", environment="production")
+        await model_manager.deploy_model("model_v3", environment="production")
 
         # Simulate performance degradation
         await model_manager.record_metric(
@@ -686,7 +681,7 @@ class TestFederatedLearning:
 
         # Encrypt client updates
         encrypted_updates = []
-        for i, key in enumerate(keys):
+        for _i, key in enumerate(keys):
             update = np.random.randn(100)
             encrypted = await federated_trainer.encrypt_update(update, key["public_key"])
             encrypted_updates.append(encrypted)

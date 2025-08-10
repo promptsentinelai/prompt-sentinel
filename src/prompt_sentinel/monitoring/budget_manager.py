@@ -168,7 +168,7 @@ class BudgetManager:
         # Check hourly budget
         if self.config.hourly_limit:
             hourly_remaining = self.config.hourly_limit - hourly_cost
-            hourly_percentage = hourly_cost / self.config.hourly_limit
+            hourly_cost / self.config.hourly_limit
 
             alert = self._check_limit(
                 BudgetPeriod.HOURLY, hourly_cost, self.config.hourly_limit, estimated_cost
@@ -181,7 +181,7 @@ class BudgetManager:
         # Check daily budget
         if self.config.daily_limit:
             daily_remaining = self.config.daily_limit - daily_cost
-            daily_percentage = daily_cost / self.config.daily_limit
+            daily_cost / self.config.daily_limit
 
             alert = self._check_limit(
                 BudgetPeriod.DAILY, daily_cost, self.config.daily_limit, estimated_cost
@@ -194,7 +194,7 @@ class BudgetManager:
         # Check monthly budget
         if self.config.monthly_limit:
             monthly_remaining = self.config.monthly_limit - monthly_cost
-            monthly_percentage = monthly_cost / self.config.monthly_limit
+            monthly_cost / self.config.monthly_limit
 
             alert = self._check_limit(
                 BudgetPeriod.MONTHLY, monthly_cost, self.config.monthly_limit, estimated_cost

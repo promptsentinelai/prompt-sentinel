@@ -1,8 +1,10 @@
 """Property-based tests using Hypothesis for PromptSentinel."""
 
 import string
-from hypothesis import given, strategies as st, settings, assume
+
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from prompt_sentinel.detection.heuristics import HeuristicDetector
 from prompt_sentinel.detection.pii_detector import PIIDetector
@@ -199,7 +201,7 @@ class TestPropertyBasedValidation:
         detector = HeuristicDetector(detection_mode=mode)
 
         # Create a fake detection reason
-        from prompt_sentinel.models.schemas import DetectionReason, DetectionCategory
+        from prompt_sentinel.models.schemas import DetectionCategory, DetectionReason
 
         reasons = [
             DetectionReason(

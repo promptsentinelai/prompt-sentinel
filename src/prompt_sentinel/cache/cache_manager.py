@@ -182,7 +182,7 @@ class CacheManager:
                         if isinstance(cached, dict):
                             cached["_cache_stale"] = True
                         return cached
-                except:
+                except Exception:
                     pass
             raise
 

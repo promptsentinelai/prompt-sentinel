@@ -10,7 +10,7 @@ API_DESCRIPTION = """
 
 ## Overview
 
-PromptSentinel is a defensive security microservice for detecting and mitigating prompt injection attacks, 
+PromptSentinel is a defensive security microservice for detecting and mitigating prompt injection attacks,
 PII exposure, and other security threats in LLM-based systems.
 
 ## Features

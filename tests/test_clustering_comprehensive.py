@@ -1,8 +1,7 @@
 """Comprehensive tests for ML clustering module."""
 
-import asyncio
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -154,8 +153,8 @@ class TestClusteringEngine:
     @patch("prompt_sentinel.ml.clustering.logger")
     def test_init_models_success(self, mock_logger):
         """Test successful model initialization."""
-        with patch("sklearn.cluster.DBSCAN") as mock_dbscan:
-            with patch("sklearn.cluster.MiniBatchKMeans") as mock_kmeans:
+        with patch("sklearn.cluster.DBSCAN"):
+            with patch("sklearn.cluster.MiniBatchKMeans"):
                 engine = ClusteringEngine()
 
                 assert engine.dbscan is not None
@@ -222,7 +221,7 @@ class TestClusteringEngine:
         engine.dbscan.fit_predict = MagicMock(return_value=labels)
 
         # Test the _cluster_hdbscan method directly since cluster_events checks algorithm first
-        clusters = await engine._cluster_hdbscan(sample_features, sample_events)
+        await engine._cluster_hdbscan(sample_features, sample_events)
 
         # Should fall back to DBSCAN
         engine.dbscan.fit_predict.assert_called_once()
@@ -258,7 +257,7 @@ class TestClusteringEngine:
         labels = np.array([-1, -1, 0, 0, 0, 1, 1, 1, 1, 1] + [2] * 10)
         engine.dbscan.fit_predict = MagicMock(return_value=labels)
 
-        clusters = await engine._cluster_dbscan(sample_features, sample_events)
+        await engine._cluster_dbscan(sample_features, sample_events)
 
         assert len(engine.noise_points) == 2
         assert 0 in engine.noise_points
@@ -310,7 +309,7 @@ class TestClusteringEngine:
         engine.kmeans.cluster_centers_ = np.random.rand(2, 10)
         engine.kmeans.inertia_ = 50.0
 
-        clusters = await engine._cluster_kmeans(small_features, small_events)
+        await engine._cluster_kmeans(small_features, small_events)
 
         # Should use minimum K value
         assert engine.kmeans.n_clusters >= 2

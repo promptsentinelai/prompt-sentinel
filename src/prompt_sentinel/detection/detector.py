@@ -198,7 +198,7 @@ class PromptDetector:
                     # Log PII detection if enabled and in pass-alert mode
                     if settings.pii_redaction_mode == "pass-alert" and settings.pii_log_detected:
                         logger = logging.getLogger(__name__)
-                        pii_types = list(set(p.pii_type for p in pii_detections))
+                        pii_types = list({p.pii_type for p in pii_detections})
                         logger.warning(
                             f"PII detected in pass-alert mode: {len(pii_detections)} item(s) of types {pii_types}"
                         )
@@ -241,13 +241,22 @@ class PromptDetector:
         # Calculate processing time
         processing_time_ms = (time.time() - start_time) * 1000
 
+        # Build metadata
+        metadata = {
+            "detection_mode": settings.detection_mode,
+            "heuristics_used": use_heuristics,
+            "llm_used": use_llm,
+            "message_count": len(messages),
+            "format_valid": check_format and len(format_recommendations) == 0,
+        }
+
         # Collect event for ML pattern discovery (if enabled)
         if self.pattern_manager and self.pattern_manager.collector:
             try:
                 if final_verdict in [Verdict.BLOCK, Verdict.FLAG]:
                     # Extract categories and patterns from reasons
                     categories = list(
-                        set(r.category.value for r in all_reasons if hasattr(r, "category"))
+                        {r.category.value for r in all_reasons if hasattr(r, "category")}
                     )
                     patterns = []
                     for r in all_reasons:
@@ -276,15 +285,6 @@ class PromptDetector:
             except Exception:
                 # Don't let ML collection errors affect detection
                 pass
-
-        # Build metadata
-        metadata = {
-            "detection_mode": settings.detection_mode,
-            "heuristics_used": use_heuristics,
-            "llm_used": use_llm,
-            "message_count": len(messages),
-            "format_valid": check_format and len(format_recommendations) == 0,
-        }
 
         # Add PII pass-alert warning to metadata
         if settings.pii_redaction_mode == "pass-alert" and pii_detections:

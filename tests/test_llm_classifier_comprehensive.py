@@ -1,8 +1,7 @@
 """Comprehensive tests for the LLMClassifierManager module."""
 
 import asyncio
-import hashlib
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -193,7 +192,7 @@ class TestLLMClassifierManager:
         mock_cache_manager.get_or_compute.return_value = cached_result
 
         with patch("prompt_sentinel.detection.llm_classifier.cache_manager", mock_cache_manager):
-            with patch("prompt_sentinel.detection.llm_classifier.logger") as mock_logger:
+            with patch("prompt_sentinel.detection.llm_classifier.logger"):
                 result = await manager.classify(sample_messages, use_cache=True)
 
                 assert result == cached_result

@@ -1,14 +1,14 @@
 """Comprehensive tests for the HeuristicDetector module."""
 
-import pytest
 import base64
-from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from prompt_sentinel.detection.heuristics import HeuristicDetector
 from prompt_sentinel.models.schemas import (
     DetectionCategory,
-    DetectionReason,
     Message,
     Role,
     Verdict,
@@ -617,7 +617,7 @@ class TestHeuristicDetector:
                 verdict, reasons, confidence = detector_moderate.detect([message])
                 assert isinstance(verdict, Verdict)
                 assert isinstance(reasons, list)
-                assert isinstance(confidence, (int, float))
+                assert isinstance(confidence, int | float)
 
     def test_regex_pattern_safety(self, detector_moderate):
         """Test that regex patterns are safe and don't cause ReDoS."""

@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -105,7 +105,7 @@ class TestGeminiProvider:
     @pytest.mark.asyncio
     async def test_classify_timeout(self, provider, messages):
         """Test classification timeout handling."""
-        provider.model_instance.generate_content = MagicMock(side_effect=asyncio.TimeoutError())
+        provider.model_instance.generate_content = MagicMock(side_effect=TimeoutError())
 
         category, confidence, explanation = await provider.classify(messages)
 
@@ -149,7 +149,7 @@ class TestGeminiProvider:
 
         result = await provider.health_check()
 
-        assert result == True
+        assert result
 
     @pytest.mark.asyncio
     async def test_health_check_failure(self, provider):
@@ -160,16 +160,16 @@ class TestGeminiProvider:
 
         result = await provider.health_check()
 
-        assert result == False
+        assert not result
 
     @pytest.mark.asyncio
     async def test_health_check_timeout(self, provider):
         """Test health check timeout."""
-        provider.model_instance.generate_content = MagicMock(side_effect=asyncio.TimeoutError())
+        provider.model_instance.generate_content = MagicMock(side_effect=TimeoutError())
 
         result = await provider.health_check()
 
-        assert result == False
+        assert not result
 
     def test_parse_response_valid_json(self, provider):
         """Test parsing valid JSON response."""
@@ -302,7 +302,7 @@ That's my assessment."""
         """Test that Gemini safety settings are configured."""
         with patch("prompt_sentinel.providers.gemini_provider.genai") as mock_genai:
             config = {"api_key": "test-key", "model": "gemini-pro"}
-            provider = GeminiProvider(config)
+            GeminiProvider(config)
 
             # Verify model is created with proper configuration
             mock_genai.GenerativeModel.assert_called_once_with("gemini-pro")

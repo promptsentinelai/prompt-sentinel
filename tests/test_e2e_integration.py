@@ -1,13 +1,12 @@
 """End-to-end integration tests for PromptSentinel."""
 
+from datetime import datetime
+from unittest.mock import patch
+
 import pytest
-import asyncio
-import json
-from datetime import datetime, timedelta
-from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+from prompt_sentinel.models.schemas import Verdict
 
 
 class TestEndToEndDetectionFlow:
@@ -16,10 +15,10 @@ class TestEndToEndDetectionFlow:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize detector if not already initialized
         if main.detector is None:
@@ -89,6 +88,7 @@ class TestEndToEndDetectionFlow:
     async def test_e2e_websocket_flow(self):
         """Test end-to-end WebSocket detection flow."""
         from fastapi.testclient import TestClient
+
         from prompt_sentinel.main import app
 
         with TestClient(app) as client:
@@ -121,10 +121,10 @@ class TestEndToEndAnalysisFlow:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize detector if not already initialized
         if main.detector is None:
@@ -162,7 +162,7 @@ class TestEndToEndAnalysisFlow:
         assert "detection_mode" in metadata
         assert "heuristics_used" in metadata
         assert "llm_used" in metadata
-        assert metadata["llm_used"] == True  # We requested LLM
+        assert metadata["llm_used"]  # We requested LLM
 
     def test_e2e_format_assistance(self, client):
         """Test end-to-end format assistance."""
@@ -196,10 +196,10 @@ class TestEndToEndExperimentFlow:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize detector if not already initialized
         if main.detector is None:
@@ -255,10 +255,10 @@ class TestEndToEndAuthenticationFlow:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize detector if not already initialized
         if main.detector is None:
@@ -308,10 +308,10 @@ class TestEndToEndMonitoringFlow:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize detector if not already initialized
         if main.detector is None:
@@ -364,10 +364,10 @@ class TestEndToEndErrorHandling:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize detector if not already initialized
         if main.detector is None:
@@ -392,7 +392,7 @@ class TestEndToEndErrorHandling:
 
     def test_e2e_internal_error_recovery(self, client):
         """Test recovery from internal errors."""
-        from prompt_sentinel.models.schemas import DetectionResponse, Verdict
+        from prompt_sentinel.models.schemas import DetectionResponse
 
         with patch("prompt_sentinel.detection.detector.PromptDetector.detect") as mock_detect:
             # Create a proper DetectionResponse object for the second call
@@ -425,10 +425,10 @@ class TestEndToEndPerformance:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize detector if not already initialized
         if main.detector is None:
@@ -457,11 +457,10 @@ class TestEndToEndPerformance:
     @pytest.mark.asyncio
     async def test_e2e_concurrent_requests(self):
         """Test handling concurrent requests."""
-        from httpx import AsyncClient
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize if needed
         if main.detector is None:
@@ -495,8 +494,9 @@ class TestEndToEndDataFlow:
     @pytest.mark.asyncio
     async def test_e2e_data_persistence(self):
         """Test data persistence end-to-end."""
-        from prompt_sentinel.main import app
         from fastapi.testclient import TestClient
+
+        from prompt_sentinel.main import app
 
         client = TestClient(app)
 
@@ -504,15 +504,17 @@ class TestEndToEndDataFlow:
         response = client.post("/api/v1/detect", json={"prompt": "Test persistence"})
 
         assert response.status_code == 200
-        data = response.json()
+        response.json()
         # v1 API doesn't provide request_id, so we can't check history
 
     @pytest.mark.asyncio
     async def test_e2e_cache_behavior(self):
         """Test caching behavior end-to-end."""
-        from prompt_sentinel.main import app
-        from fastapi.testclient import TestClient
         import time
+
+        from fastapi.testclient import TestClient
+
+        from prompt_sentinel.main import app
 
         client = TestClient(app)
 
@@ -547,10 +549,10 @@ class TestEndToEndSecurityFlow:
     @pytest.fixture
     def client(self):
         """Create test client."""
-        from prompt_sentinel.main import app
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
+        from prompt_sentinel.main import app
 
         # Initialize detector if not already initialized
         if main.detector is None:

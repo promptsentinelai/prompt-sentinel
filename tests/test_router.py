@@ -1,33 +1,32 @@
 """Tests for intelligent routing system."""
 
-import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from prompt_sentinel.routing.router import (
-    DetectionStrategy,
-    IntelligentRouter,
-    RoutingDecision,
-    RoutingMetrics,
+import pytest
+
+from prompt_sentinel.detection.detector import PromptDetector
+from prompt_sentinel.experiments import ExperimentManager
+from prompt_sentinel.experiments.config import ExperimentAssignment
+from prompt_sentinel.models.schemas import (
+    DetectionCategory,
+    DetectionReason,
+    DetectionResponse,
+    Message,
+    Role,
+    Verdict,
 )
 from prompt_sentinel.routing.complexity_analyzer import (
     ComplexityLevel,
     ComplexityScore,
     RiskIndicator,
 )
-from prompt_sentinel.models.schemas import (
-    Message,
-    Role,
-    DetectionResponse,
-    DetectionReason,
-    DetectionCategory,
-    Verdict,
+from prompt_sentinel.routing.router import (
+    DetectionStrategy,
+    IntelligentRouter,
+    RoutingDecision,
+    RoutingMetrics,
 )
-from prompt_sentinel.detection.detector import PromptDetector
-from prompt_sentinel.experiments import ExperimentManager
-from prompt_sentinel.experiments.assignments import AssignmentContext
-from prompt_sentinel.experiments.config import ExperimentAssignment
 
 
 class TestDetectionStrategy:

@@ -1,16 +1,12 @@
 """Workflow automation tests for PromptSentinel."""
 
-import pytest
 import asyncio
-import json
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Callable
-from unittest.mock import AsyncMock, MagicMock, patch
-import uuid
 from enum import Enum
+from unittest.mock import patch
 
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+import pytest
 
 # Skip all tests in this file - feature not implemented
 pytestmark = pytest.mark.skip(reason="Feature not yet implemented")
@@ -323,7 +319,7 @@ class TestWorkflowEngine:
             "steps": [{"name": "step1", "type": "log"}, {"name": "step2", "type": "log"}],
         }
 
-        v2_result = await workflow_engine.register_workflow(workflow_v2)
+        await workflow_engine.register_workflow(workflow_v2)
 
         # Get workflow versions
         versions = await workflow_engine.get_workflow_versions("versioned_workflow")

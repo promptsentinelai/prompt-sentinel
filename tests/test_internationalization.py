@@ -1,11 +1,9 @@
 """Internationalization and multi-language support tests."""
 
-import pytest
-import asyncio
-from typing import Dict, List
-from unittest.mock import MagicMock, patch
 
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+import pytest
+
+from prompt_sentinel.models.schemas import Verdict
 
 
 class TestMultiLanguageDetection:
@@ -183,7 +181,7 @@ class TestLocalization:
             "fr-FR": "15/03/2024 14:30",
         }
 
-        for locale, expected_pattern in formats.items():
+        for locale, _expected_pattern in formats.items():
             formatted = await localization_manager.format_date(date, locale=locale)
             # Check key components are present
             assert "15" in formatted or "3" in formatted
@@ -345,7 +343,7 @@ class TestTranslationAccuracy:
             text=original, languages=["es", "fr", "de"]
         )
 
-        for lang, back_translated in translations.items():
+        for _lang, back_translated in translations.items():
             similarity = await translation_validator.calculate_similarity(original, back_translated)
             assert similarity > 0.7  # Should maintain meaning
 
@@ -417,7 +415,7 @@ class TestLocaleFormatting:
             "fr-FR": "1 234 567,89 €",
         }
 
-        for locale, expected_pattern in formats.items():
+        for locale, _expected_pattern in formats.items():
             formatted = await locale_formatter.format_currency(amount, locale=locale)
             # Check key formatting elements
             if locale == "en-US":
@@ -436,7 +434,7 @@ class TestLocaleFormatting:
             "fr-FR": "85,67 %",
         }
 
-        for locale, expected in formats.items():
+        for locale, _expected in formats.items():
             formatted = await locale_formatter.format_percentage(value, locale=locale)
             # Verify decimal separator matches locale
             if locale == "en-US":

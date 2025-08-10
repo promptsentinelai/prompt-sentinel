@@ -1,7 +1,5 @@
 """Comprehensive tests for main FastAPI application endpoints."""
 
-import json
-from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,9 +10,6 @@ from prompt_sentinel.models.schemas import (
     DetectionCategory,
     DetectionReason,
     DetectionResponse,
-    HealthResponse,
-    Message,
-    Role,
     Verdict,
 )
 
@@ -481,7 +476,7 @@ class TestMiddleware:
 
     def test_request_logging_middleware(self, client):
         """Test request logging middleware."""
-        with patch("prompt_sentinel.main.logger") as mock_logger:
+        with patch("prompt_sentinel.main.logger"):
             response = client.get("/api/v1/health")
             assert response.status_code == 200
             # Logger should be called for request

@@ -1,15 +1,15 @@
 """Comprehensive tests for ML-enhanced heuristic detector module."""
 
-import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from prompt_sentinel.detection.ml_enhanced_heuristics import MLEnhancedHeuristicDetector
-from prompt_sentinel.ml.patterns import ExtractedPattern
 from prompt_sentinel.ml.manager import PatternManager
+from prompt_sentinel.ml.patterns import ExtractedPattern
 from prompt_sentinel.models.schemas import (
     DetectionCategory,
-    DetectionReason,
     Message,
     Role,
     Verdict,
@@ -152,7 +152,7 @@ class TestMLEnhancedHeuristicDetector:
 
         assert isinstance(verdict, Verdict)
         assert isinstance(reasons, list)
-        assert isinstance(confidence, (int, float))  # Accept both int and float
+        assert isinstance(confidence, int | float)  # Accept both int and float
         assert 0 <= confidence <= 1.0
 
     def test_detect_with_safe_content(self, detector_with_patterns, simple_messages):
@@ -389,7 +389,7 @@ class TestMLEnhancedHeuristicDetector:
         # Should have reasons from both sources
         assert len(reasons) > 0
         ml_reasons = [r for r in reasons if "ML Pattern" in r.description]
-        base_reasons = [r for r in reasons if "ML Pattern" not in r.description]
+        [r for r in reasons if "ML Pattern" not in r.description]
 
         # Might have both types depending on base heuristic implementation
         assert len(ml_reasons) > 0

@@ -1,19 +1,8 @@
 """Deployment and rollback tests for PromptSentinel."""
 
-import pytest
 import asyncio
-import os
-import json
-import yaml
-import subprocess
-from datetime import datetime, timedelta
-from typing import Dict, List, Any
-from unittest.mock import AsyncMock, MagicMock, patch
-import tempfile
-import shutil
-from pathlib import Path
 
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+import pytest
 
 # Skip all tests in this file - feature not implemented
 pytestmark = pytest.mark.skip(reason="Feature not yet implemented")
@@ -356,7 +345,7 @@ class TestRollbackStrategies:
         await rollback_manager.configure_triggers(triggers)
 
         # Simulate deployment with issues
-        deployment = await rollback_manager.monitor_deployment(
+        await rollback_manager.monitor_deployment(
             deployment_id="deploy_123", version="v2.0.0"
         )
 
@@ -653,7 +642,7 @@ class TestInfrastructureAsCode:
           cluster         = aws_ecs_cluster.main.id
           task_definition = aws_ecs_task_definition.app.arn
           desired_count   = 3
-          
+
           deployment_configuration {
             maximum_percent         = 200
             minimum_healthy_percent = 100

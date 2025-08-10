@@ -1,8 +1,5 @@
 """Comprehensive tests for the PII detector module."""
 
-import hashlib
-import re
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -246,7 +243,7 @@ class TestPIIDetector:
         -----BEGIN RSA PRIVATE KEY-----
         MIIEpAIBAAKCAQEA...
         -----END RSA PRIVATE KEY-----
-        
+
         -----BEGIN OPENSSH PRIVATE KEY-----
         b3BlbnNzaC1rZXktdjEAAAAA...
         -----END OPENSSH PRIVATE KEY-----
@@ -623,14 +620,14 @@ class TestPIIDetector:
         """Test detection in realistic mixed content."""
         text = """
         Dear Customer,
-        
+
         Your order has been processed. We've charged the credit card ending in 0366.
         If you have questions, email support@company.com or call (555) 123-4567.
-        
+
         For security, never share your password or API keys like sk_test_abc123 with anyone.
-        
+
         Your tracking number is: 1234567890 (this should not be detected as SSN due to context).
-        
+
         Best regards,
         Customer Service
         """

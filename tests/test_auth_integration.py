@@ -8,8 +8,7 @@ Tests the complete authentication flow including:
 - Auth middleware integration
 """
 
-import time
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,9 +21,9 @@ class TestAPIKeyAuthentication:
 
     def setup_method(self):
         """Setup test client."""
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
 
         # Initialize detector if not already initialized
         if main.detector is None:
@@ -35,14 +34,13 @@ class TestAPIKeyAuthentication:
 
         # Initialize auth components for testing
         from prompt_sentinel.auth.api_key_manager import APIKeyManager
-        from prompt_sentinel.auth.models import APIKey, ClientPermission
 
         if not main.api_key_manager:
             main.api_key_manager = APIKeyManager()
 
     def test_valid_api_key_access(self):
         """Test access with valid API key."""
-        from prompt_sentinel.auth.models import Client, AuthMethod, UsageTier
+        from prompt_sentinel.auth.models import AuthMethod, Client, UsageTier
 
         headers = {"X-API-Key": "test-valid-key"}
 
@@ -138,8 +136,8 @@ class TestRateLimiting:
         self.client = TestClient(app)
 
         # Initialize rate limiter for testing
-        from prompt_sentinel.monitoring.rate_limiter import RateLimiter, RateLimitConfig
         from prompt_sentinel import main
+        from prompt_sentinel.monitoring.rate_limiter import RateLimitConfig, RateLimiter
 
         if not main.rate_limiter:
             config = RateLimitConfig(
@@ -181,7 +179,7 @@ class TestRateLimiting:
         ]
 
         # Some rate limit headers might be present
-        has_rate_headers = any(header in response.headers for header in rate_limit_headers)
+        any(header in response.headers for header in rate_limit_headers)
         # This is informational - may or may not be implemented
         assert True  # Always pass, just checking availability
 
@@ -216,7 +214,6 @@ class TestRateLimiting:
         # Make initial request
         response = self.client.post("/api/v1/detect", json={"prompt": "test"}, headers=headers)
 
-        initial_status = response.status_code
 
         # Cooldown wait removed for faster testing
 
@@ -301,7 +298,7 @@ class TestAuthenticationMiddleware:
         ]
 
         # CORS may or may not be configured
-        has_cors = any(header in response.headers for header in cors_headers)
+        any(header in response.headers for header in cors_headers)
         assert True  # Always pass - just checking availability
 
     def test_request_id_generation(self):
@@ -310,7 +307,7 @@ class TestAuthenticationMiddleware:
 
         # Look for request ID in headers
         request_id_headers = ["X-Request-ID", "Request-ID", "X-Trace-ID"]
-        has_request_id = any(header in response.headers for header in request_id_headers)
+        any(header in response.headers for header in request_id_headers)
 
         # Request IDs are helpful but not required
         assert True  # Always pass - just checking availability
@@ -357,7 +354,6 @@ class TestPermissionSystem:
         ]
 
         regular_headers = {"X-API-Key": "regular-user-key"}
-        admin_headers = {"X-API-Key": "admin-key"}
 
         for endpoint, method in admin_endpoints:
             # Try with regular user
@@ -478,7 +474,6 @@ class TestAuthenticationIntegration:
         """Test complete authentication flow."""
         # Step 1: Access without auth
         response = self.client.post("/api/v1/detect", json={"prompt": "test"})
-        initial_status = response.status_code
 
         # Step 2: Access with valid key
         valid_headers = {"X-API-Key": "valid-test-key"}

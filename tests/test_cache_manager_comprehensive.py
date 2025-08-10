@@ -1,12 +1,9 @@
 """Comprehensive tests for the CacheManager module."""
 
-import asyncio
 import hashlib
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import redis.asyncio as redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import RedisError
 
@@ -434,7 +431,7 @@ class TestCacheManager:
 
         assert result is True
         # Verify the key was hashed
-        expected_hash = hashlib.sha256("test_key".encode()).hexdigest()[:16]
+        expected_hash = hashlib.sha256(b"test_key").hexdigest()[:16]
         manager.client.setex.assert_called_once_with(
             f"cache:{expected_hash}", 300, '{"data": "value"}'
         )
@@ -590,7 +587,7 @@ class TestCacheManager:
         manager = CacheManager()
 
         result = manager._hash_key("llm:prompt_123")
-        expected_hash = hashlib.sha256("llm:prompt_123".encode()).hexdigest()[:16]
+        expected_hash = hashlib.sha256(b"llm:prompt_123").hexdigest()[:16]
 
         assert result == f"llm:{expected_hash}"
 
@@ -599,7 +596,7 @@ class TestCacheManager:
         manager = CacheManager()
 
         result = manager._hash_key("simple_key")
-        expected_hash = hashlib.sha256("simple_key".encode()).hexdigest()[:16]
+        expected_hash = hashlib.sha256(b"simple_key").hexdigest()[:16]
 
         assert result == f"cache:{expected_hash}"
 
@@ -807,17 +804,17 @@ class TestCacheManager:
 
         # Empty string
         result = manager._hash_key("")
-        expected_hash = hashlib.sha256("".encode()).hexdigest()[:16]
+        expected_hash = hashlib.sha256(b"").hexdigest()[:16]
         assert result == f"cache:{expected_hash}"
 
         # Multiple colons
         result = manager._hash_key("prefix:sub:key")
-        expected_hash = hashlib.sha256("prefix:sub:key".encode()).hexdigest()[:16]
+        expected_hash = hashlib.sha256(b"prefix:sub:key").hexdigest()[:16]
         assert result == f"prefix:{expected_hash}"
 
         # Just colon
         result = manager._hash_key(":")
-        expected_hash = hashlib.sha256(":".encode()).hexdigest()[:16]
+        expected_hash = hashlib.sha256(b":").hexdigest()[:16]
         assert result == f":{expected_hash}"
 
     @pytest.mark.asyncio
@@ -833,7 +830,7 @@ class TestCacheManager:
         # Pattern without wildcard should be hashed
         await manager.clear_pattern("specific:key")
 
-        expected_hash = hashlib.sha256("specific:key".encode()).hexdigest()[:16]
+        expected_hash = hashlib.sha256(b"specific:key").hexdigest()[:16]
         expected_pattern = f"specific:{expected_hash}"
         manager.client.scan.assert_called_with(0, match=expected_pattern, count=100)
 

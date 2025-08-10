@@ -1,16 +1,13 @@
 """Comprehensive tests for rate limiting module."""
 
-import asyncio
 import time
-from dataclasses import dataclass
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from prompt_sentinel.monitoring.rate_limiter import (
     Priority,
-    RateLimiter,
     RateLimitConfig,
+    RateLimiter,
     TokenBucket,
 )
 
@@ -325,7 +322,7 @@ class TestRateLimiter:
 
         # Should wait instead of failing
         start_time = time.time()
-        result = await rate_limiter.wait_if_needed(
+        await rate_limiter.wait_if_needed(
             client_id=client_id,
             tokens=1,
             max_wait=0.1,  # Short wait for test

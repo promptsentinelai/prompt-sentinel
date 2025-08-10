@@ -1,7 +1,6 @@
 """Error recovery and resilience tests."""
 
 import asyncio
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,7 +10,6 @@ from prompt_sentinel.detection.llm_classifier import LLMClassifierManager
 from prompt_sentinel.detection.pii_detector import PIIDetector
 from prompt_sentinel.models.schemas import (
     DetectionCategory,
-    DetectionReason,
     Message,
     Role,
     Verdict,
@@ -240,7 +238,7 @@ class TestPIIRecovery:
         try:
             matches = detector.detect(text)
             # Might not detect due to broken patterns
-        except:
+        except Exception:
             # Should not crash
             pass
 
@@ -265,7 +263,7 @@ class TestPIIRecovery:
                 redacted = detector.redact(text, matches, mode=mode)
                 # Should use default mode or handle gracefully
                 assert redacted is not None
-            except:
+            except Exception:
                 # Should not crash the system
                 pass
 
@@ -291,7 +289,7 @@ class TestPIIRecovery:
             try:
                 result = detector._validate_credit_card(card_num)
                 assert isinstance(result, bool)
-            except:
+            except Exception:
                 # Should handle gracefully
                 pass
 
@@ -366,7 +364,7 @@ class TestConcurrentRecovery:
             try:
                 messages = [Message(role=Role.USER, content=msg)]
                 return detector.detect(messages)
-            except Exception as e:
+            except Exception:
                 # Should handle gracefully
                 return (Verdict.ALLOW, [], 0.0)
 
@@ -411,7 +409,7 @@ class TestConcurrentRecovery:
             messages = [Message(role=Role.USER, content="test")]
 
             # First few calls fail due to rate limiting
-            for i in range(3):
+            for _i in range(3):
                 verdict, reasons, conf = await manager.classify(messages)
                 assert verdict == Verdict.ALLOW  # Safe default
                 assert conf == 0.0
@@ -519,14 +517,14 @@ class TestGracefulDegradation:
             ("What's the weather?", "Should allow benign queries"),
         ]
 
-        for text, description in test_cases:
+        for text, _description in test_cases:
             messages = [Message(role=Role.USER, content=text)]
             verdict, reasons, conf = detector.detect(messages)
 
             # All verdicts should be valid, regardless of detection results
             assert verdict is not None
             assert verdict in [Verdict.ALLOW, Verdict.FLAG, Verdict.BLOCK]
-            assert isinstance(conf, (int, float))  # Accept both int and float
+            assert isinstance(conf, int | float)  # Accept both int and float
             assert 0.0 <= conf <= 1.0
 
     def test_partial_feature_availability(self):
@@ -548,7 +546,7 @@ class TestGracefulDegradation:
         # Should still function and return valid verdict
         assert verdict is not None
         assert verdict in [Verdict.ALLOW, Verdict.FLAG, Verdict.BLOCK]
-        assert isinstance(conf, (int, float))  # Accept both int and float
+        assert isinstance(conf, int | float)  # Accept both int and float
 
     def test_minimal_configuration(self):
         """Test system with minimal configuration."""
@@ -561,7 +559,7 @@ class TestGracefulDegradation:
 
         assert verdict is not None
         assert verdict in [Verdict.ALLOW, Verdict.FLAG, Verdict.BLOCK]
-        assert isinstance(conf, (int, float))  # Accept both int and float
+        assert isinstance(conf, int | float)  # Accept both int and float
         assert 0.0 <= conf <= 1.0
         assert isinstance(reasons, list)
 

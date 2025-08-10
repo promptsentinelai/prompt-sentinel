@@ -1,8 +1,8 @@
 """Complete security-focused test scenarios for PromptSentinel."""
 
-import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.detection.heuristics import HeuristicDetector

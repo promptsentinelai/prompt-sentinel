@@ -5,9 +5,8 @@ import pytest
 # Mark entire module as skip - experiments feature is partially implemented
 pytestmark = pytest.mark.skip(reason="Experiments feature is partially implemented")
 
-import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from prompt_sentinel.experiments.analyzer import ExperimentResult, StatisticalAnalyzer
 from prompt_sentinel.experiments.assignments import AssignmentContext, AssignmentService

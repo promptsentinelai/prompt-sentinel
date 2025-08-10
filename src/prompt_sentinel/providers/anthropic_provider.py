@@ -119,14 +119,14 @@ class AnthropicProvider(LLMProvider):
         """
         try:
             # Try a minimal API call
-            response = await asyncio.wait_for(
+            await asyncio.wait_for(
                 self.client.messages.create(
                     model=self.model, max_tokens=10, messages=[{"role": "user", "content": "test"}]
                 ),
                 timeout=5.0,
             )
             return True
-        except:
+        except Exception:
             return False
 
     def _parse_response(self, content: str) -> tuple[DetectionCategory, float, str]:

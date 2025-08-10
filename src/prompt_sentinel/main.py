@@ -25,7 +25,10 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from prompt_sentinel.experiments import ExperimentManager
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request, WebSocket, status

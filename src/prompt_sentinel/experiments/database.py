@@ -198,7 +198,7 @@ class ExperimentDatabase:
             async with aiosqlite.connect(self.db_path) as db:
                 await db.execute(
                     """
-                    INSERT OR REPLACE INTO experiments 
+                    INSERT OR REPLACE INTO experiments
                     (id, name, description, type, status, config, created_at, updated_at, start_time, end_time)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -360,7 +360,7 @@ class ExperimentDatabase:
             async with aiosqlite.connect(self.db_path) as db:
                 await db.executemany(
                     """
-                    INSERT INTO experiment_metrics 
+                    INSERT INTO experiment_metrics
                     (experiment_id, variant_id, user_id, metric_name, value, timestamp, metadata)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -408,8 +408,8 @@ class ExperimentDatabase:
         """
         try:
             query = """
-                SELECT metric_name, variant_id, value 
-                FROM experiment_metrics 
+                SELECT metric_name, variant_id, value
+                FROM experiment_metrics
                 WHERE experiment_id = ?
             """
             params = [experiment_id]
@@ -478,7 +478,7 @@ class ExperimentDatabase:
                     await db.execute(
                         """
                         INSERT INTO experiment_results
-                        (experiment_id, metric_name, control_variant_id, treatment_variant_id, 
+                        (experiment_id, metric_name, control_variant_id, treatment_variant_id,
                          results, analyzed_at)
                         VALUES (?, ?, ?, ?, ?, ?)
                     """,
@@ -519,7 +519,7 @@ class ExperimentDatabase:
             async with aiosqlite.connect(self.db_path) as db:
                 async with db.execute(
                     """
-                    SELECT metric_name, control_variant_id, treatment_variant_id, 
+                    SELECT metric_name, control_variant_id, treatment_variant_id,
                            results, analyzed_at
                     FROM experiment_results
                     WHERE experiment_id = ?

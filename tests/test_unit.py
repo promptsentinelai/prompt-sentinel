@@ -6,7 +6,7 @@ from prompt_sentinel.detection.heuristics import HeuristicDetector
 from prompt_sentinel.detection.pii_detector import PIIDetector, PIIType
 from prompt_sentinel.detection.prompt_processor import PromptProcessor
 from prompt_sentinel.models.schemas import DetectionCategory, Message, Role, Verdict
-from prompt_sentinel.monitoring.budget_manager import BudgetManager, BudgetPeriod
+from prompt_sentinel.monitoring.budget_manager import BudgetManager
 from prompt_sentinel.monitoring.rate_limiter import RateLimiter
 from prompt_sentinel.routing.complexity_analyzer import (
     ComplexityAnalyzer,

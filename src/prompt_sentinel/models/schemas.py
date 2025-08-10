@@ -138,8 +138,8 @@ class StructuredPromptRequest(BaseModel):
             raise ValueError("Messages list cannot be empty")
 
         # Check for proper role separation
-        has_system = any(msg.role == Role.SYSTEM for msg in v)
-        has_user = any(msg.role == Role.USER for msg in v)
+        any(msg.role == Role.SYSTEM for msg in v)
+        any(msg.role == Role.USER for msg in v)
 
         # This is just a warning in the response, not an error
         # We'll include this info in the response metadata

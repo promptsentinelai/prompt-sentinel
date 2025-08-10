@@ -6,7 +6,6 @@ import pytest
 pytestmark = pytest.mark.skip(reason="Experiments database is partially implemented")
 
 import asyncio
-import json
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path

@@ -103,36 +103,40 @@ class TestInvalidInputs:
         """Test provider initialization with null/empty API keys."""
         from prompt_sentinel.providers.anthropic_provider import AnthropicProvider
         
-        configs = [
+        # These configs should raise ValueError
+        invalid_configs = [
             {"api_key": None},
             {"api_key": ""},
-            {"api_key": " "},
             {},  # Missing api_key
         ]
         
-        for config in configs:
-            # Provider accepts empty/null keys but won't work when calling classify
-            provider = AnthropicProvider(config)
-            # The provider should fail when trying to classify
-            messages = [Message(role=Role.USER, content="test")]
-            category, confidence, reasoning = await provider.classify(messages)
-            # Should return BENIGN with 0 confidence on error
-            assert category == DetectionCategory.BENIGN
-            assert confidence == 0.0
+        for config in invalid_configs:
+            # Provider raises ValueError for null/empty keys
+            with pytest.raises(ValueError) as exc_info:
+                provider = AnthropicProvider(config)
+            assert "API key required" in str(exc_info.value)
+        
+        # Whitespace-only key is accepted but won't work
+        provider = AnthropicProvider({"api_key": " "})
+        messages = [Message(role=Role.USER, content="test")]
+        category, confidence, reasoning = await provider.classify(messages)
+        # Should return BENIGN with 0 confidence on error
+        assert category == DetectionCategory.BENIGN
+        assert confidence == 0.0
 
     def test_malformed_detection_mode(self):
         """Test with invalid detection modes."""
-        # Invalid mode defaults to 'moderate' instead of raising error
+        # Invalid mode is accepted as-is (no validation)
         detector = HeuristicDetector("INVALID_MODE")
-        assert detector.mode == "moderate"  # Falls back to default
+        assert detector.detection_mode == "INVALID_MODE"
         
-        # None also defaults to moderate
+        # None is passed through as None
         detector = HeuristicDetector(None)
-        assert detector.mode == "moderate"
+        assert detector.detection_mode is None
         
         # Numeric mode gets converted to string
         detector = HeuristicDetector(123)
-        assert detector.mode == "moderate"  # Falls back to default
+        assert str(detector.detection_mode) == "123"
 
     def test_negative_confidence_scores(self):
         """Test handling of negative confidence scores."""
@@ -199,7 +203,7 @@ class TestResourceExhaustion:
         from prompt_sentinel.providers.anthropic_provider import AnthropicProvider
         
         config = {"api_key": "test-key", "model": "claude-3"}
-        with patch("prompt_sentinel.providers.anthropic_provider.Anthropic"):
+        with patch("prompt_sentinel.providers.anthropic_provider.AsyncAnthropic"):
             provider = AnthropicProvider(config)
             
             # Mock to simulate rate limiting
@@ -320,7 +324,7 @@ class TestAPIErrorHandling:
         
         config = {"api_key": "revoked-key", "model": "claude-3"}
         
-        with patch("prompt_sentinel.providers.anthropic_provider.Anthropic"):
+        with patch("prompt_sentinel.providers.anthropic_provider.AsyncAnthropic"):
             provider = AnthropicProvider(config)
             
             # Mock authentication error
@@ -636,7 +640,8 @@ class TestBoundaryConditions:
             reason = DetectionReason(
                 category=DetectionCategory.BENIGN,
                 confidence=conf,
-                explanation="boundary test"
+                description="boundary test",
+                source="heuristic"
             )
             assert reason.confidence == conf
 

@@ -133,7 +133,11 @@ class TestLLMClassifierManager:
     def test_initialize_providers_no_api_key(self, mock_gemini_class, mock_openai_class, mock_anthropic_class, mock_settings):
         """Test provider initialization when API key is missing."""
         # Return config with None api_key - providers shouldn't be instantiated
-        mock_settings.get_provider_config.return_value = {"api_key": None}
+        def get_config_side_effect(provider_name):
+            return {"api_key": None}  # Always return None api_key
+        
+        mock_settings.get_provider_config.side_effect = get_config_side_effect
+        mock_settings.llm_providers = ["anthropic", "openai", "gemini"]  # Set provider order
         
         with patch('prompt_sentinel.detection.llm_classifier.settings', mock_settings):
             with patch('builtins.print'):  # Suppress print statements
@@ -141,7 +145,7 @@ class TestLLMClassifierManager:
                 
         # When api_key is None, providers shouldn't be added to the dict
         assert len(manager.providers) == 0
-        # Provider classes should not have been instantiated
+        # Provider classes should not have been instantiated  
         mock_anthropic_class.assert_not_called()
         mock_openai_class.assert_not_called()
         mock_gemini_class.assert_not_called()

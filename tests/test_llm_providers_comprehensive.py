@@ -322,7 +322,7 @@ class TestOpenAIProvider:
             provider = OpenAIProvider(mock_config)
             
             assert provider.api_key == "test_openai_key"
-            assert provider.model == "gpt-4"
+            assert provider.model == "gpt-4-turbo-preview"  # Mapped from gpt-4
             mock_client.assert_called_once_with(api_key="test_openai_key")
 
     @pytest.mark.asyncio
@@ -348,13 +348,11 @@ class TestOpenAIProvider:
         assert explanation == "Role confusion detected"
 
     @pytest.mark.asyncio
-    async def test_classify_with_function_calling(self, provider, sample_messages):
-        """Test classification using OpenAI function calling."""
-        # Mock function call response
+    async def test_classify_with_json_response(self, provider, sample_messages):
+        """Test classification using OpenAI JSON mode response."""
+        # Mock JSON response (not function calling since provider uses JSON mode)
         mock_choice = MagicMock()
-        mock_choice.message.content = None
-        mock_choice.message.function_call = MagicMock()
-        mock_choice.message.function_call.arguments = json.dumps({
+        mock_choice.message.content = json.dumps({
             "category": "context_switching",
             "confidence": 0.65,
             "explanation": "Context switch attempt"

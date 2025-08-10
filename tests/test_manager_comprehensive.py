@@ -835,10 +835,10 @@ class TestPatternManagerIntegration:
         await manager._check_pattern_status(managed)
         # Should call promote_pattern internally
         
-        # Simulate poor performance and retire
+        # Simulate poor performance and retire (need >1000 total evaluations)
         managed.status = PatternStatus.ACTIVE
-        managed.performance.true_positives = 100
-        managed.performance.false_positives = 250
+        managed.performance.true_positives = 400
+        managed.performance.false_positives = 900  # >2x true positives and >1000 total
         
         with patch.object(manager, 'retire_pattern', new_callable=AsyncMock) as mock_retire:
             await manager._check_pattern_status(managed)

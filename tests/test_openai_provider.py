@@ -131,7 +131,7 @@ class TestOpenAIProvider:
     @pytest.mark.asyncio
     async def test_classify_timeout(self, provider, messages):
         """Test classification timeout handling."""
-        provider.client.chat.completions.create = AsyncMock(side_effect=asyncio.TimeoutError())
+        provider.client.chat.completions.create = AsyncMock(side_effect=TimeoutError())
 
         category, confidence, explanation = await provider.classify(messages)
 
@@ -173,7 +173,7 @@ class TestOpenAIProvider:
 
         result = await provider.health_check()
 
-        assert result == True
+        assert result
         provider.client.chat.completions.create.assert_called_once()
         call_args = provider.client.chat.completions.create.call_args
         assert call_args.kwargs["max_tokens"] == 10
@@ -188,7 +188,7 @@ class TestOpenAIProvider:
 
         result = await provider.health_check()
 
-        assert result == False
+        assert not result
 
     def test_parse_response_valid_json(self, provider):
         """Test parsing valid JSON response."""
@@ -373,7 +373,7 @@ class TestOpenAIProviderIntegration:
         models = ["gpt-4", "gpt-4-turbo", "gpt-3.5"]
         expected_models = ["gpt-4-turbo-preview", "gpt-4-turbo-preview", "gpt-3.5-turbo"]
 
-        for model, expected in zip(models, expected_models):
+        for model, expected in zip(models, expected_models, strict=False):
             config = {"api_key": "test-key", "model": model}
 
             with patch("prompt_sentinel.providers.openai_provider.AsyncOpenAI"):

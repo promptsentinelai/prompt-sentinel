@@ -299,7 +299,7 @@ class PatternExtractor:
         for other_prompt in prompts[1:4]:
             matcher = difflib.SequenceMatcher(None, base_prompt, other_prompt)
 
-            for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            for tag, i1, i2, _j1, _j2 in matcher.get_opcodes():
                 if tag == "equal":
                     fixed_parts.append(base_prompt[i1:i2])
                 elif tag in ["replace", "insert"]:

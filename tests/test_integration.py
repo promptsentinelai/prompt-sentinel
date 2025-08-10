@@ -19,9 +19,9 @@ class TestIntegrationEndToEnd:
         self.settings = settings
 
         # Manually initialize the detector and processor for testing
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
 
         if not main.detector:
             main.detector = PromptDetector(pattern_manager=None)
@@ -108,9 +108,9 @@ class TestIntelligentRouting:
         self.client = TestClient(app)
 
         # Manually initialize the router for testing
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.routing.router import IntelligentRouter
-        from prompt_sentinel import main
 
         if not main.detector:
             main.detector = PromptDetector(pattern_manager=None)
@@ -187,10 +187,10 @@ class TestMonitoringAndBudget:
         self.client = TestClient(app)
 
         # Initialize monitoring components for testing
-        from prompt_sentinel.monitoring.usage_tracker import UsageTracker
-        from prompt_sentinel.monitoring.budget_manager import BudgetConfig, BudgetManager
-        from prompt_sentinel.monitoring.rate_limiter import RateLimiter, RateLimitConfig
         from prompt_sentinel import main
+        from prompt_sentinel.monitoring.budget_manager import BudgetConfig, BudgetManager
+        from prompt_sentinel.monitoring.rate_limiter import RateLimitConfig, RateLimiter
+        from prompt_sentinel.monitoring.usage_tracker import UsageTracker
 
         if not main.usage_tracker:
             main.usage_tracker = UsageTracker(persist_to_cache=False)
@@ -349,9 +349,9 @@ class TestBatchProcessing:
         self.client = TestClient(app)
 
         # Initialize detector and processor for testing
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
 
         if not main.detector:
             main.detector = PromptDetector(pattern_manager=None)
@@ -486,8 +486,8 @@ class TestSecurityFeatures:
         self.client = TestClient(app)
 
         # Initialize detector for testing
-        from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel import main
+        from prompt_sentinel.detection.detector import PromptDetector
 
         if not main.detector:
             main.detector = PromptDetector(pattern_manager=None)
@@ -552,9 +552,9 @@ class TestFormatValidation:
         self.client = TestClient(app)
 
         # Initialize detector and processor for testing
+        from prompt_sentinel import main
         from prompt_sentinel.detection.detector import PromptDetector
         from prompt_sentinel.detection.prompt_processor import PromptProcessor
-        from prompt_sentinel import main
 
         if not main.detector:
             main.detector = PromptDetector(pattern_manager=None)

@@ -1,8 +1,9 @@
 """Simplified tests for experiment assignments module."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from prompt_sentinel.experiments.assignments import (
     AssignmentContext,

@@ -145,7 +145,7 @@ class TestPIIPerformance:
         times = []
         for _ in range(50):
             with BenchmarkTimer("pii_detection") as timer:
-                matches = detector.detect(text)
+                detector.detect(text)
             times.append(timer.elapsed)
 
         avg_time = mean(times)
@@ -165,7 +165,7 @@ class TestPIIPerformance:
 
         for mode in modes:
             with BenchmarkTimer(f"redaction_{mode}") as timer:
-                redacted = detector.redact(text, matches, mode=mode)
+                detector.redact(text, matches, mode=mode)
 
             print(f"\nRedaction mode '{mode}': {timer.elapsed:.2f}ms")
 
@@ -317,7 +317,6 @@ class TestMemoryUsage:
     def test_detection_memory_stability(self):
         """Test that detection doesn't leak memory."""
         import gc
-        import sys
 
         detector = HeuristicDetector("moderate")
 
@@ -383,7 +382,7 @@ class TestLatencyDistribution:
         p95 = latencies[int(len(latencies) * 0.95)]
         p99 = latencies[int(len(latencies) * 0.99)]
 
-        print(f"\nLatency percentiles (ms):")
+        print("\nLatency percentiles (ms):")
         print(f"  P50: {p50:.2f}")
         print(f"  P90: {p90:.2f}")
         print(f"  P95: {p95:.2f}")

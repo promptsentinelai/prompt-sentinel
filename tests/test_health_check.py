@@ -82,7 +82,7 @@ class TestDetailedHealthCheck:
     @pytest.mark.asyncio
     async def test_detailed_health_check(self):
         """Test detailed health check returns component status."""
-        from httpx import ASGITransport, AsyncClient, ASGITransport
+        from httpx import ASGITransport, AsyncClient
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/health/detailed")

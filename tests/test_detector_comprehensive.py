@@ -1,19 +1,18 @@
 """Comprehensive tests for the main PromptDetector orchestrator."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
-from datetime import datetime
 
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.models.schemas import (
     DetectionCategory,
     DetectionReason,
     DetectionResponse,
+    FormatRecommendation,
     Message,
     Role,
     Verdict,
-    PIIDetection,
-    FormatRecommendation,
 )
 
 
@@ -238,7 +237,6 @@ class TestPromptDetector:
     async def test_detect_with_pii(self, detector, simple_messages, mock_pii_detector):
         """Test detection with PII found."""
         # Setup PII detector to find PII
-        from prompt_sentinel.detection.pii_detector import PIIMatch, PIIType
 
         pii_match = MagicMock()
         pii_match.pii_type.value = "email"

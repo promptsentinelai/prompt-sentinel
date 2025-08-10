@@ -1,10 +1,10 @@
 """Comprehensive tests for the PromptProcessor module."""
 
+
 import pytest
-import re
 
 from prompt_sentinel.detection.prompt_processor import PromptProcessor
-from prompt_sentinel.models.schemas import FormatRecommendation, Message, Role
+from prompt_sentinel.models.schemas import Message, Role
 
 
 class TestPromptProcessor:

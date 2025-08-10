@@ -1,17 +1,11 @@
 """Observability tests for logging, tracing, and monitoring."""
 
-import pytest
 import asyncio
-import json
-import time
+import random
 from datetime import datetime, timedelta
-from typing import Dict, List, Any
-from unittest.mock import AsyncMock, MagicMock, patch
-import logging
-from opentelemetry import trace, metrics
-from opentelemetry.trace import Status, StatusCode
 
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+import pytest
+from opentelemetry.trace import Status, StatusCode
 
 
 class TestStructuredLogging:
@@ -211,12 +205,12 @@ class TestDistributedTracing:
     @pytest.mark.asyncio
     async def test_baggage_propagation(self, tracer):
         """Test baggage propagation across spans."""
-        with tracer.start_span("root") as root_span:
+        with tracer.start_span("root"):
             # Set baggage
             tracer.set_baggage("user_id", "user123")
             tracer.set_baggage("session_id", "sess456")
 
-            with tracer.start_span("child") as child_span:
+            with tracer.start_span("child"):
                 # Baggage should be available
                 baggage = tracer.get_baggage()
                 assert baggage["user_id"] == "user123"

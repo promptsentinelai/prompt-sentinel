@@ -4,7 +4,7 @@ import asyncio
 import json
 from collections import deque
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -223,7 +223,7 @@ class TestPatternCollector:
     @pytest.mark.asyncio
     async def test_initialize(self, collector):
         """Test collector initialization."""
-        with patch.object(collector, "_load_from_cache", new_callable=AsyncMock) as mock_load:
+        with patch.object(collector, "_load_from_cache", new_callable=AsyncMock):
             with patch("asyncio.create_task") as mock_create_task:
                 mock_create_task.return_value = MagicMock()
 
@@ -257,7 +257,7 @@ class TestPatternCollector:
         task2 = MagicMock()
         collector._tasks = [task1, task2]
 
-        with patch.object(collector, "_save_to_cache", new_callable=AsyncMock) as mock_save:
+        with patch.object(collector, "_save_to_cache", new_callable=AsyncMock):
             await collector.shutdown()
 
             assert collector._running is False
@@ -679,7 +679,7 @@ class TestPatternCollectorIntegration:
             processing_time_ms=50.0,
         )
 
-        event2 = await collector.collect_event(
+        await collector.collect_event(
             prompt="Test 2",
             verdict=Verdict.FLAG,
             confidence=0.7,

@@ -309,7 +309,7 @@ class LLMClassifierManager:
             try:
                 is_healthy = await provider.health_check()
                 health_status[provider_name] = is_healthy
-            except:
+            except Exception:
                 health_status[provider_name] = False
 
         return health_status

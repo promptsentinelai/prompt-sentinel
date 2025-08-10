@@ -3,6 +3,7 @@
 import asyncio
 import time
 from statistics import mean, stdev
+
 import pytest
 
 from prompt_sentinel.detection.detector import PromptDetector
@@ -94,7 +95,7 @@ class TestDetectionBenchmarks:
         times = []
         for _ in range(10):
             start = time.perf_counter()
-            response = await detector.detect(messages)
+            await detector.detect(messages)
             elapsed = time.perf_counter() - start
             times.append(elapsed)
 
@@ -162,7 +163,7 @@ class TestPIIDetectionBenchmarks:
         times = []
         for _ in range(5):
             start = time.perf_counter()
-            result = detector.detect(text)
+            detector.detect(text)
             elapsed = time.perf_counter() - start
             times.append(elapsed)
 
@@ -243,7 +244,6 @@ class TestScalabilityBenchmarks:
     async def test_memory_usage_stability(self, detector):
         """Test that memory usage remains stable."""
         import gc
-        import sys
 
         # Force garbage collection
         gc.collect()
@@ -254,7 +254,7 @@ class TestScalabilityBenchmarks:
         # Process many messages
         for i in range(100):
             messages = [Message(role=Role.USER, content=f"Test message {i}" * 100)]
-            response = await detector.detect(messages)
+            await detector.detect(messages)
 
         # Force garbage collection again
         gc.collect()
@@ -278,12 +278,12 @@ class TestCachingPerformance:
 
         # First call (cache miss)
         start = time.perf_counter()
-        response1 = await detector.detect(messages)
+        await detector.detect(messages)
         first_time = time.perf_counter() - start
 
         # Second call (potential cache hit)
         start = time.perf_counter()
-        response2 = await detector.detect(messages)
+        await detector.detect(messages)
         second_time = time.perf_counter() - start
 
         # Cache hit should be faster (or at least not slower)

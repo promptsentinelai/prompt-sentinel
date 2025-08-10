@@ -1,15 +1,10 @@
 """Comprehensive tests for the APIKeyManager module."""
 
-import hashlib
-import ipaddress
 import json
-import secrets
-import uuid
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-import structlog
 
 from prompt_sentinel.auth.api_key_manager import APIKeyManager
 from prompt_sentinel.auth.models import (
@@ -261,7 +256,7 @@ class TestAPIKeyManager:
 
         # Should not call _get_api_key_by_hash when cache hit
         with patch.object(manager, "_get_api_key_by_hash") as mock_get:
-            client = await manager.validate_api_key(api_key)
+            await manager.validate_api_key(api_key)
             mock_get.assert_not_called()
 
     @pytest.mark.asyncio

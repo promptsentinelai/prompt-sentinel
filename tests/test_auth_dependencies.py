@@ -5,19 +5,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException, Request
-from fastapi.security import APIKeyHeader
 
 from prompt_sentinel.auth.dependencies import (
-    get_auth_config,
+    _has_public_endpoint,
+    _is_docker_container,
+    _is_kubernetes_pod,
     get_api_key_manager,
+    get_auth_config,
     get_current_client,
     get_optional_client,
-    require_permission,
-    require_authenticated,
     require_admin,
-    _is_kubernetes_pod,
-    _is_docker_container,
-    _has_public_endpoint,
+    require_authenticated,
+    require_permission,
 )
 from prompt_sentinel.auth.models import (
     AuthConfig,
@@ -68,8 +67,9 @@ class TestAuthDependencies:
     @pytest.fixture
     def authenticated_client(self):
         """Create authenticated client."""
-        from prompt_sentinel.auth.models import APIKey, APIKeyStatus, ClientPermission
         from datetime import datetime, timedelta
+
+        from prompt_sentinel.auth.models import APIKey, APIKeyStatus, ClientPermission
 
         # Create an APIKey with proper permissions
         api_key = APIKey(
@@ -122,8 +122,8 @@ class TestAuthDependencies:
             config = get_auth_config()
 
             assert config.mode == AuthMode.OPTIONAL
-            assert config.enforce_https == False
-            assert config.allow_localhost == True
+            assert not config.enforce_https
+            assert config.allow_localhost
 
     def test_get_auth_config_from_settings(self):
         """Test getting auth config from settings."""
@@ -141,10 +141,10 @@ class TestAuthDependencies:
             config = get_auth_config()
 
             assert config.mode == AuthMode.REQUIRED
-            assert config.enforce_https == True
+            assert config.enforce_https
             assert config.bypass_networks == ["10.0.0.0/8"]
             assert config.bypass_headers == {"X-Secret": "value"}
-            assert config.allow_localhost == False
+            assert not config.allow_localhost
 
     def test_get_api_key_manager(self, mock_auth_config):
         """Test getting API key manager."""
@@ -247,7 +247,7 @@ class TestAuthDependencies:
             manager=mock_api_key_manager,
         )
 
-        assert client.is_authenticated == True
+        assert client.is_authenticated
         assert client.auth_method == AuthMethod.BYPASS
 
     @pytest.mark.asyncio
@@ -266,7 +266,7 @@ class TestAuthDependencies:
             manager=mock_api_key_manager,
         )
 
-        assert client.is_authenticated == True
+        assert client.is_authenticated
         assert client.auth_method == AuthMethod.BYPASS
         mock_api_key_manager.check_network_bypass.assert_called_once_with("10.0.0.5")
 
@@ -286,7 +286,7 @@ class TestAuthDependencies:
             manager=mock_api_key_manager,
         )
 
-        assert client.is_authenticated == True
+        assert client.is_authenticated
         assert client.auth_method == AuthMethod.BYPASS
 
     @pytest.mark.asyncio
@@ -327,7 +327,7 @@ class TestAuthDependencies:
         )
 
         # In optional mode with no auth, client gets anonymous access
-        assert client.is_authenticated == False
+        assert not client.is_authenticated
         assert client.auth_method == AuthMethod.ANONYMOUS
         assert client.client_id.startswith("anon")  # Anonymous client ID includes IP
 
@@ -347,7 +347,7 @@ class TestAuthDependencies:
         )
 
         # In NONE mode, client gets local access (not authenticated but allowed)
-        assert client.is_authenticated == False  # NONE is not authenticated
+        assert not client.is_authenticated  # NONE is not authenticated
         assert client.auth_method == AuthMethod.NONE
         assert client.client_id == "local"
 
@@ -388,7 +388,7 @@ class TestAuthDependencies:
             manager=mock_api_key_manager,
         )
 
-        assert client.is_authenticated == False
+        assert not client.is_authenticated
         assert client.client_id.startswith("anon")  # Anonymous client ID includes IP
 
     @pytest.mark.asyncio
@@ -469,11 +469,11 @@ class TestAuthDependencies:
         """Test Docker container detection."""
         # Test when not in Docker
         with patch("os.path.exists", return_value=False):
-            assert _is_docker_container() == False
+            assert not _is_docker_container()
 
         # Test when in Docker
         with patch("os.path.exists", return_value=True):
-            assert _is_docker_container() == True
+            assert _is_docker_container()
 
     def test_has_public_endpoint(self):
         """Test public endpoint detection."""
@@ -505,7 +505,7 @@ class TestAuthDependenciesIntegration:
     async def test_full_auth_flow(self):
         """Test complete authentication flow."""
         from prompt_sentinel.auth.api_key_manager import APIKeyManager
-        from prompt_sentinel.auth.models import CreateAPIKeyRequest, APIKey
+        from prompt_sentinel.auth.models import CreateAPIKeyRequest
 
         # Setup
         config = AuthConfig(mode=AuthMode.REQUIRED)

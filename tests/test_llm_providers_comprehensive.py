@@ -2,11 +2,9 @@
 
 import asyncio
 import json
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from anthropic import AsyncAnthropic
-from openai import AsyncOpenAI
 
 from prompt_sentinel.models.schemas import DetectionCategory, Message, Role
 from prompt_sentinel.providers.anthropic_provider import AnthropicProvider
@@ -196,7 +194,7 @@ class TestAnthropicProvider:
     @pytest.mark.asyncio
     async def test_classify_timeout(self, provider, sample_messages):
         """Test classification timeout handling."""
-        provider.client.messages.create = AsyncMock(side_effect=asyncio.TimeoutError())
+        provider.client.messages.create = AsyncMock(side_effect=TimeoutError())
 
         category, confidence, explanation = await provider.classify(sample_messages)
 
@@ -573,7 +571,7 @@ class TestProviderIntegration:
                             result = await provider.classify(messages)
                             if result[0] != DetectionCategory.BENIGN or result[1] > 0:
                                 break
-                        except:
+                        except Exception:
                             continue
 
                     assert result[0] == DetectionCategory.JAILBREAK
@@ -593,7 +591,7 @@ class TestProviderIntegration:
         # Test each provider type with timeout
         with patch("prompt_sentinel.providers.anthropic_provider.AsyncAnthropic"):
             provider = AnthropicProvider(configs[0])
-            provider.client.messages.create = AsyncMock(side_effect=asyncio.TimeoutError())
+            provider.client.messages.create = AsyncMock(side_effect=TimeoutError())
             result = await provider.classify(messages)
             assert result[0] == DetectionCategory.BENIGN
             assert result[1] == 0.0

@@ -1,14 +1,9 @@
 """API versioning and compatibility tests for PromptSentinel."""
 
-import pytest
-import asyncio
-import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
-from packaging import version
+from unittest.mock import AsyncMock
 
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+import pytest
 
 # Skip all tests in this file - feature not implemented
 pytestmark = pytest.mark.skip(reason="Feature not yet implemented")

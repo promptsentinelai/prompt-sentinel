@@ -292,9 +292,9 @@ class MetricsCollector:
 
         if variant_metrics:
             performance["summary"]["total_events"] = len(variant_metrics)
-            performance["summary"]["unique_users"] = len(set(m.user_id for m in variant_metrics))
+            performance["summary"]["unique_users"] = len({m.user_id for m in variant_metrics})
             performance["summary"]["avg_events_per_user"] = len(variant_metrics) / len(
-                set(m.user_id for m in variant_metrics)
+                {m.user_id for m in variant_metrics}
             )
             performance["summary"]["first_event"] = min(
                 m.timestamp for m in variant_metrics

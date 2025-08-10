@@ -1,29 +1,22 @@
 """Comprehensive tests for the WebSocket module."""
 
-import asyncio
-import json
-import uuid
-from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
-from pydantic import ValidationError
 
 from prompt_sentinel.api.websocket import (
     ConnectionManager,
     StreamingDetector,
-    handle_websocket_connection,
     broadcast_system_message,
+    handle_websocket_connection,
 )
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.models.schemas import (
     DetectionCategory,
     DetectionReason,
     DetectionResponse,
-    Message,
-    Role,
     Verdict,
 )
 from prompt_sentinel.routing.router import IntelligentRouter
@@ -61,7 +54,7 @@ class TestConnectionManager:
         """Test successful WebSocket connection."""
         client_id = "test_client_123"
 
-        with patch("prompt_sentinel.api.websocket.logger") as mock_logger:
+        with patch("prompt_sentinel.api.websocket.logger"):
             result = await manager.connect(mock_websocket, client_id)
 
         assert result is True
@@ -108,7 +101,7 @@ class TestConnectionManager:
         assert client_id in manager.active_connections
 
         # Then disconnect
-        with patch("prompt_sentinel.api.websocket.logger") as mock_logger:
+        with patch("prompt_sentinel.api.websocket.logger"):
             await manager.disconnect(client_id)
 
         assert client_id not in manager.active_connections
@@ -442,7 +435,7 @@ class TestStreamingDetector:
         with patch.object(
             streaming_detector.usage_tracker, "track_api_call", new=AsyncMock()
         ) as mock_track:
-            result = await streaming_detector.process_detection(request_data, client_id)
+            await streaming_detector.process_detection(request_data, client_id)
 
         # Should track usage for each provider
         assert mock_track.call_count == 2
@@ -493,7 +486,7 @@ class TestStreamingDetector:
         request_data = {"messages": [{"role": "user", "content": "Test"}]}
         client_id = "client_123"
 
-        with patch("prompt_sentinel.api.websocket.logger") as mock_logger:
+        with patch("prompt_sentinel.api.websocket.logger"):
             result = await streaming_detector.process_analysis(request_data, client_id)
 
         assert result["type"] == "error"

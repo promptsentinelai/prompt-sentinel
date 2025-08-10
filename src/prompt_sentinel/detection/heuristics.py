@@ -268,13 +268,13 @@ class HeuristicDetector:
                         # Check if decoded content contains text
                         if any(32 <= b < 127 for b in decoded):
                             return True
-                    except:
+                    except Exception:
                         pass
             # For other encoding patterns, just return True if pattern matched
             elif any(enc in pattern for enc in [r"\\x", r"\\u", r"%", r"&"]):
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def _check_role_manipulation(self, content: str) -> bool:

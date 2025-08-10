@@ -1,9 +1,8 @@
 """Comprehensive tests for ML patterns module."""
 
-import asyncio
 import re
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -286,7 +285,7 @@ class TestPatternExtractor:
         mock_cluster.cluster_id = 1
 
         with patch("prompt_sentinel.ml.patterns.logger") as mock_logger:
-            patterns = extractor._match_templates(prompts, "test", mock_cluster)
+            extractor._match_templates(prompts, "test", mock_cluster)
             mock_logger.warning.assert_called_once()
 
     def test_extract_ngram_patterns(self, extractor):

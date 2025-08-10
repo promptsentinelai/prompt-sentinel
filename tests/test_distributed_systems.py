@@ -8,14 +8,9 @@ pytestmark = pytest.mark.skip(reason="Distributed systems feature not yet implem
 import asyncio
 import random
 import time
-import hashlib
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Set
-from unittest.mock import AsyncMock, MagicMock, patch
-from collections import defaultdict
 import uuid
-
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+from collections import defaultdict
+from datetime import datetime
 
 
 class TestDistributedConsensus:
@@ -208,7 +203,7 @@ class TestDistributedCaching:
         for i in range(10):
             write_tasks.append(cache_cluster.set(key, f"value_{i}"))
 
-        results = await asyncio.gather(*write_tasks)
+        await asyncio.gather(*write_tasks)
 
         # All nodes should have same final value
         await asyncio.sleep(0.1)  # Allow propagation
@@ -364,7 +359,6 @@ class TestDistributedCoordination:
         lock_name = "detection_lock"
 
         # Multiple clients try to acquire lock
-        clients = []
         lock_holders = []
 
         async def try_acquire(client_id):
@@ -495,7 +489,6 @@ class TestDistributedTransactions:
         tx_id = await transaction_manager.begin()
 
         # Prepare phase
-        participants = ["db1", "db2", "cache1"]
         operations = [
             {"participant": "db1", "operation": "INSERT", "data": {"id": 1}},
             {"participant": "db2", "operation": "UPDATE", "data": {"id": 2}},
@@ -809,7 +802,7 @@ class TestDistributedResilience:
         accepted = 0
         rejected = 0
 
-        for i in range(150):
+        for _i in range(150):
             result = await resilience_manager.check_rate_limit(user_id=user_id, ip="192.168.1.1")
 
             if result["allowed"]:

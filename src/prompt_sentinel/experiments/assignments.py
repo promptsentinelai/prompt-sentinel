@@ -451,7 +451,6 @@ class AssignmentService:
         """
         # This would typically query a database
         # For now, return basic stats from cache
-        pattern = f"assignment:{experiment_id}:*"
 
         stats = {
             "experiment_id": experiment_id,
@@ -462,7 +461,7 @@ class AssignmentService:
         }
 
         # Count cached assignments (simplified implementation)
-        for key, assignment in self.assignments_cache.items():
+        for _key, assignment in self.assignments_cache.items():
             if assignment.experiment_id == experiment_id:
                 stats["total_assignments"] += 1
                 variant_id = assignment.variant_id

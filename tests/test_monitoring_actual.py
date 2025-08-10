@@ -1,14 +1,11 @@
 """Unit tests for actual monitoring modules."""
 
-import asyncio
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from prompt_sentinel.monitoring.budget_manager import BudgetManager
-from prompt_sentinel.monitoring.usage_tracker import UsageTracker
 from prompt_sentinel.monitoring.rate_limiter import RateLimiter
+from prompt_sentinel.monitoring.usage_tracker import UsageTracker
 
 
 @pytest.mark.skip(reason="Tests use outdated API - monitoring modules have been refactored")
@@ -398,7 +395,7 @@ class TestMonitoringIntegration:
         allowed_count = 0
 
         # Make requests with tracking
-        for i in range(20):
+        for _i in range(20):
             if await rate_limiter.allow_request(client_id):
                 allowed_count += 1
                 await usage_tracker.track_request(

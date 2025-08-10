@@ -1,8 +1,9 @@
 """Edge case tests for critical detection components."""
 
 import asyncio
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.detection.heuristics import HeuristicDetector
@@ -133,7 +134,7 @@ class TestHeuristicEdgeCases:
             verdict, reasons, confidence = detector.detect(messages)
             # Just verify we get a valid verdict (detection may vary by mode)
             assert verdict in [Verdict.ALLOW, Verdict.FLAG, Verdict.STRIP, Verdict.BLOCK]
-            assert isinstance(confidence, (int, float))
+            assert isinstance(confidence, int | float)
             assert 0.0 <= confidence <= 1.0
 
     def test_whitespace_obfuscation(self, detector):
@@ -235,7 +236,6 @@ class TestDetectorPerformanceEdgeCases:
     @pytest.mark.asyncio
     async def test_concurrent_detection_requests(self):
         """Test handling concurrent detection requests."""
-        import asyncio
 
         detector = PromptDetector()
 
@@ -285,7 +285,7 @@ class TestErrorRecoveryEdgeCases:
         """Test recovery from provider timeouts."""
         with patch("prompt_sentinel.detection.llm_classifier.AnthropicProvider") as mock_provider:
             mock_provider.return_value.classify = AsyncMock(
-                side_effect=asyncio.TimeoutError("Provider timeout")
+                side_effect=TimeoutError("Provider timeout")
             )
 
             detector = PromptDetector()

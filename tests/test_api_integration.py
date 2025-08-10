@@ -1,24 +1,9 @@
 """API integration tests for PromptSentinel."""
 
-import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timedelta
+from unittest.mock import patch
 
-from fastapi.testclient import TestClient
-from httpx import AsyncClient
-
-from prompt_sentinel.models.schemas import (
-    Message,
-    Role,
-    Verdict,
-    DetectionResponse,
-    AnalysisRequest,
-    AnalysisResponse,
-    SimplePromptRequest,
-    StructuredPromptRequest,
-    UnifiedDetectionRequest,
-)
+import pytest
 
 
 class TestAPIEndpoints:

@@ -1,8 +1,7 @@
 """Comprehensive tests for usage tracking module."""
 
-import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -306,7 +305,7 @@ class TestUsageTracker:
     async def test_update_metrics_time_windows(self, tracker):
         """Test metrics update with different time windows."""
         # Track multiple calls to test time window logic
-        for i in range(5):
+        for _i in range(5):
             await tracker.track_api_call(
                 provider="anthropic",
                 model="claude-3-haiku-20240307",
@@ -777,7 +776,7 @@ class TestUsageTrackerIntegration:
         providers = ["anthropic", "openai", "gemini"]
         models = ["claude-3-haiku-20240307", "gpt-3.5-turbo", "gemini-1.5-flash"]
 
-        for provider, model in zip(providers, models):
+        for provider, model in zip(providers, models, strict=False):
             await tracker.track_api_call(
                 provider=provider,
                 model=model,
@@ -839,7 +838,7 @@ class TestUsageTrackerIntegration:
         assert trend[0]["requests"] == 10
 
         # Clear old data and verify cleanup
-        original_calls = len(tracker.api_calls)
+        len(tracker.api_calls)
 
         # Manually set old timestamps to test cleanup
         for call in tracker.api_calls:

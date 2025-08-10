@@ -24,9 +24,8 @@ def event_loop() -> Generator:
 def test_client() -> TestClient:
     """Create a test client for the FastAPI app."""
     # Initialize global detector for testing
-    from prompt_sentinel.main import detector
-    from prompt_sentinel.detection.detector import PromptDetector
     from prompt_sentinel import main
+    from prompt_sentinel.detection.detector import PromptDetector
 
     if main.detector is None:
         main.detector = PromptDetector()

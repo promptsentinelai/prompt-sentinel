@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.detection.heuristics import HeuristicDetector
 from prompt_sentinel.detection.llm_classifier import LLMClassifierManager
 from prompt_sentinel.detection.pii_detector import PIIDetector
@@ -141,11 +140,10 @@ class TestInvalidInputs:
 
     def test_negative_confidence_scores(self):
         """Test handling of negative confidence scores."""
-        from prompt_sentinel.models.schemas import DetectionReason
 
         # Try to create reason with negative confidence
         with pytest.raises(ValueError):
-            reason = DetectionReason(
+            DetectionReason(
                 category=DetectionCategory.JAILBREAK,
                 confidence=-0.5,  # Invalid negative
                 explanation="test",
@@ -153,11 +151,10 @@ class TestInvalidInputs:
 
     def test_confidence_score_above_one(self):
         """Test handling of confidence scores > 1.0."""
-        from prompt_sentinel.models.schemas import DetectionReason
 
         # Try to create reason with confidence > 1
         with pytest.raises(ValueError):
-            reason = DetectionReason(
+            DetectionReason(
                 category=DetectionCategory.JAILBREAK,
                 confidence=1.5,  # Invalid > 1.0
                 explanation="test",
@@ -277,7 +274,7 @@ class TestAPIErrorHandling:
             provider = OpenAIProvider(config)
 
             # Mock to simulate timeout
-            provider.client.chat.completions.create = AsyncMock(side_effect=asyncio.TimeoutError())
+            provider.client.chat.completions.create = AsyncMock(side_effect=TimeoutError())
 
             messages = [Message(role=Role.USER, content="test")]
             category, confidence, explanation = await provider.classify(messages)
@@ -451,7 +448,6 @@ class TestDataCorruption:
 
     def test_circular_json_serialization(self):
         """Test handling of circular references in JSON serialization."""
-        from prompt_sentinel.models.schemas import DetectionReason
 
         reason = DetectionReason(
             category=DetectionCategory.JAILBREAK, confidence=0.9, explanation="test"
@@ -495,7 +491,7 @@ class TestConcurrencyIssues:
 
         # All should complete successfully
         assert len(results) == 100
-        for verdict, reasons, confidence in results:
+        for verdict, _reasons, _confidence in results:
             assert verdict is not None
             assert isinstance(verdict, Verdict)
 
@@ -544,7 +540,6 @@ class TestConcurrencyIssues:
     @pytest.mark.asyncio
     async def test_cache_race_conditions(self):
         """Test cache behavior under concurrent access."""
-        from prompt_sentinel.detection.llm_classifier import LLMClassifierManager
 
         config = {
             "provider_order": ["anthropic"],
@@ -570,7 +565,7 @@ class TestConcurrencyIssues:
             results = await asyncio.gather(*tasks)
 
             # All should get same result
-            for category, confidence, explanation in results:
+            for category, confidence, _explanation in results:
                 assert category == DetectionCategory.BENIGN
                 assert confidence == 0.1
 
@@ -621,7 +616,6 @@ class TestBoundaryConditions:
 
     def test_boundary_confidence_values(self):
         """Test exact boundary confidence values."""
-        from prompt_sentinel.models.schemas import DetectionReason
 
         # Test exact boundaries
         boundaries = [0.0, 0.5, 1.0]
@@ -676,7 +670,6 @@ class TestSystemIntegration:
     @pytest.mark.asyncio
     async def test_provider_failover_exhaustion(self):
         """Test when all providers fail."""
-        from prompt_sentinel.detection.llm_classifier import LLMClassifierManager
 
         config = {
             "provider_order": ["anthropic", "openai", "gemini"],
@@ -723,7 +716,7 @@ class TestSystemIntegration:
                 del sys.modules["anthropic"]
 
             with pytest.raises(ImportError):
-                from prompt_sentinel.providers.anthropic_provider import AnthropicProvider
+                pass
         finally:
             # Restore modules
             sys.modules.update(original_modules)

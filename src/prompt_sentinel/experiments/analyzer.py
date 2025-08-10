@@ -522,7 +522,7 @@ class StatisticalAnalyzer:
 
         # Calculate ranks
         ranks = {}
-        for i, (val, group) in enumerate(combined):
+        for i, (val, _group) in enumerate(combined):
             if val not in ranks:
                 ranks[val] = []
             ranks[val].append(i + 1)

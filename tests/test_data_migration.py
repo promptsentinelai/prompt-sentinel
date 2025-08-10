@@ -1,17 +1,9 @@
 """Data migration and schema evolution tests for PromptSentinel."""
 
-import pytest
 import asyncio
-import json
-import sqlite3
-from datetime import datetime, timedelta
-from typing import Dict, List, Any
-from unittest.mock import AsyncMock, MagicMock, patch
-import tempfile
-import shutil
-from pathlib import Path
+from datetime import datetime
 
-from prompt_sentinel.models.schemas import Message, Role, Verdict
+import pytest
 
 # Skip all tests in this file - feature not implemented
 pytestmark = pytest.mark.skip(reason="Feature not yet implemented")
@@ -327,7 +319,7 @@ class TestBulkDataMigration:
             return data
 
         # Migrate in parallel
-        results = await bulk_migrator.migrate_parallel(sources, migrate_source)
+        await bulk_migrator.migrate_parallel(sources, migrate_source)
 
         assert len(migrated) == 3
         assert migrated["users"] == 1000
@@ -579,7 +571,6 @@ class TestMigrationRollback:
         snapshot_id = await rollback_manager.create_snapshot_from_data(initial_data)
 
         # Modify data (simulated migration)
-        current_data = {"users": [{"id": 1, "name": "modified"}]}
 
         # Rollback
         result = await rollback_manager.rollback_to_snapshot(snapshot_id)
@@ -658,11 +649,6 @@ class TestCrossVersionTesting:
         evolution = FormatEvolution()
 
         # Version history
-        formats = {
-            "v1": {"fields": ["id", "text", "result"]},
-            "v2": {"fields": ["id", "prompt", "verdict", "confidence"]},
-            "v3": {"fields": ["id", "messages", "verdict", "confidence", "metadata"]},
-        }
 
         # Test forward compatibility
         v1_data = {"id": 1, "text": "test", "result": "safe"}

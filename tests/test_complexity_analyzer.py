@@ -1,14 +1,15 @@
 """Tests for routing complexity analyzer module."""
 
+
 import pytest
-import re
-from prompt_sentinel.routing.complexity_analyzer import (
-    ComplexityLevel,
-    RiskIndicator,
-    ComplexityScore,
-    ComplexityAnalyzer,
-)
+
 from prompt_sentinel.models.schemas import Message, Role
+from prompt_sentinel.routing.complexity_analyzer import (
+    ComplexityAnalyzer,
+    ComplexityLevel,
+    ComplexityScore,
+    RiskIndicator,
+)
 
 
 class TestComplexityLevel:
@@ -416,7 +417,7 @@ class TestComplexityAnalyzer:
             ("こんにちは", {"japanese"}),
         ]
 
-        for text, expected_scripts in test_cases:
+        for text, _expected_scripts in test_cases:
             messages = [Message(role=Role.USER, content=text)]
             # We can't directly test the internal script detection,
             # but we can test that it doesn't crash

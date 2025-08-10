@@ -1,13 +1,12 @@
 """Comprehensive tests for the AuthenticationMiddleware module."""
 
 import json
-from unittest.mock import AsyncMock, MagicMock, Mock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from starlette.datastructures import Headers
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from prompt_sentinel.auth.middleware import AuthenticationMiddleware
 from prompt_sentinel.auth.models import (
@@ -15,7 +14,6 @@ from prompt_sentinel.auth.models import (
     AuthMethod,
     AuthMode,
     Client,
-    ClientPermission,
     UsageTier,
 )
 
@@ -113,7 +111,7 @@ class TestAuthenticationMiddleware:
             request.url.path = path
             request.state = MagicMock()
 
-            response = await middleware.dispatch(request, mock_call_next)
+            await middleware.dispatch(request, mock_call_next)
 
             # Should set system client
             assert request.state.client.client_id == "system"
@@ -132,7 +130,7 @@ class TestAuthenticationMiddleware:
         request.url.path = "/admin/settings"
         request.state = MagicMock()
 
-        response = await middleware.dispatch(request, mock_call_next)
+        await middleware.dispatch(request, mock_call_next)
 
         # Should set admin client
         assert request.state.client.client_id == "admin"
@@ -148,7 +146,7 @@ class TestAuthenticationMiddleware:
         middleware.auth_config.mode = AuthMode.REQUIRED
         mock_request.url.path = "/admin/settings"
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should not bypass, will get anonymous client
         assert mock_request.state.client.auth_method == AuthMethod.ANONYMOUS
@@ -158,7 +156,7 @@ class TestAuthenticationMiddleware:
         """Test dispatch when auth mode is NONE."""
         middleware.auth_config.mode = AuthMode.NONE
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should set local client
         assert mock_request.state.client.client_id == "local"
@@ -171,7 +169,7 @@ class TestAuthenticationMiddleware:
         """Test dispatch with localhost bypass."""
         mock_request.client.host = "127.0.0.1"
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should set localhost bypass client
         assert mock_request.state.client.client_id == "localhost"
@@ -184,7 +182,7 @@ class TestAuthenticationMiddleware:
         """Test dispatch with IPv6 localhost bypass."""
         mock_request.client.host = "::1"
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should set localhost bypass client
         assert mock_request.state.client.client_id == "localhost"
@@ -198,7 +196,7 @@ class TestAuthenticationMiddleware:
         middleware.auth_config.allow_localhost = False
         mock_request.client.host = "127.0.0.1"
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should not bypass, will get anonymous client
         assert mock_request.state.client.client_id == "anon_127.0.0.1"
@@ -210,7 +208,7 @@ class TestAuthenticationMiddleware:
         mock_request.client.host = "10.0.0.5"
         middleware.api_key_manager.check_network_bypass.return_value = True
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should set network bypass client
         assert mock_request.state.client.client_id == "network_10.0.0.5"
@@ -224,7 +222,7 @@ class TestAuthenticationMiddleware:
         mock_request.headers = Headers({"X-Internal": "true"})
         middleware.api_key_manager.check_header_bypass.return_value = True
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should set header bypass client
         assert mock_request.state.client.client_id == "header_bypass"
@@ -246,7 +244,7 @@ class TestAuthenticationMiddleware:
         )
         middleware.api_key_manager.validate_api_key.return_value = test_client
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should set the validated client
         assert mock_request.state.client == test_client
@@ -262,7 +260,7 @@ class TestAuthenticationMiddleware:
         mock_request.headers = Headers({"X-API-Key": "psk_invalid_key"})
         middleware.api_key_manager.validate_api_key.return_value = None
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should fall back to anonymous client
         assert mock_request.state.client.client_id == "anon_192.168.1.1"
@@ -278,7 +276,7 @@ class TestAuthenticationMiddleware:
         mock_request.headers = Headers({"X-API-Key": "psk_invalid_key"})
         middleware.api_key_manager.validate_api_key.return_value = None
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should still fall back to anonymous (dependency will handle error)
         assert mock_request.state.client.client_id == "anon_192.168.1.1"
@@ -291,7 +289,7 @@ class TestAuthenticationMiddleware:
         """Test dispatch with no API key in required mode."""
         middleware.auth_config.mode = AuthMode.REQUIRED
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should fall back to anonymous (dependency will handle error)
         assert mock_request.state.client.client_id == "anon_192.168.1.1"
@@ -303,7 +301,7 @@ class TestAuthenticationMiddleware:
         middleware.auth_config.unauthenticated_rpm = 20
         middleware.auth_config.unauthenticated_tpm = 2000
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         assert mock_request.state.client.auth_method == AuthMethod.ANONYMOUS
         assert mock_request.state.client.rate_limits == {"rpm": 20, "tpm": 2000}
@@ -334,7 +332,7 @@ class TestAuthenticationMiddleware:
         mock_request.url.scheme = "http"
         mock_request.client.host = "127.0.0.1"  # Localhost bypass
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Bypass clients are allowed even without HTTPS
         mock_call_next.assert_called_with(mock_request)
@@ -347,7 +345,7 @@ class TestAuthenticationMiddleware:
         mock_request.url.scheme = "http"
         mock_request.headers = Headers({"X-Forwarded-Proto": "https"})
 
-        response = await middleware.dispatch(mock_request, mock_call_next)
+        await middleware.dispatch(mock_request, mock_call_next)
 
         # Should allow request with proxy HTTPS header
         mock_call_next.assert_called_with(mock_request)
@@ -389,7 +387,7 @@ class TestAuthenticationMiddleware:
 
         # Simulate exception in _get_client
         with patch.object(middleware, "_get_client", side_effect=Exception("Auth error")):
-            response = await middleware.dispatch(mock_request, mock_call_next)
+            await middleware.dispatch(mock_request, mock_call_next)
 
         # Should set error client and continue
         assert mock_request.state.client.client_id == "error"
@@ -491,7 +489,7 @@ class TestAuthenticationMiddleware:
         middleware.api_key_manager.validate_api_key.return_value = test_client
 
         with patch("prompt_sentinel.auth.middleware.logger") as mock_logger:
-            response = await middleware.dispatch(mock_request, mock_call_next)
+            await middleware.dispatch(mock_request, mock_call_next)
 
             # Should log authentication
             mock_logger.debug.assert_called_once()
@@ -508,7 +506,7 @@ class TestAuthenticationMiddleware:
         middleware.auth_config.mode = AuthMode.NONE
 
         with patch("prompt_sentinel.auth.middleware.logger") as mock_logger:
-            response = await middleware.dispatch(mock_request, mock_call_next)
+            await middleware.dispatch(mock_request, mock_call_next)
 
             # Should not log for NONE auth method
             mock_logger.debug.assert_not_called()
@@ -539,7 +537,7 @@ class TestAuthenticationMiddleware:
         )
 
         with patch.object(middleware, "_get_client", return_value=test_client):
-            response = await middleware.dispatch(mock_request, mock_call_next)
+            await middleware.dispatch(mock_request, mock_call_next)
 
         # Check all state attributes are set
         assert mock_request.state.client == test_client
@@ -552,7 +550,7 @@ class TestAuthenticationMiddleware:
         for mode in [AuthMode.NONE, AuthMode.OPTIONAL, AuthMode.REQUIRED]:
             middleware.auth_config.mode = mode
 
-            response = await middleware.dispatch(mock_request, mock_call_next)
+            await middleware.dispatch(mock_request, mock_call_next)
 
             # Should always set a client
             assert hasattr(mock_request.state, "client")
@@ -578,6 +576,6 @@ class TestAuthenticationMiddleware:
             mock_request.headers = Headers({"X-API-Key": f"psk_{tier.value}"})
             middleware.api_key_manager.validate_api_key.return_value = test_client
 
-            response = await middleware.dispatch(mock_request, mock_call_next)
+            await middleware.dispatch(mock_request, mock_call_next)
 
             assert mock_request.state.client.usage_tier == tier

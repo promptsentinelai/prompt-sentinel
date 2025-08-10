@@ -123,7 +123,7 @@ class TestAnthropicProvider:
     @pytest.mark.asyncio
     async def test_classify_timeout(self, provider, messages):
         """Test classification timeout handling."""
-        provider.client.messages.create = AsyncMock(side_effect=asyncio.TimeoutError())
+        provider.client.messages.create = AsyncMock(side_effect=TimeoutError())
 
         category, confidence, explanation = await provider.classify(messages)
 
@@ -163,7 +163,7 @@ class TestAnthropicProvider:
 
         result = await provider.health_check()
 
-        assert result == True
+        assert result
         provider.client.messages.create.assert_called_once()
 
     @pytest.mark.asyncio
@@ -173,16 +173,16 @@ class TestAnthropicProvider:
 
         result = await provider.health_check()
 
-        assert result == False
+        assert not result
 
     @pytest.mark.asyncio
     async def test_health_check_timeout(self, provider):
         """Test health check timeout."""
-        provider.client.messages.create = AsyncMock(side_effect=asyncio.TimeoutError())
+        provider.client.messages.create = AsyncMock(side_effect=TimeoutError())
 
         result = await provider.health_check()
 
-        assert result == False
+        assert not result
 
     def test_parse_response_valid_json(self, provider):
         """Test parsing valid JSON response."""

@@ -10,23 +10,23 @@ A production-ready defensive security microservice for detecting and mitigating 
 
 ## 🚀 Key Features
 
-- **🎯 Multi-Layer Detection**: Combines heuristic patterns, LLM classification, and PII detection
-- **🚀 Intelligent Routing**: Automatically routes prompts to optimal detection strategy based on complexity
-- **🔐 Flexible Authentication**: Multiple deployment modes - no auth (sidecar), optional (mixed), or required (SaaS)
-- **🤖 ML Pattern Discovery**: Self-learning system that discovers new attack patterns from real threats
-- **💰 API Usage Monitoring**: Track costs, usage, and performance with budget controls and alerts
-- **🔄 Multi-Provider LLM Support**: Anthropic (Claude), OpenAI (GPT), and Google (Gemini) with automatic failover
-- **🛡️ PII Protection**: Detects and redacts 15+ PII types including SSNs, credit cards, API keys
-- **⚡ High Performance**: 98% faster responses with Redis caching (12ms vs 700ms)
-- **🔌 WebSocket Support**: Real-time streaming detection for continuous monitoring
-- **🧪 A/B Testing**: Built-in experimentation framework for optimizing detection strategies
-- **🤖 ML Pattern Discovery**: Automated discovery of new attack patterns using clustering and machine learning
-- **🚦 Rate Limiting**: Token bucket algorithm with per-client and global limits
-- **🔧 Flexible Deployment**: Works with or without Redis, Docker, Kubernetes ready
-- **📊 Production Ready**: OpenTelemetry monitoring, structured logging, health checks
-- **🎛️ Configurable Detection Modes**: Strict, moderate, or permissive detection based on your needs
-- **📝 Format Validation**: Encourages secure prompt design with role separation
-- **🏢 Enterprise Compliant**: SOC 2, FINRA, GDPR/CPRA ready with audit logging
+- **Multi-Layer Detection**: Combines heuristic patterns, LLM classification, and PII detection
+- **Intelligent Routing**: Automatically routes prompts to optimal detection strategy based on complexity
+- **Flexible Authentication**: Multiple deployment modes - no auth (sidecar), optional (mixed), or required (SaaS)
+- **ML Pattern Discovery**: Self-learning system that discovers new attack patterns from real threats
+- **API Usage Monitoring**: Track costs, usage, and performance with budget controls and alerts
+- **Multi-Provider LLM Support**: Anthropic (Claude), OpenAI (GPT), and Google (Gemini) with automatic failover
+- **PII Protection**: Detects and redacts 15+ PII types including SSNs, credit cards, API keys
+- **High Performance**: 98% faster responses with Redis caching (12ms vs 700ms)
+- **WebSocket Support**: Real-time streaming detection for continuous monitoring
+- **A/B Testing**: Built-in experimentation framework for optimizing detection strategies
+- **ML Pattern Discovery**: Automated discovery of new attack patterns using clustering and machine learning
+- **Rate Limiting**: Token bucket algorithm with per-client and global limits
+- **Flexible Deployment**: Works with or without Redis, Docker, Kubernetes ready
+- **Production Ready**: OpenTelemetry monitoring, structured logging, health checks
+- **Configurable Detection Modes**: Strict, moderate, or permissive detection based on your needs
+- **Format Validation**: Encourages secure prompt design with role separation
+- **Enterprise Compliant**: SOC 2, FINRA, GDPR/CPRA ready with audit logging
 
 ## 📋 Table of Contents
 
@@ -639,12 +639,12 @@ make up
 
 ### Redis Security Features
 
-- 🔒 Password protected with AUTH
-- 💾 Memory-only operation (no disk writes)
-- 🚫 Dangerous commands disabled (FLUSHDB, CONFIG, etc.)
-- 📦 Read-only filesystem with tmpfs
-- ⏱️ Auto-expiring entries (max 1 hour TTL)
-- 🔐 Hashed cache keys (no sensitive data exposed)
+- Password protected with AUTH
+- Memory-only operation (no disk writes)
+- Dangerous commands disabled (FLUSHDB, CONFIG, etc.)
+- Read-only filesystem with tmpfs
+- Auto-expiring entries (max 1 hour TTL)
+- Hashed cache keys (no sensitive data exposed)
 
 ## 🔍 PII Detection
 
@@ -701,7 +701,7 @@ The system combines both methods for maximum accuracy:
 ### Test Suite Status
 
 - **Total Tests**: 1,653
-- **Pass Rate**: 100% ✅
+- **Pass Rate**: 100%
 - **Code Coverage**: 61%
 - **Test Categories**:
   - Unit Tests: Comprehensive coverage of all modules
@@ -941,7 +941,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **API Monitoring**: Usage tracking, budget controls, and rate limiting
 - **PII Detection**: 15+ PII types with multiple redaction modes
 - **Redis Caching**: 98% performance improvement with optional Redis support
-- **Comprehensive Testing**: 1,653 tests with 100% pass rate, 61% code coverage ✅
+- **Comprehensive Testing**: 1,653 tests with 100% pass rate, 61% code coverage
 - **API Documentation**: Full OpenAPI/Swagger support with interactive UI
 - **Docker Support**: Official images available at `promptsentinel/prompt-sentinel`
 - **Kubernetes Ready**: Helm charts and deployment configurations included

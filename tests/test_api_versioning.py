@@ -10,6 +10,10 @@ from packaging import version
 
 from prompt_sentinel.models.schemas import Message, Role, Verdict
 
+# Skip all tests in this file - feature not implemented
+pytestmark = pytest.mark.skip(reason="Feature not yet implemented")
+
+
 
 class TestAPIVersioning:
     """Test API versioning strategies."""

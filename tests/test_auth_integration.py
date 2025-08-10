@@ -22,27 +22,39 @@ class TestAPIKeyAuthentication:
     
     def setup_method(self):
         """Setup test client."""
+        from prompt_sentinel.detection.detector import PromptDetector
+        from prompt_sentinel.detection.prompt_processor import PromptProcessor
+        from prompt_sentinel import main
+        
+        # Initialize detector if not already initialized
+        if main.detector is None:
+            main.detector = PromptDetector()
+            main.processor = PromptProcessor()
+        
         self.client = TestClient(app)
         
         # Initialize auth components for testing
         from prompt_sentinel.auth.api_key_manager import APIKeyManager
         from prompt_sentinel.auth.models import APIKey, ClientPermission
-        from prompt_sentinel import main
         
         if not main.api_key_manager:
             main.api_key_manager = APIKeyManager()
     
     def test_valid_api_key_access(self):
         """Test access with valid API key."""
+        from prompt_sentinel.auth.models import Client, AuthMethod, UsageTier
+        
         headers = {"X-API-Key": "test-valid-key"}
         
         with patch("prompt_sentinel.auth.api_key_manager.APIKeyManager.validate_api_key") as mock_validate:
-            mock_validate.return_value = {
-                "valid": True,
-                "key_id": "test-key-id", 
-                "scopes": ["read", "write"],
-                "rate_limit": {"requests_per_minute": 100}
-            }
+            # Return a Client object instead of dict
+            mock_client = Client(
+                client_id="test-key-id",
+                client_name="Test Client",
+                auth_method=AuthMethod.API_KEY,
+                usage_tier=UsageTier.PRO
+            )
+            mock_validate.return_value = mock_client
             
             response = self.client.post(
                 "/v1/detect",

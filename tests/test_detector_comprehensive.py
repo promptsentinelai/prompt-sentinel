@@ -35,6 +35,7 @@ class TestPromptDetector:
         with patch('prompt_sentinel.detection.detector.PromptProcessor') as MockProcessor:
             processor = MockProcessor.return_value
             processor.validate_role_separation = MagicMock(return_value=(True, []))
+            processor.clean_prompt = MagicMock(return_value="cleaned prompt")
             yield processor
 
     @pytest.fixture

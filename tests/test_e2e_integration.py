@@ -108,8 +108,12 @@ class TestEndToEndDetectionFlow:
                     ]
                 })
                 
-                # Receive response
+                # Receive response - may get connection message first
                 data = websocket.receive_json()
+                
+                # If we get a connection message, get the next message
+                if data.get("type") == "connection":
+                    data = websocket.receive_json()
                 
                 assert data["type"] == "detection"
                 assert "verdict" in data

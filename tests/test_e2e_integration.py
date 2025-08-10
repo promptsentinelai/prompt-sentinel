@@ -32,13 +32,13 @@ class TestEndToEndDetectionFlow:
         data = response.json()
         
         # Verify response structure
-        assert "is_malicious" in data
+        assert "verdict" in data
         assert "confidence" in data
         assert "reasons" in data
         assert "request_id" in data
         
         # Should be benign
-        assert data["is_malicious"] is False
+        assert data["verdict"] == "allow"
         assert data["confidence"] > 0.8
 
     def test_e2e_malicious_detection(self, client):
@@ -495,7 +495,7 @@ class TestEndToEndDataFlow:
         assert response2.status_code == 200
         
         # Results should be identical
-        assert response1.json()["is_malicious"] == response2.json()["is_malicious"]
+        assert response1.json()["verdict"] == response2.json()["verdict"]
         assert response1.json()["confidence"] == response2.json()["confidence"]
         
         # Second might be faster if cached
@@ -533,7 +533,7 @@ class TestEndToEndSecurityFlow:
             data = response.json()
             
             # Should detect as malicious
-            assert data["is_malicious"] is True
+            assert data["verdict"] in ["block", "flag", "strip"]
             assert data["confidence"] > 0.7
 
     def test_e2e_pii_detection(self, client):

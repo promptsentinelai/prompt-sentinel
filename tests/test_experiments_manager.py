@@ -44,7 +44,7 @@ class TestExperimentExecution:
             },
             assignment_cache={"user_001": "control"},
         )
-        
+
         assert execution.experiment_id == "exp_001"
         assert len(execution.variant_configs) == 2
         assert execution.assignment_cache["user_001"] == "control"
@@ -59,11 +59,11 @@ class TestExperimentExecution:
             variant_configs={},
             assignment_cache={},
         )
-        
+
         # Add metrics to buffer
         metric = {"metric_name": "accuracy", "value": 0.95}
         execution.metrics_buffer.append(metric)
-        
+
         assert len(execution.metrics_buffer) == 1
         assert execution.metrics_buffer[0]["value"] == 0.95
 
@@ -197,10 +197,10 @@ class TestExperimentManager:
     async def test_initialize(self, manager):
         """Test manager initialization."""
         await manager.initialize()
-        
+
         # Verify components initialized
         manager.database.initialize.assert_called_once()
-        
+
         # Verify background tasks started
         assert manager.analysis_task is not None
         assert manager.metrics_flush_task is not None
@@ -210,10 +210,10 @@ class TestExperimentManager:
         """Test manager shutdown."""
         # Initialize first
         await manager.initialize()
-        
+
         # Shutdown
         await manager.shutdown()
-        
+
         # Verify tasks cancelled
         assert manager.analysis_task is None
         assert manager.metrics_flush_task is None
@@ -222,7 +222,7 @@ class TestExperimentManager:
     async def test_create_experiment(self, manager, sample_experiment_config):
         """Test creating a new experiment."""
         result = await manager.create_experiment(sample_experiment_config)
-        
+
         assert result is True
         manager.database.save_experiment.assert_called_once_with(sample_experiment_config)
         assert sample_experiment_config.id in manager.experiment_configs
@@ -232,7 +232,7 @@ class TestExperimentManager:
         """Test creating duplicate experiment."""
         # First creation succeeds
         await manager.create_experiment(sample_experiment_config)
-        
+
         # Second creation should fail
         with pytest.raises(ExperimentError, match="already exists"):
             await manager.create_experiment(sample_experiment_config)
@@ -242,13 +242,13 @@ class TestExperimentManager:
         """Test starting an experiment."""
         # Create experiment first
         await manager.create_experiment(sample_experiment_config)
-        
+
         # Start experiment
         result = await manager.start_experiment(sample_experiment_config.id)
-        
+
         assert result is True
         assert sample_experiment_config.id in manager.active_experiments
-        
+
         # Verify execution state
         execution = manager.active_experiments[sample_experiment_config.id]
         assert execution.experiment_id == sample_experiment_config.id
@@ -265,7 +265,7 @@ class TestExperimentManager:
         """Test starting already running experiment."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Starting again should fail
         with pytest.raises(ExperimentError, match="already running"):
             await manager.start_experiment(sample_experiment_config.id)
@@ -275,13 +275,13 @@ class TestExperimentManager:
         """Test stopping an experiment."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Stop experiment
         result = await manager.stop_experiment(sample_experiment_config.id)
-        
+
         assert result is True
         assert sample_experiment_config.id not in manager.active_experiments
-        
+
         # Verify status updated
         manager.database.update_experiment.assert_called()
 
@@ -290,10 +290,10 @@ class TestExperimentManager:
         """Test pausing an experiment."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Pause experiment
         result = await manager.pause_experiment(sample_experiment_config.id)
-        
+
         assert result is True
         assert sample_experiment_config.status == ExperimentStatus.PAUSED
 
@@ -303,10 +303,10 @@ class TestExperimentManager:
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
         await manager.pause_experiment(sample_experiment_config.id)
-        
+
         # Resume experiment
         result = await manager.resume_experiment(sample_experiment_config.id)
-        
+
         assert result is True
         assert sample_experiment_config.status == ExperimentStatus.RUNNING
 
@@ -315,7 +315,7 @@ class TestExperimentManager:
         """Test getting user assignment."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Mock assignment service response
         manager.assignment_service.get_assignment.return_value = ExperimentAssignment(
             experiment_id=sample_experiment_config.id,
@@ -324,17 +324,17 @@ class TestExperimentManager:
             assigned_at=datetime.utcnow(),
             context={},
         )
-        
+
         # Get assignment
         context = AssignmentContext(
             user_id="user_001",
             attributes={"device": "mobile"},
         )
         assignment = await manager.get_assignment(sample_experiment_config.id, context)
-        
+
         assert assignment is not None
         assert assignment.variant_id == "control"
-        
+
         # Check cache
         execution = manager.active_experiments[sample_experiment_config.id]
         assert execution.assignment_cache["user_001"] == "control"
@@ -344,15 +344,15 @@ class TestExperimentManager:
         """Test getting cached assignment."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Pre-populate cache
         execution = manager.active_experiments[sample_experiment_config.id]
         execution.assignment_cache["user_001"] = "treatment"
-        
+
         # Get assignment (should use cache)
         context = AssignmentContext(user_id="user_001", attributes={})
         assignment = await manager.get_assignment(sample_experiment_config.id, context)
-        
+
         assert assignment.variant_id == "treatment"
         # Assignment service should not be called
         manager.assignment_service.get_assignment.assert_not_called()
@@ -362,7 +362,7 @@ class TestExperimentManager:
         """Test recording experiment metric."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Record metric
         await manager.record_metric(
             experiment_id=sample_experiment_config.id,
@@ -371,7 +371,7 @@ class TestExperimentManager:
             value=0.95,
             variant_id="control",
         )
-        
+
         # Verify metric in buffer
         execution = manager.active_experiments[sample_experiment_config.id]
         assert len(execution.metrics_buffer) == 1
@@ -382,7 +382,7 @@ class TestExperimentManager:
         """Test recording detection result as metric."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Create detection result
         detection_result = DetectionResponse(
             verdict=Verdict.BLOCK,
@@ -391,7 +391,7 @@ class TestExperimentManager:
             processing_time_ms=100.0,
             metadata={},
         )
-        
+
         # Record result
         await manager.record_detection_result(
             experiment_id=sample_experiment_config.id,
@@ -399,11 +399,11 @@ class TestExperimentManager:
             variant_id="treatment",
             result=detection_result,
         )
-        
+
         # Verify metrics recorded
         execution = manager.active_experiments[sample_experiment_config.id]
         assert len(execution.metrics_buffer) > 0
-        
+
         # Should record multiple metrics from result
         metric_names = [m["metric_name"] for m in execution.metrics_buffer]
         assert "verdict" in metric_names
@@ -415,7 +415,7 @@ class TestExperimentManager:
         """Test analyzing experiment results."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Mock analyzer response
         mock_result = ExperimentResult(
             experiment_id=sample_experiment_config.id,
@@ -428,14 +428,14 @@ class TestExperimentManager:
             analysis_timestamp=datetime.utcnow(),
         )
         manager.analyzer.analyze.return_value = mock_result
-        
+
         # Analyze
         result = await manager.analyze_experiment(sample_experiment_config.id)
-        
+
         assert result is not None
         assert result.statistical_significance == 0.03
         assert result.recommendation == "Continue experiment"
-        
+
         # Verify saved
         manager.database.save_analysis_results.assert_called_once()
 
@@ -444,7 +444,7 @@ class TestExperimentManager:
         """Test checking experiment guardrails."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Mock guardrail violation
         violation = GuardrailViolation(
             experiment_id=sample_experiment_config.id,
@@ -457,13 +457,13 @@ class TestExperimentManager:
             auto_stopped=True,
         )
         manager.safety_controls.check_guardrails.return_value = [violation]
-        
+
         # Check guardrails
         violations = await manager.check_guardrails(sample_experiment_config.id)
-        
+
         assert len(violations) == 1
         assert violations[0].guardrail_name == "max_false_positive_rate"
-        
+
         # Should auto-stop if configured
         if sample_experiment_config.guardrails.auto_stop_on_violation:
             assert sample_experiment_config.id not in manager.active_experiments
@@ -473,13 +473,13 @@ class TestExperimentManager:
         """Test listing experiments."""
         # Mock database response
         manager.database.list_experiments.return_value = [sample_experiment_config]
-        
+
         # List all experiments
         experiments = await manager.list_experiments()
-        
+
         assert len(experiments) == 1
         assert experiments[0].id == sample_experiment_config.id
-        
+
         # List by status
         experiments = await manager.list_experiments(status=ExperimentStatus.DRAFT)
         manager.database.list_experiments.assert_called_with(status=ExperimentStatus.DRAFT)
@@ -488,13 +488,13 @@ class TestExperimentManager:
     async def test_get_experiment_status(self, manager, sample_experiment_config):
         """Test getting experiment status."""
         await manager.create_experiment(sample_experiment_config)
-        
+
         status = await manager.get_experiment_status(sample_experiment_config.id)
-        
+
         assert status["id"] == sample_experiment_config.id
         assert status["status"] == sample_experiment_config.status.value
         assert status["is_running"] is False
-        
+
         # Start experiment
         await manager.start_experiment(sample_experiment_config.id)
         status = await manager.get_experiment_status(sample_experiment_config.id)
@@ -505,17 +505,17 @@ class TestExperimentManager:
         """Test flushing metrics to database."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Add metrics to buffer
         execution = manager.active_experiments[sample_experiment_config.id]
         execution.metrics_buffer = [
             {"metric_name": "accuracy", "value": 0.9},
             {"metric_name": "latency", "value": 100},
         ]
-        
+
         # Flush metrics
         await manager._flush_metrics()
-        
+
         # Verify saved
         manager.database.save_metrics_batch.assert_called_once()
         assert len(execution.metrics_buffer) == 0
@@ -525,17 +525,17 @@ class TestExperimentManager:
         """Test periodic analysis task."""
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
-        
+
         # Mock analyzer
         mock_result = MagicMock()
         manager.analyzer.analyze.return_value = mock_result
-        
+
         # Run periodic analysis
         await manager._run_periodic_analysis()
-        
+
         # Verify analysis performed
         manager.analyzer.analyze.assert_called()
-        
+
         # Verify last analysis time updated
         execution = manager.active_experiments[sample_experiment_config.id]
         assert execution.last_analysis is not None
@@ -546,23 +546,23 @@ class TestExperimentManager:
         # Register handlers
         started_called = False
         completed_called = False
-        
+
         async def on_started(exp_id):
             nonlocal started_called
             started_called = True
-        
+
         async def on_completed(exp_id):
             nonlocal completed_called
             completed_called = True
-        
+
         manager.on_experiment_started(on_started)
         manager.on_experiment_completed(on_completed)
-        
+
         # Start experiment (should trigger handler)
         await manager.create_experiment(sample_experiment_config)
         await manager.start_experiment(sample_experiment_config.id)
         assert started_called
-        
+
         # Stop experiment (should trigger handler)
         await manager.stop_experiment(sample_experiment_config.id)
         assert completed_called
@@ -572,13 +572,13 @@ class TestExperimentManager:
         """Test error handling in experiment operations."""
         # Database error
         manager.database.save_experiment.side_effect = Exception("Database error")
-        
+
         with pytest.raises(ExperimentError):
             await manager.create_experiment(MagicMock())
-        
+
         # Assignment error
         manager.assignment_service.get_assignment.side_effect = Exception("Assignment error")
-        
+
         with pytest.raises(ExperimentError):
             await manager.get_assignment("exp_001", MagicMock())
 
@@ -603,14 +603,14 @@ class TestExperimentManager:
             )
             experiments.append(config)
             await manager.create_experiment(config)
-        
+
         # Start all experiments
         for exp in experiments:
             await manager.start_experiment(exp.id)
-        
+
         # Verify all running
         assert len(manager.active_experiments) == 3
-        
+
         # Stop one experiment
         await manager.stop_experiment("exp_1")
         assert len(manager.active_experiments) == 2
@@ -622,19 +622,19 @@ class TestExperimentManager:
         # Create
         await manager.create_experiment(sample_experiment_config)
         assert sample_experiment_config.status == ExperimentStatus.DRAFT
-        
+
         # Start
         await manager.start_experiment(sample_experiment_config.id)
         assert sample_experiment_config.status == ExperimentStatus.RUNNING
-        
+
         # Pause
         await manager.pause_experiment(sample_experiment_config.id)
         assert sample_experiment_config.status == ExperimentStatus.PAUSED
-        
+
         # Resume
         await manager.resume_experiment(sample_experiment_config.id)
         assert sample_experiment_config.status == ExperimentStatus.RUNNING
-        
+
         # Complete
         await manager.complete_experiment(sample_experiment_config.id)
         assert sample_experiment_config.status == ExperimentStatus.COMPLETED
@@ -644,12 +644,12 @@ class TestExperimentManager:
         """Test experiment configuration validation."""
         # Valid config should pass
         assert manager._validate_config(sample_experiment_config) is True
-        
+
         # Invalid traffic allocation
         sample_experiment_config.traffic_allocation.control = 0.6
         sample_experiment_config.traffic_allocation.treatment = 0.6
         assert manager._validate_config(sample_experiment_config) is False
-        
+
         # No variants
         sample_experiment_config.variants = []
         assert manager._validate_config(sample_experiment_config) is False

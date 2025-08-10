@@ -648,7 +648,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
     Accepts either:
     - Simple string prompt with optional role specification
     - Role-separated messages for more complex conversations
-    
+
     Performs injection detection using heuristic patterns, LLM classification,
     and PII detection based on configuration.
 
@@ -665,7 +665,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
         >>> # Simple format
         >>> request = {"prompt": "Help me write an email"}
         >>> response = await client.post("/api/v1/detect", json=request)
-        >>> 
+        >>>
         >>> # Advanced format
         >>> request = {"messages": [{"role": "user", "content": "Hello"}]}
         >>> response = await client.post("/api/v1/detect", json=request)
@@ -678,29 +678,33 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
         # Simple format with 'prompt' field
         messages = [Message(role=request.role or Role.USER, content=request.prompt)]
         check_format = False
-        use_routing = getattr(request, 'use_intelligent_routing', False)
+        use_routing = getattr(request, "use_intelligent_routing", False)
     elif isinstance(request, UnifiedDetectionRequest):
         # Unified format with 'input' field
         try:
             messages = request.to_messages()
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Invalid role in message: {str(e)}")
-        check_format = request.config.get('check_format', False) if request.config else False
-        use_routing = request.config.get('use_intelligent_routing', False) if request.config else False
-    elif hasattr(request, 'prompt'):
+        check_format = request.config.get("check_format", False) if request.config else False
+        use_routing = (
+            request.config.get("use_intelligent_routing", False) if request.config else False
+        )
+    elif hasattr(request, "prompt"):
         # Legacy simple format
-        messages = [Message(role=getattr(request, 'role', Role.USER) or Role.USER, content=request.prompt)]
-        check_format = getattr(request, 'check_format', False)
-        use_routing = getattr(request, 'use_intelligent_routing', False)
-    elif hasattr(request, 'messages'):
+        messages = [
+            Message(role=getattr(request, "role", Role.USER) or Role.USER, content=request.prompt)
+        ]
+        check_format = getattr(request, "check_format", False)
+        use_routing = getattr(request, "use_intelligent_routing", False)
+    elif hasattr(request, "messages"):
         # Advanced format with messages
         messages = request.messages
-        check_format = getattr(request, 'check_format', False)
-        use_routing = getattr(request, 'use_intelligent_routing', False)
+        check_format = getattr(request, "check_format", False)
+        use_routing = getattr(request, "use_intelligent_routing", False)
     else:
         # Default case - try to convert
         try:
-            if hasattr(request, 'to_messages'):
+            if hasattr(request, "to_messages"):
                 messages = request.to_messages()
             else:
                 raise ValueError("Cannot convert request to messages")
@@ -771,7 +775,7 @@ async def analyze(request: AnalysisRequest):
     """
     if not detector:
         raise HTTPException(status_code=503, detail="Detector not initialized")
-    
+
     if not processor:
         raise HTTPException(status_code=503, detail="Prompt processor not initialized")
 
@@ -866,7 +870,7 @@ async def batch_detect(request: dict) -> JSONResponse:
     """
     if not detector:
         raise HTTPException(status_code=503, detail="Detection service unavailable")
-    
+
     if not processor:
         raise HTTPException(status_code=503, detail="Prompt processor not initialized")
 
@@ -956,7 +960,7 @@ async def format_assist(request: FormatAssistRequest):
     """
     if not processor:
         raise HTTPException(status_code=503, detail="Prompt processor not initialized")
-    
+
     # Analyze the raw prompt
     complexity = processor.calculate_complexity_metrics(request.raw_prompt)
 

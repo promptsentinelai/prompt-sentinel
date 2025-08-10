@@ -258,19 +258,17 @@ class MetricsCollector:
 
         # Get all metrics for the variant within the time window
         all_experiment_metrics = self.experiment_metrics.get(experiment_id, [])
-        
+
         # Apply time window filter if specified
         if time_window_hours:
             cutoff_time = datetime.utcnow() - timedelta(hours=time_window_hours)
             filtered_metrics = [
-                m for m in all_experiment_metrics 
+                m
+                for m in all_experiment_metrics
                 if m.timestamp > cutoff_time and m.variant_id == variant_id
             ]
         else:
-            filtered_metrics = [
-                m for m in all_experiment_metrics 
-                if m.variant_id == variant_id
-            ]
+            filtered_metrics = [m for m in all_experiment_metrics if m.variant_id == variant_id]
 
         for metric_name, variant_data in metrics_data.items():
             if variant_id in variant_data:

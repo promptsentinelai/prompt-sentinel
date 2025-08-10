@@ -212,22 +212,22 @@ class TestLLMClassifierPerformance:
             },
         }
         
-        with patch("prompt_sentinel.detection.llm_classifier.AnthropicProvider"), \
-             patch("prompt_sentinel.detection.llm_classifier.OpenAIProvider"), \
+        # Create mock providers
+        mock_anthropic = MagicMock()
+        mock_anthropic.classify = AsyncMock(side_effect=Exception("API error"))
+        mock_anthropic.health_check = AsyncMock(return_value=False)
+        
+        mock_openai = MagicMock()
+        mock_openai.classify = AsyncMock(
+            return_value=(DetectionCategory.BENIGN, 0.1, "Result")
+        )
+        mock_openai.health_check = AsyncMock(return_value=True)
+        
+        with patch("prompt_sentinel.detection.llm_classifier.AnthropicProvider", return_value=mock_anthropic), \
+             patch("prompt_sentinel.detection.llm_classifier.OpenAIProvider", return_value=mock_openai), \
              patch("prompt_sentinel.detection.llm_classifier.GeminiProvider"):
             
             manager = LLMClassifierManager(config)
-            
-            # First provider fails, second succeeds
-            manager.providers["anthropic"].classify = AsyncMock(
-                side_effect=Exception("API error")
-            )
-            manager.providers["anthropic"].health_check = AsyncMock(return_value=False)
-            
-            manager.providers["openai"].classify = AsyncMock(
-                return_value=(DetectionCategory.BENIGN, 0.1, "Result")
-            )
-            manager.providers["openai"].health_check = AsyncMock(return_value=True)
             
             messages = [Message(role=Role.USER, content="test")]
             
@@ -251,18 +251,17 @@ class TestLLMClassifierPerformance:
             "cache_ttl": 60,
         }
         
-        with patch("prompt_sentinel.detection.llm_classifier.AnthropicProvider"):
+        # Mock provider with artificial delay
+        async def slow_classify(*args, **kwargs):
+            await asyncio.sleep(0.05)  # 50ms delay
+            return (DetectionCategory.BENIGN, 0.1, "Result")
+        
+        mock_provider = MagicMock()
+        mock_provider.classify = AsyncMock(side_effect=slow_classify)
+        mock_provider.health_check = AsyncMock(return_value=True)
+        
+        with patch("prompt_sentinel.detection.llm_classifier.AnthropicProvider", return_value=mock_provider):
             manager = LLMClassifierManager(config)
-            
-            # Mock provider with artificial delay
-            async def slow_classify(*args, **kwargs):
-                await asyncio.sleep(0.05)  # 50ms delay
-                return (DetectionCategory.BENIGN, 0.1, "Result")
-            
-            manager.providers["anthropic"].classify = AsyncMock(
-                side_effect=slow_classify
-            )
-            manager.providers["anthropic"].health_check = AsyncMock(return_value=True)
             
             messages = [Message(role=Role.USER, content="cached test")]
             

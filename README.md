@@ -24,7 +24,7 @@ A production-ready defensive security microservice for detecting and mitigating 
 - **🚦 Rate Limiting**: Token bucket algorithm with per-client and global limits
 - **🔧 Flexible Deployment**: Works with or without Redis, Docker, Kubernetes ready
 - **📊 Production Ready**: OpenTelemetry monitoring, structured logging, health checks
-- **🎛️ Configurable Modes**: Strict, moderate, or permissive detection based on your needs
+- **🎛️ Configurable Detection Modes**: Strict, moderate, or permissive detection based on your needs
 - **📝 Format Validation**: Encourages secure prompt design with role separation
 - **🏢 Enterprise Compliant**: SOC 2, FINRA, GDPR/CPRA ready with audit logging
 
@@ -211,7 +211,22 @@ curl "http://localhost:8080/api/v1/metrics/complexity?prompt=Your%20test%20promp
 curl "http://localhost:8080/api/v1/metrics/complexity"
 ```
 
-### Monitoring & Budget Control (NEW - FR12)
+### Monitoring & Budget Control
+
+**Configuration:** Budget and rate limits are now configurable via environment variables:
+```bash
+# Budget Configuration
+BUDGET_HOURLY_LIMIT=10.0        # Maximum spend per hour in USD
+BUDGET_DAILY_LIMIT=100.0         # Maximum spend per day in USD
+BUDGET_MONTHLY_LIMIT=1000.0      # Maximum spend per month in USD
+BUDGET_BLOCK_ON_EXCEEDED=true    # Block requests when budget exceeded
+BUDGET_PREFER_CACHE=true         # Prefer cached results to save costs
+
+# Rate Limiting Configuration
+RATE_LIMIT_REQUESTS_PER_MINUTE=60           # Global requests per minute
+RATE_LIMIT_TOKENS_PER_MINUTE=10000          # Global tokens per minute  
+RATE_LIMIT_CLIENT_REQUESTS_PER_MINUTE=20    # Per-client requests per minute
+```
 
 #### `GET /api/v1/monitoring/usage` - API Usage Metrics
 Track API usage, costs, and performance:

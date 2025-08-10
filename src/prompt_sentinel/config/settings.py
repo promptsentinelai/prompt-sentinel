@@ -100,6 +100,18 @@ class Settings(BaseSettings):
     api_key_prefix: str = Field(default="psk_")
     api_key_length: int = Field(default=32)
 
+    # Budget Configuration
+    budget_hourly_limit: float = Field(default=10.0)
+    budget_daily_limit: float = Field(default=100.0)
+    budget_monthly_limit: float = Field(default=1000.0)
+    budget_block_on_exceeded: bool = Field(default=True)
+    budget_prefer_cache: bool = Field(default=True)
+
+    # Rate Limiting Configuration
+    rate_limit_requests_per_minute: int = Field(default=60)
+    rate_limit_tokens_per_minute: int = Field(default=10000)
+    rate_limit_client_requests_per_minute: int = Field(default=20)
+
     # Security Configuration
     max_prompt_length: int = Field(default=50000)
     rate_limit_per_ip: int = Field(default=1000)

@@ -194,9 +194,11 @@ class TestMonitoringAndBudget:
         
         if not main.budget_manager:
             config = BudgetConfig(
-                hourly_limit=10.0,
-                daily_limit=100.0,
-                monthly_limit=1000.0
+                hourly_limit=settings.budget_hourly_limit,
+                daily_limit=settings.budget_daily_limit,
+                monthly_limit=settings.budget_monthly_limit,
+                block_on_exceeded=settings.budget_block_on_exceeded,
+                prefer_cache=settings.budget_prefer_cache
             )
             main.budget_manager = BudgetManager(config, main.usage_tracker)
         

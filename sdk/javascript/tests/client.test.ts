@@ -10,7 +10,8 @@ describe('PromptSentinel Client', () => {
 
   beforeEach(() => {
     client = new PromptSentinel({ baseUrl: 'http://test.local' });
-    mock = new MockAdapter(axios);
+    // Mock the axios instance used by the client
+    mock = new MockAdapter((client as any).client);
   });
 
   afterEach(() => {
@@ -33,7 +34,7 @@ describe('PromptSentinel Client', () => {
         metadata: {},
       };
 
-      mock.onPost('http://test.local/v1/detect').reply(200, mockResponse);
+      mock.onPost('/v1/detect').reply(200, mockResponse);
 
       const result = await client.detectSimple('Hello, world!');
       expect(result.verdict).toBe(Verdict.ALLOW);
@@ -41,7 +42,7 @@ describe('PromptSentinel Client', () => {
     });
 
     it('should handle validation error', async () => {
-      mock.onPost('http://test.local/v1/detect').reply(422, {
+      mock.onPost('/v1/detect').reply(422, {
         detail: 'Invalid prompt format',
       });
 
@@ -70,7 +71,7 @@ describe('PromptSentinel Client', () => {
         metadata: {},
       };
 
-      mock.onPost('http://test.local/v2/detect').reply(200, mockResponse);
+      mock.onPost('/v2/detect').reply(200, mockResponse);
 
       const result = await client.detectMessages(messages);
       expect(result.verdict).toBe(Verdict.ALLOW);
@@ -93,7 +94,7 @@ describe('PromptSentinel Client', () => {
         timestamp: '2025-01-08T10:00:00Z',
       };
 
-      mock.onPost('http://test.local/v2/batch').reply(200, mockResponse);
+      mock.onPost('/v2/batch').reply(200, mockResponse);
 
       const result = await client.batchDetect(prompts);
       expect(result.processed).toBe(2);
@@ -103,7 +104,7 @@ describe('PromptSentinel Client', () => {
 
   describe('rate limiting', () => {
     it('should handle rate limit errors', async () => {
-      mock.onPost('http://test.local/v1/detect').reply(429, 
+      mock.onPost('/v1/detect').reply(429, 
         { detail: 'Rate limit exceeded' },
         { 'retry-after': '60' }
       );
@@ -136,7 +137,7 @@ describe('PromptSentinel Client', () => {
     });
 
     it('should check if prompt is safe', async () => {
-      mock.onPost('http://test.local/v1/detect').reply(200, {
+      mock.onPost('/v1/detect').reply(200, {
         verdict: Verdict.ALLOW,
         confidence: 0.95,
         reasons: [],

@@ -283,7 +283,7 @@ class TestEndToEndAuthenticationFlow:
 
         # Test API key in query params
         response = client.post(
-            "/v1/detect?api_key=test_key", json={"prompt": "Test with query auth"}
+            "/api/v1/detect?api_key=test_key", json={"prompt": "Test with query auth"}
         )
         assert response.status_code == 200
 

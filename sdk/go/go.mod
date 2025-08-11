@@ -1,4 +1,4 @@
-module github.com/rhoska/prompt-sentinel/sdk/go
+module github.com/promptsentinelai/prompt-sentinel/sdk/go
 
 go 1.19
 

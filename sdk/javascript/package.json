@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rhoska/prompt-sentinel.git"
+    "url": "https://github.com/promptsentinelai/prompt-sentinel.git"
   },
   "keywords": [
     "llm",

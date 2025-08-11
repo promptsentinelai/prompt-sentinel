@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/rhoska/prompt-sentinel/sdk/go/pkg/promptsentinel"
+	"github.com/promptsentinelai/prompt-sentinel/sdk/go/pkg/promptsentinel"
 )
 
 func main() {

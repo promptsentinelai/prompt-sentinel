@@ -83,9 +83,9 @@ test = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/rhoska/prompt-sentinel"
-"Bug Tracker" = "https://github.com/rhoska/prompt-sentinel/issues"
-"Documentation" = "https://github.com/rhoska/prompt-sentinel/wiki"
+"Homepage" = "https://github.com/promptsentinelai/prompt-sentinel"
+"Bug Tracker" = "https://github.com/promptsentinelai/prompt-sentinel/issues"
+"Documentation" = "https://github.com/promptsentinelai/prompt-sentinel/wiki"
 
 [build-system]
 requires = ["setuptools>=69.0", "wheel"]

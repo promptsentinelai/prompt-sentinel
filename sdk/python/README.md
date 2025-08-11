@@ -1,6 +1,6 @@
 # PromptSentinel Python SDK
 
-Official Python SDK for [PromptSentinel](https://github.com/rhoska/prompt-sentinel) - LLM Prompt Injection Detection Service.
+Official Python SDK for [PromptSentinel](https://github.com/promptsentinelai/prompt-sentinel) - LLM Prompt Injection Detection Service.
 
 ## Installation
 
@@ -280,5 +280,5 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- GitHub Issues: https://github.com/rhoska/prompt-sentinel/issues
-- Documentation: https://github.com/rhoska/prompt-sentinel/tree/main/docs
+- GitHub Issues: https://github.com/promptsentinelai/prompt-sentinel/issues
+- Documentation: https://github.com/promptsentinelai/prompt-sentinel/tree/main/docs

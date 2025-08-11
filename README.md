@@ -1,10 +1,10 @@
 # 🛡️ PromptSentinel
 
-[![CI/CD Pipeline](https://github.com/rhoska/prompt-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/rhoska/prompt-sentinel/actions)
+[![CI/CD Pipeline](https://github.com/promptsentinelai/prompt-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/promptsentinelai/prompt-sentinel/actions)
 [![Docker Pulls](https://img.shields.io/docker/pulls/promptsentinel/prompt-sentinel)](https://hub.docker.com/r/promptsentinel/prompt-sentinel)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116+-green.svg)](https://fastapi.tiangolo.com/)
-[![License: ELv2](https://img.shields.io/badge/License-ELv2-purple.svg)](https://github.com/rhoska/prompt-sentinel/blob/main/LICENSE)
+[![License: ELv2](https://img.shields.io/badge/License-ELv2-purple.svg)](https://github.com/promptsentinelai/prompt-sentinel/blob/main/LICENSE)
 
 A production-ready defensive security microservice for detecting and mitigating prompt injection attacks, PII exposure, and other security threats in LLM-based systems. PromptSentinel provides real-time protection using multi-layered detection strategies with sub-100ms response times.
 
@@ -63,7 +63,7 @@ docker run -p 8080:8080 \
   promptsentinel/prompt-sentinel:latest
 
 # Or use docker-compose
-wget https://raw.githubusercontent.com/rhoska/prompt-sentinel/main/docker-compose.yml
+wget https://raw.githubusercontent.com/promptsentinelai/prompt-sentinel/main/docker-compose.yml
 docker-compose up
 ```
 
@@ -71,7 +71,7 @@ docker-compose up
 
 ```bash
 # Clone the repository
-git clone https://github.com/rhoska/prompt-sentinel.git
+git clone https://github.com/promptsentinelai/prompt-sentinel.git
 cd prompt-sentinel
 
 # Copy and configure environment
@@ -192,7 +192,7 @@ User Input → PromptSentinel → Input Validation → LLM → Output Validation
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone and setup
-git clone https://github.com/rhoska/prompt-sentinel.git
+git clone https://github.com/promptsentinelai/prompt-sentinel.git
 cd prompt-sentinel
 
 # Create virtual environment and install

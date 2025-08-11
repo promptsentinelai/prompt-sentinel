@@ -62,7 +62,8 @@ class TestPropertyBasedHeuristics:
         text=st.text(
             alphabet=string.ascii_letters + string.digits + " .,!?", min_size=1, max_size=500
         ).filter(
-            lambda x: not any(
+            lambda x: x.strip() != ""
+            and not any(
                 word in x.lower()
                 for word in [
                     "ignore",

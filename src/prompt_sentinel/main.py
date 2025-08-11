@@ -357,6 +357,24 @@ async def health_check_legacy() -> HealthResponse:
     return await health_check()
 
 
+@app.get("/health/detailed", include_in_schema=False)
+async def detailed_health_check_legacy() -> dict:
+    """Legacy detailed health check endpoint for backward compatibility."""
+    return await detailed_health_check()
+
+
+@app.get("/health/live", include_in_schema=False)
+async def liveness_probe_legacy() -> dict:
+    """Legacy liveness probe endpoint for backward compatibility."""
+    return await liveness_probe()
+
+
+@app.get("/health/ready", include_in_schema=False)
+async def readiness_probe_legacy() -> dict:
+    """Legacy readiness probe endpoint for backward compatibility."""
+    return await readiness_probe()
+
+
 @app.get(
     "/api/v1/health",
     response_model=HealthResponse,

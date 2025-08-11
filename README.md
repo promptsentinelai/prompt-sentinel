@@ -1267,22 +1267,23 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
 - **API Monitoring**: Usage tracking, budget controls, and rate limiting
 - **PII Detection**: 15+ PII types with multiple redaction modes
 - **Redis Caching**: 98% performance improvement with optional Redis support
-- **Comprehensive Testing**: 1,653 tests with 100% pass rate, 61% code coverage
+- **Comprehensive Testing**: ~1,700 tests with 100% pass rate, 60+% code coverage
 - **API Documentation**: Full OpenAPI/Swagger support with interactive UI
 - **Docker Support**: Official images available at `promptsentinelai/prompt-sentinel`
 - **Kubernetes Ready**: Helm charts and deployment configurations included
+- **SDK Libraries**: Python, JavaScript, and Go SDKs (fully implemented, tested, ready for v1.0.0)
+- **Grafana Dashboards**: Monitoring templates and configurations included
 
 ### 🚧 In Development
-- **SDK Libraries**: Python, JavaScript, and Go SDKs (implemented, pending package registry publication)
 - **A/B Testing Framework**: Experimentation system for optimizing detection strategies
-- **Grafana Dashboards**: Monitoring dashboards (templates available, pending refinement)
 
 ### 📋 Roadmap
-- **Package Registry Publishing**: Publish SDKs to PyPI, npm, and pkg.go.dev
+- **Package Registry Publishing**: Publish SDKs to PyPI, npm, and pkg.go.dev (Q1 2025)
 - **Enhanced ML Features**: Advanced clustering algorithms and embedding-based detection
 - **Multi-Language Support**: Detection patterns for non-English languages
 - **Cloud-Native Integrations**: AWS Lambda, Google Cloud Functions, Azure Functions support
 - **Enterprise Features**: SAML/SSO, audit logging, compliance reporting
+- **GitHub Actions Marketplace**: Publish action for CI/CD integration
 
 ---
 

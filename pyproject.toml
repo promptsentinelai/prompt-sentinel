@@ -1,6 +1,6 @@
 [project]
 name = "prompt-sentinel"
-version = "0.1.0"
+version = "1.0.0"
 description = "LLM Prompt Injection Detection Microservice - A defensive security tool for detecting and mitigating prompt injection attacks"
 authors = [
     { name = "PromptSentinel Team", email = "admin@promptsentinel.ai" }

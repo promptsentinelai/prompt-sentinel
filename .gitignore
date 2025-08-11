@@ -62,6 +62,8 @@ docker-compose.override.yml
 # Project specific
 corpus/*.jsonl.backup
 /tmp/
+experiments.db
+*.db
 
 # Claude Code
 .claude/

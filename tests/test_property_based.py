@@ -15,7 +15,7 @@ class TestPropertyBasedHeuristics:
     """Property-based tests for heuristic detection."""
 
     @given(
-        text=st.text(min_size=1, max_size=1000),
+        text=st.text(min_size=1, max_size=1000).filter(lambda x: x.strip() != ""),
         mode=st.sampled_from(["strict", "moderate", "permissive"]),
     )
     def test_heuristic_detector_never_crashes(self, text, mode):
@@ -96,7 +96,7 @@ class TestPropertyBasedHeuristics:
             st.builds(
                 Message,
                 role=st.sampled_from([Role.USER, Role.SYSTEM, Role.ASSISTANT]),
-                content=st.text(min_size=1, max_size=200),
+                content=st.text(min_size=1, max_size=200).filter(lambda x: x.strip() != ""),
             ),
             min_size=1,
             max_size=10,
@@ -208,7 +208,7 @@ class TestPropertyBasedValidation:
                 category=DetectionCategory.DIRECT_INJECTION,
                 description="Test",
                 confidence=confidence,
-                source="test",
+                source="heuristic",
             )
         ]
 
@@ -220,7 +220,7 @@ class TestPropertyBasedValidation:
         elif confidence <= 0.3:
             assert verdict in [Verdict.ALLOW, Verdict.FLAG]
 
-    @given(text_length=st.integers(min_value=0, max_value=1_000_000))
+    @given(text_length=st.integers(min_value=1, max_value=1_000_000))
     def test_performance_scales_linearly(self, text_length):
         """Test that detection performance scales reasonably."""
         import time

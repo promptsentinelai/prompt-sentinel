@@ -237,7 +237,8 @@ class TestDockerContainer:
         )
 
         # Wait for container to be ready
-        time.sleep(5)  # Initial startup time
+        # Docker health check has a 5s start period, so we need to wait longer
+        time.sleep(10)  # Initial startup time + health check start period
 
         # Wait for health check
         if not docker_manager.wait_for_health("prompt-sentinel-test", timeout=30):

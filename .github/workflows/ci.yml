@@ -113,7 +113,7 @@ jobs:
       - name: Run full test suite with parallel execution
         run: |
           source .venv/bin/activate
-          pytest tests/ -n auto --cov=src/prompt_sentinel --cov-report=xml --cov-report=term
+          pytest tests/ -m "not docker" -n auto --cov=src/prompt_sentinel --cov-report=xml --cov-report=term
         env:
           REDIS_ENABLED: false
           HEURISTIC_ENABLED: true

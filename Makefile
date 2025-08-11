@@ -174,6 +174,63 @@ quick-test: ## Run quick smoke test
 	$(UV) run pytest tests/test_heuristics.py -v --tb=short
 
 # ============================================================================
+# Docker Testing
+# ============================================================================
+
+.PHONY: test-docker
+test-docker: ## Run Docker container tests (requires Docker)
+	@echo "$(GREEN)Running Docker container tests...$(NC)"
+	@if command -v docker &> /dev/null; then \
+		$(UV) run pytest tests/test_docker_integration.py -v -m docker; \
+	else \
+		echo "$(RED)Docker is not installed or not running$(NC)"; \
+		exit 1; \
+	fi
+
+.PHONY: test-docker-build
+test-docker-build: ## Test Docker image building only
+	@echo "$(GREEN)Testing Docker image build...$(NC)"
+	@if command -v docker &> /dev/null; then \
+		$(UV) run pytest tests/test_docker_integration.py::TestDockerBuild -v -m docker; \
+	else \
+		echo "$(RED)Docker is not installed or not running$(NC)"; \
+		exit 1; \
+	fi
+
+.PHONY: test-docker-api
+test-docker-api: ## Test API in Docker container
+	@echo "$(GREEN)Testing API in Docker container...$(NC)"
+	@if command -v docker &> /dev/null; then \
+		$(UV) run pytest tests/test_docker_integration.py::TestDockerContainer -v -m docker; \
+	else \
+		echo "$(RED)Docker is not installed or not running$(NC)"; \
+		exit 1; \
+	fi
+
+.PHONY: test-docker-compose
+test-docker-compose: ## Test Docker Compose stack
+	@echo "$(GREEN)Testing Docker Compose stack...$(NC)"
+	@if command -v docker-compose &> /dev/null; then \
+		$(UV) run pytest tests/test_docker_integration.py::TestDockerComposeStack -v -m docker; \
+	else \
+		echo "$(RED)Docker Compose is not installed$(NC)"; \
+		exit 1; \
+	fi
+
+.PHONY: test-docker-all
+test-docker-all: test-docker-build test-docker-api test-docker-compose ## Run all Docker tests
+	@echo "$(GREEN)✓ All Docker tests completed$(NC)"
+
+.PHONY: docker-test-clean
+docker-test-clean: ## Clean up Docker test artifacts
+	@echo "$(YELLOW)Cleaning up Docker test artifacts...$(NC)"
+	@docker ps -a | grep "test-container-" | awk '{print $$1}' | xargs -r docker rm -f 2>/dev/null || true
+	@docker ps -a | grep "prompt-sentinel-test" | awk '{print $$1}' | xargs -r docker rm -f 2>/dev/null || true
+	@docker images | grep "prompt-sentinel:.*-test" | awk '{print $$3}' | xargs -r docker rmi -f 2>/dev/null || true
+	@docker network ls | grep "test-network" | awk '{print $$1}' | xargs -r docker network rm 2>/dev/null || true
+	@echo "$(GREEN)✓ Docker test artifacts cleaned$(NC)"
+
+# ============================================================================
 # Code Quality
 # ============================================================================
 

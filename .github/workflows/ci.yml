@@ -67,7 +67,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.11']  # Only test on 3.11 to reduce duplicate runs
 
     services:
       redis:
@@ -155,6 +155,16 @@ jobs:
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-uv-lint-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-lint-
 
       - name: Install dependencies
         run: |

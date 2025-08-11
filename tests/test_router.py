@@ -355,9 +355,8 @@ class TestIntelligentRouter:
                 complexity_score, performance_mode=False
             )
 
-            assert strategy == expected_strategy, (
-                f"For {complexity_level}, expected {expected_strategy} but got {strategy}"
-            )
+            error_msg = f"For {complexity_level}, expected {expected_strategy} but got {strategy}"
+            assert strategy == expected_strategy, error_msg
             assert reasoning is not None
 
     @patch("prompt_sentinel.routing.router.settings")

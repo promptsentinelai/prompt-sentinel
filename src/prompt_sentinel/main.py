@@ -1371,12 +1371,15 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request) -> De
             tokens_used = routing_decision.complexity_score.metrics.get("total_tokens", 0)
 
             await usage_tracker.track_request(
-                client_id=client_id,
                 endpoint="/v3/detect",
-                provider=provider,
-                tokens_used=tokens_used,
-                response_time_ms=routing_decision.estimated_latency_ms,
+                latency_ms=routing_decision.estimated_latency_ms,
                 success=True,
+                client_id=client_id,
+                metadata={
+                    "provider": provider,
+                    "tokens_used": tokens_used,
+                    "complexity_level": routing_decision.complexity_score.level.value,
+                },
             )
 
         return response

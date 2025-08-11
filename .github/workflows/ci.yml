@@ -129,6 +129,9 @@ jobs:
           REDIS_HOST: localhost
           REDIS_PORT: 6379
           REDIS_PASSWORD: ''
+          HEURISTIC_ENABLED: true
+          LLM_CLASSIFICATION_ENABLED: false
+          PII_DETECTION_ENABLED: true
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4

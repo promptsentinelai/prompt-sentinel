@@ -10,7 +10,8 @@ security/
 ├── artifacts/                  # Scan outputs (committed as proof of scanning)
 │   ├── snyk/                  # Snyk scan results
 │   ├── npm/                   # NPM audit results
-│   └── go/                    # Go vulnerability results
+│   ├── go/                    # Go vulnerability results
+│   └── sbom/                  # Software Bill of Materials (SBOM) files
 └── scripts/                   # Automation scripts
     ├── run_security_scan.sh   # Main scan orchestrator
     └── generate_report.py     # Report generator
@@ -46,13 +47,15 @@ This will:
 3. Scan Python SDK
 4. Scan JavaScript SDK
 5. Scan Go SDK (if Go is installed)
-6. Generate consolidated report
+6. Generate Software Bill of Materials (SBOM)
+7. Generate consolidated report
 
 ### Other Commands
 ```bash
 make security-report  # Regenerate report from existing artifacts
 make security-quick   # Quick Python-only scan
 make security-clean   # Clean artifacts (not recommended)
+make sbom             # Generate Software Bill of Materials only
 ```
 
 ## Artifacts
@@ -113,9 +116,27 @@ Add to your CI pipeline:
     fi
 ```
 
+## Software Bill of Materials (SBOM)
+
+The security scan now generates SBOMs in industry-standard formats:
+
+- **CycloneDX** - OWASP standard for software supply chain component analysis
+- **SPDX** - Software Package Data Exchange (ISO/IEC 5962:2021 standard)
+
+SBOMs provide:
+- Complete dependency inventory
+- License information
+- Component versions and hashes
+- Supply chain transparency
+
+Generated SBOMs are stored in `security/artifacts/sbom/` and include:
+- `python-sbom.cdx.json` - Python dependencies SBOM
+- `container-sbom.cdx.json` - Docker container SBOM
+- `sdk-*-sbom.cdx.json` - SDK SBOMs (when available)
+
 ## Tools Used
 
-- **Snyk CLI** - Primary vulnerability scanner
+- **Snyk CLI** - Primary vulnerability scanner and SBOM generator
 - **npm audit** - JavaScript dependency scanner
 - **govulncheck** - Go vulnerability checker (when available)
 

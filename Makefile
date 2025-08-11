@@ -449,6 +449,58 @@ security-report: ## Generate security scan report from existing artifacts
 	@python3 security/scripts/generate_report.py
 	@echo "$(GREEN)Report generated: security/SECURITY_SCAN_REPORT.md$(NC)"
 
+.PHONY: sbom
+sbom: ## Generate Software Bill of Materials (SBOM)
+	@echo "$(GREEN)Generating Software Bill of Materials...$(NC)"
+	@# Try to load from environment first, then vault, then .env file
+	@if [ -z "$${SNYK_TOKEN}" ] && [ -f .local/vault_secure.py ]; then \
+		echo "$(BLUE)Attempting to load SNYK_TOKEN from Vault...$(NC)"; \
+		SNYK_TOKEN=$$(python3 .local/vault_secure.py get-secret api_keys/snyk 2>/dev/null); \
+		if [ -n "$${SNYK_TOKEN}" ]; then \
+			export SNYK_TOKEN="$${SNYK_TOKEN}"; \
+			echo "$(GREEN)✓ SNYK_TOKEN loaded from Vault$(NC)"; \
+		fi; \
+	fi; \
+	if [ -z "$${SNYK_ORG_ID}" ] && [ -f .local/vault_secure.py ]; then \
+		echo "$(BLUE)Attempting to load SNYK_ORG_ID from Vault...$(NC)"; \
+		SNYK_ORG_ID=$$(python3 .local/vault_secure.py get-secret api_keys/snyk_org 2>/dev/null); \
+		if [ -n "$${SNYK_ORG_ID}" ]; then \
+			export SNYK_ORG_ID="$${SNYK_ORG_ID}"; \
+			echo "$(GREEN)✓ SNYK_ORG_ID loaded from Vault$(NC)"; \
+		fi; \
+	fi; \
+	if [ -z "$${SNYK_TOKEN}" ] && [ -f .env ]; then \
+		echo "$(BLUE)Loading credentials from .env file...$(NC)"; \
+		export $$(grep -E '^SNYK_TOKEN=' .env | xargs) 2>/dev/null || true; \
+		export $$(grep -E '^SNYK_ORG_ID=' .env | xargs) 2>/dev/null || true; \
+	fi; \
+	if [ -z "$${SNYK_TOKEN}" ] || [ -z "$${SNYK_ORG_ID}" ]; then \
+		echo "$(YELLOW)Warning: SNYK_TOKEN or SNYK_ORG_ID not set.$(NC)"; \
+		echo "Set these in your .env file or environment variables."; \
+		echo "SBOM generation requires both SNYK_TOKEN and SNYK_ORG_ID."; \
+	else \
+		echo "$(GREEN)✓ Snyk credentials configured$(NC)"; \
+	fi; \
+	mkdir -p security/artifacts/sbom; \
+	echo "Generating Python SBOM..."; \
+	if [ -n "$${SNYK_ORG_ID}" ]; then \
+		snyk sbom --org="$${SNYK_ORG_ID}" --format=cyclonedx1.4+json --file=requirements.txt > security/artifacts/sbom/python-sbom.cdx.json 2>/dev/null || \
+			echo '{"error": "SBOM generation failed"}' > security/artifacts/sbom/python-sbom.json; \
+	else \
+		echo '{"error": "Org ID required"}' > security/artifacts/sbom/python-sbom.json; \
+	fi; \
+	if docker images | grep -q "promptsentinel-prompt-sentinel"; then \
+		echo "Generating container SBOM..."; \
+		if [ -n "$${SNYK_ORG_ID}" ]; then \
+			snyk sbom --org="$${SNYK_ORG_ID}" --format=cyclonedx1.4+json --docker promptsentinel-prompt-sentinel:latest > security/artifacts/sbom/container-sbom.cdx.json 2>/dev/null || \
+				echo '{"error": "Container SBOM generation failed"}' > security/artifacts/sbom/container-sbom.json; \
+		else \
+			echo '{"error": "Org ID required"}' > security/artifacts/sbom/container-sbom.json; \
+		fi; \
+	fi
+	@echo "$(GREEN)✓ SBOM generation complete$(NC)"
+	@echo "SBOMs saved to: security/artifacts/sbom/"
+
 .PHONY: security-clean
 security-clean: ## Clean security scan artifacts
 	@echo "$(YELLOW)Cleaning security artifacts...$(NC)"

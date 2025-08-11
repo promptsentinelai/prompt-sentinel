@@ -26,6 +26,7 @@ import logging
 import time
 
 from prompt_sentinel.config.settings import settings
+from prompt_sentinel.detection.custom_pii_loader import CustomPIIRulesLoader
 from prompt_sentinel.detection.heuristics import HeuristicDetector
 from prompt_sentinel.detection.llm_classifier import LLMClassifierManager
 from prompt_sentinel.detection.pii_detector import PIIDetector
@@ -73,7 +74,18 @@ class PromptDetector:
         # Initialize PII detector if enabled
         if settings.pii_detection_enabled:
             pii_config = {"types": settings.pii_types_list}
-            self.pii_detector = PIIDetector(pii_config)
+
+            # Load custom PII rules if enabled
+            custom_rules_loader = None
+            if settings.custom_pii_rules_enabled and settings.custom_pii_rules_path:
+                try:
+                    custom_rules_loader = CustomPIIRulesLoader(settings.custom_pii_rules_path)
+                    custom_rules_loader.load_rules()
+                except Exception as e:
+                    logging.error(f"Failed to load custom PII rules: {e}")
+                    # Continue without custom rules
+
+            self.pii_detector = PIIDetector(pii_config, custom_rules_loader)
         else:
             self.pii_detector = None
 

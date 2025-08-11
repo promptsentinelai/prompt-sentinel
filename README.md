@@ -16,7 +16,7 @@ A production-ready defensive security microservice for detecting and mitigating 
 - **ML Pattern Discovery**: Self-learning system that discovers new attack patterns from real threats
 - **API Usage Monitoring**: Track costs, usage, and performance with budget controls and alerts
 - **Multi-Provider LLM Support**: Anthropic (Claude), OpenAI (GPT), and Google (Gemini) with automatic failover
-- **PII Protection**: Detects and redacts 15+ PII types including SSNs, credit cards, API keys
+- **PII Protection**: Detects and redacts 15+ built-in PII types plus custom organization-specific patterns
 - **High Performance**: 98% faster responses with Redis caching (12ms vs 700ms)
 - **WebSocket Support**: Real-time streaming detection for continuous monitoring
 - **A/B Testing**: Built-in experimentation framework for optimizing detection strategies
@@ -38,6 +38,7 @@ A production-ready defensive security microservice for detecting and mitigating 
 - [WebSocket Support](#-websocket-support)
 - [Redis Caching](#-redis-caching-optional)
 - [PII Detection](#-pii-detection)
+- [Custom PII Rules](#-custom-pii-rules)
 - [Detection Strategies](#️-detection-strategies)
 - [Development](#-development)
 - [Deployment](#-deployment)
@@ -814,6 +815,78 @@ PromptSentinel detects and redacts 15+ PII types:
 | `remove` | My SSN is 123-45-6789 | My SSN is [SSN_REMOVED] | Complete removal |
 | `hash` | user@email.com | a3f5b2c8... | Consistent anonymization |
 | `reject` | (any PII detected) | (request blocked) | Zero tolerance |
+
+## 🛠️ Custom PII Rules
+
+PromptSentinel supports defining custom PII detection patterns specific to your organization through YAML configuration files. This allows you to detect domain-specific sensitive data like employee IDs, internal project codes, or proprietary identifiers.
+
+### Quick Example
+
+Create a `config/custom_pii_rules.yaml` file:
+
+```yaml
+version: "1.0"
+custom_pii_rules:
+  - name: "employee_id"
+    description: "Company employee identification"
+    enabled: true
+    severity: "high"
+    patterns:
+      - regex: "EMP[0-9]{6}"
+        confidence: 0.95
+        description: "Standard employee ID"
+    redaction:
+      mask_format: "EMP-****"
+
+  - name: "project_code"
+    description: "Internal project codes"
+    enabled: true
+    severity: "medium"
+    patterns:
+      - regex: "PROJ-[0-9]{4}-[A-Z]{2}"
+        confidence: 0.85
+    redaction:
+      mask_format: "PROJ-****-**"
+```
+
+### Key Features
+
+- **YAML Configuration**: Easy-to-maintain rule definitions
+- **ReDoS Prevention**: Automatic complexity checking prevents regex denial-of-service
+- **Custom Redaction**: Define custom masking formats for each PII type
+- **API Testing**: Test rules before deployment via API endpoints
+- **Security-First**: Rules are immutable after startup, preventing runtime tampering
+- **Seamless Integration**: Works alongside built-in PII detection
+
+### API Endpoints
+
+```bash
+# Validate rules without applying
+curl -X POST http://localhost:8080/api/v1/pii/validate-rules \
+  -H "Content-Type: application/yaml" \
+  --data-binary @custom_rules.yaml
+
+# Test rules against sample text
+curl -X POST http://localhost:8080/api/v1/pii/test-rules \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Employee EMP123456 accessed PROJ-2024-AB",
+    "rules_yaml": "..."
+  }'
+
+# Check loaded rules status
+curl http://localhost:8080/api/v1/pii/rules/status
+```
+
+### Configuration
+
+```yaml
+# Environment variables
+CUSTOM_PII_RULES_ENABLED: true  # Enable custom rules (default: true)
+CUSTOM_PII_RULES_PATH: "config/custom_pii_rules.yaml"  # Path to rules file
+```
+
+📚 **[Full Documentation](docs/custom-pii-rules.md)** - Comprehensive guide with security considerations, best practices, and industry-specific examples.
 
 ## 🛡️ Detection Strategies
 

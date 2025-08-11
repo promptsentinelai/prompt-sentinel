@@ -58,6 +58,7 @@ from prompt_sentinel.auth import (
 from prompt_sentinel.auth.middleware import AuthenticationMiddleware
 from prompt_sentinel.cache.cache_manager import cache_manager
 from prompt_sentinel.config.settings import settings
+from prompt_sentinel.detection.custom_pii_loader import CustomPIIRulesLoader
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.detection.prompt_processor import PromptProcessor
 from prompt_sentinel.models.schemas import (
@@ -2040,6 +2041,217 @@ async def benchmark_strategies(request: UnifiedDetectionRequest):
         "results": results,
         "optimal_strategy": complexity_score.recommended_strategy,
     }
+
+
+# Custom PII Rules API Endpoints
+
+
+class PIIRulesValidationRequest(BaseModel):
+    """Request body for PII rules validation."""
+
+    rules_yaml: str = Field(..., description="YAML content of PII rules to validate")
+
+
+class PIIRulesTestRequest(BaseModel):
+    """Request body for PII rules testing."""
+
+    text: str = Field(..., description="Sample text to test against current rules")
+    include_custom_only: bool = Field(default=False, description="Test only custom rules")
+
+
+@app.post(
+    "/api/v1/pii/validate-rules",
+    tags=["PII"],
+    summary="Validate PII rules",
+    description="Validate YAML PII detection rules without applying them",
+)
+async def validate_pii_rules(request: PIIRulesValidationRequest) -> dict:
+    """Validate custom PII detection rules YAML without loading them.
+
+    Checks YAML syntax, regex pattern validity, and configuration structure
+    without applying the rules to the system.
+
+    Args:
+        request: YAML content to validate
+
+    Returns:
+        Validation result with any errors found
+
+    Example:
+        >>> yaml_content = '''
+        ... version: "1.0"
+        ... custom_pii_rules:
+        ...   - name: "test_rule"
+        ...     patterns:
+        ...       - regex: "TEST[0-9]{4}"
+        ...         confidence: 0.9
+        ... '''
+        >>> response = await client.post("/api/v1/pii/validate-rules",
+        ...                             json={"rules_yaml": yaml_content})
+        >>> print(response.json()["valid"])
+        True
+    """
+    loader = CustomPIIRulesLoader()
+    is_valid, errors = loader.validate_rules(request.rules_yaml)
+
+    return {
+        "valid": is_valid,
+        "errors": errors,
+        "message": "Rules are valid" if is_valid else f"Found {len(errors)} validation errors",
+    }
+
+
+@app.post(
+    "/api/v1/pii/test-rules",
+    tags=["PII"],
+    summary="Test PII rules",
+    description="Test current PII detection rules against sample text",
+)
+async def test_pii_rules(request: PIIRulesTestRequest) -> dict:
+    """Test PII detection rules against sample text.
+
+    Runs the current loaded PII detection rules (both built-in and custom)
+    against provided text to show what would be detected.
+
+    Args:
+        request: Sample text and test options
+
+    Returns:
+        Detection results showing what PII was found
+
+    Example:
+        >>> response = await client.post("/api/v1/pii/test-rules",
+        ...     json={"text": "My employee ID is EMP123456"})
+        >>> print(response.json()["detections"])
+        [{"rule_name": "employee_id", "matches": ["EMP123456"], ...}]
+    """
+    if not detector or not detector.pii_detector:
+        raise HTTPException(status_code=503, detail="PII detector not initialized")
+
+    # Test with current detector
+    matches = detector.pii_detector.detect(request.text)
+
+    # Format results
+    detections = []
+    for match in matches:
+        detection = {
+            "type": (
+                match.pii_type.value if hasattr(match.pii_type, "value") else str(match.pii_type)
+            ),
+            "masked_value": match.masked_value,
+            "confidence": match.confidence,
+            "start_pos": match.start_pos,
+            "end_pos": match.end_pos,
+            "is_custom": str(match.pii_type).startswith("custom_"),
+        }
+
+        # Filter if only custom rules requested
+        if not request.include_custom_only or detection["is_custom"]:
+            detections.append(detection)
+
+    # Also test with the custom loader directly if available
+    custom_results = []
+    if detector.pii_detector.custom_rules_loader:
+        custom_results = detector.pii_detector.custom_rules_loader.test_rules(request.text)
+
+    return {
+        "text": request.text,
+        "detections": detections,
+        "custom_rule_results": custom_results,
+        "total_found": len(detections),
+        "custom_found": len([d for d in detections if d["is_custom"]]),
+    }
+
+
+@app.get(
+    "/api/v1/pii/rules/status",
+    tags=["PII"],
+    summary="Get PII rules status",
+    description="Get information about loaded PII detection rules",
+)
+async def get_pii_rules_status() -> dict:
+    """Get status of PII detection rules.
+
+    Returns information about currently loaded PII detection rules,
+    including both built-in and custom rules.
+
+    Returns:
+        Status information about PII detection configuration
+
+    Example:
+        >>> response = await client.get("/api/v1/pii/rules/status")
+        >>> print(response.json()["custom_rules_loaded"])
+        True
+    """
+    status_info = {
+        "pii_detection_enabled": settings.pii_detection_enabled,
+        "custom_rules_enabled": settings.custom_pii_rules_enabled,
+        "custom_rules_path": settings.custom_pii_rules_path,
+        "custom_rules_loaded": False,
+        "custom_rule_count": 0,
+        "builtin_types": [],
+        "custom_types": [],
+    }
+
+    if detector and detector.pii_detector:
+        # Get built-in types
+        status_info["builtin_types"] = [t.value for t in detector.pii_detector.enabled_types]
+
+        # Get custom types if loaded
+        if detector.pii_detector.custom_rules_loader:
+            status_info["custom_rules_loaded"] = detector.pii_detector.custom_rules_loader._loaded
+            status_info["custom_rule_count"] = len(detector.pii_detector.custom_patterns)
+            status_info["custom_types"] = list(detector.pii_detector.custom_patterns.keys())
+
+    return status_info
+
+
+@app.post(
+    "/api/v1/pii/rules/reload",
+    tags=["PII"],
+    summary="Reload PII rules",
+    description="Reload custom PII detection rules from configuration file",
+)
+async def reload_pii_rules() -> dict:
+    """Reload custom PII detection rules from configuration file.
+
+    Reloads the custom PII rules from the configured YAML file path.
+    This allows updating rules without restarting the service.
+
+    Returns:
+        Reload status and number of rules loaded
+
+    Example:
+        >>> response = await client.post("/api/v1/pii/rules/reload")
+        >>> print(response.json()["message"])
+        'Successfully reloaded 5 custom PII rules'
+    """
+    if not settings.custom_pii_rules_enabled:
+        raise HTTPException(
+            status_code=400, detail="Custom PII rules are disabled in configuration"
+        )
+
+    if not settings.custom_pii_rules_path:
+        raise HTTPException(status_code=400, detail="No custom PII rules path configured")
+
+    try:
+        # Create new loader and load rules
+        loader = CustomPIIRulesLoader(settings.custom_pii_rules_path)
+        rules = loader.load_rules()
+
+        # Update detector if available
+        if detector and detector.pii_detector:
+            detector.pii_detector.custom_rules_loader = loader
+            detector.pii_detector._load_custom_patterns()
+
+        return {
+            "success": True,
+            "rules_loaded": len(rules),
+            "message": f"Successfully reloaded {len(rules)} custom PII rules",
+        }
+    except Exception as e:
+        logger.error(f"Failed to reload PII rules: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reload rules: {str(e)}") from e
 
 
 if __name__ == "__main__":

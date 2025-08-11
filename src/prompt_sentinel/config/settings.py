@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     )
 
     # API Configuration
-    api_host: str = Field(default="0.0.0.0")
+    api_host: str = Field(default="0.0.0.0")  # nosec B104 - Docker requires binding to all interfaces
     api_port: int = Field(default=8080)
     api_env: Literal["development", "staging", "production"] = Field(default="development")
     debug: bool = Field(default=False)
@@ -137,6 +137,10 @@ class Settings(BaseSettings):
     pii_types_to_detect: str = Field(default="all")
     pii_log_detected: bool = Field(default=False)
     pii_confidence_threshold: float = Field(default=0.7)
+
+    # Custom PII Rules Configuration
+    custom_pii_rules_path: str | None = Field(default="config/custom_pii_rules.yaml")
+    custom_pii_rules_enabled: bool = Field(default=True)
 
     @property
     def llm_providers(self) -> list[str]:

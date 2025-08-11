@@ -10,6 +10,7 @@ Supported PII types include:
 - Credentials: API keys, passwords, private keys
 - Identity: Passport numbers, driver's licenses, dates of birth
 - Network: IP addresses, AWS keys
+- Custom: Organization-specific patterns loaded from YAML configuration
 
 The detector supports multiple redaction modes:
 - mask: Replace with asterisks
@@ -21,6 +22,7 @@ The detector supports multiple redaction modes:
 import re
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class PIIType(str, Enum):
@@ -77,15 +79,21 @@ class PIIDetector:
     Provides pattern-based detection of various PII types with
     configurable sensitivity and redaction options. Includes
     validation logic for formats like credit cards (Luhn algorithm)
-    and structured data like SSNs.
+    and structured data like SSNs. Supports custom patterns loaded
+    from YAML configuration files.
 
     Attributes:
         config: Detection configuration dictionary
         enabled_types: List of PII types to detect
         patterns: Dictionary of compiled regex patterns
+        custom_rules: Optional custom PII detection rules
+        custom_patterns: Dictionary of custom patterns from YAML
+        custom_redaction: Dictionary of custom redaction settings
     """
 
-    def __init__(self, detection_config: dict | None = None):
+    def __init__(
+        self, detection_config: dict | None = None, custom_rules_loader: Any | None = None
+    ):
         """Initialize PII detector with configuration.
 
         Args:
@@ -93,10 +101,15 @@ class PIIDetector:
                 - types: List of PII types to detect (default: all)
                 - confidence_threshold: Minimum confidence to report (default: 0.7)
                 - context_window: Characters of context to capture (default: 20)
+            custom_rules_loader: Optional CustomPIIRulesLoader instance with loaded rules
         """
         self.config = detection_config or {}
         self.enabled_types = self._get_enabled_types()
+        self.custom_rules_loader = custom_rules_loader
+        self.custom_patterns: dict[str, list[tuple[str, float, str]]] = {}
+        self.custom_redaction: dict[str, dict[str, str]] = {}
         self._init_patterns()
+        self._load_custom_patterns()
 
     def _get_enabled_types(self) -> list[PIIType]:
         """Get list of PII types to detect based on configuration.
@@ -204,9 +217,32 @@ class PIIDetector:
             ],
         }
 
+    def _load_custom_patterns(self) -> None:
+        """Load custom patterns from the rules loader if available."""
+        if not self.custom_rules_loader:
+            return
+
+        try:
+            # Get patterns formatted for detection
+            self.custom_patterns = self.custom_rules_loader.get_patterns_for_detection()
+
+            # Get redaction configuration
+            self.custom_redaction = self.custom_rules_loader.get_redaction_config()
+
+            if self.custom_patterns:
+                import structlog
+
+                logger = structlog.get_logger()
+                logger.info(f"Loaded {len(self.custom_patterns)} custom PII detection rules")
+        except Exception as e:
+            import structlog
+
+            logger = structlog.get_logger()
+            logger.error(f"Failed to load custom PII patterns: {e}")
+
     def detect(self, text: str) -> list[PIIMatch]:
         """
-        Detect PII in text.
+        Detect PII in text, including both built-in and custom patterns.
 
         Args:
             text: Text to scan for PII
@@ -216,6 +252,7 @@ class PIIDetector:
         """
         matches = []
 
+        # Check built-in patterns
         for pii_type in self.enabled_types:
             if pii_type not in self.patterns:
                 continue
@@ -249,6 +286,37 @@ class PIIDetector:
                         )
                     )
 
+        # Check custom patterns
+        for custom_type, patterns in self.custom_patterns.items():
+            for pattern, confidence, _description in patterns:
+                try:
+                    for match in re.finditer(pattern, text, re.IGNORECASE):
+                        # Get context around the match
+                        start = max(0, match.start() - 20)
+                        end = min(len(text), match.end() + 20)
+                        context = text[start:end]
+
+                        # Mask the value using custom format if available
+                        matched_text = match.group()
+                        masked = self._mask_custom_value(
+                            matched_text, custom_type, self.custom_redaction.get(custom_type, {})
+                        )
+
+                        # Create a custom PIIType-like string for the match
+                        matches.append(
+                            PIIMatch(
+                                pii_type=f"custom_{custom_type}",  # Custom types prefixed
+                                start_pos=match.start(),
+                                end_pos=match.end(),
+                                masked_value=masked,
+                                confidence=confidence,
+                                context=context,
+                            )
+                        )
+                except re.error:
+                    # Skip invalid patterns
+                    continue
+
         # Remove duplicates and overlapping matches
         return self._deduplicate_matches(matches)
 
@@ -278,6 +346,35 @@ class PIIDetector:
             total += n
 
         return total % 10 == 0
+
+    def _mask_custom_value(
+        self, value: str, custom_type: str, redaction_config: dict[str, str]
+    ) -> str:
+        """
+        Mask custom PII value using configured format.
+
+        Args:
+            value: Original value
+            custom_type: Custom PII type name
+            redaction_config: Redaction configuration for this type
+
+        Returns:
+            Masked version of the value
+        """
+        mask_format = redaction_config.get("mask_format", "****")
+
+        # If mask_format contains asterisks, use it as a template
+        if "*" in mask_format:
+            # Count the number of asterisks to replace
+            asterisk_count = mask_format.count("*")
+            if asterisk_count >= len(value):
+                return "*" * len(value)
+            else:
+                # Try to preserve some structure
+                return mask_format
+        else:
+            # Use the format as-is
+            return mask_format
 
     def _mask_value(self, value: str, pii_type: PIIType) -> str:
         """

@@ -123,6 +123,27 @@ class Settings(BaseSettings):
     rate_limit_per_key: int = Field(default=10000)
     allowed_charsets: str = Field(default="utf-8,ascii")
 
+    # CORS Configuration
+    cors_enabled: bool = Field(default=True)
+    cors_allow_origins: str = Field(
+        default="http://localhost:3000,http://localhost:8080",
+        description="Comma-separated list of allowed origins. Use * for all (not recommended for production)",
+    )
+    cors_allow_credentials: bool = Field(default=True)
+    cors_allow_methods: str = Field(default="GET,POST,PUT,DELETE,OPTIONS")
+    cors_allow_headers: str = Field(default="Content-Type,Authorization,X-API-Key,X-Client-ID")
+    cors_max_age: int = Field(default=3600, description="Preflight cache time in seconds")
+
+    # Security Headers Configuration
+    security_headers_enabled: bool = Field(default=True)
+    security_hsts_enabled: bool = Field(
+        default=True, description="Enable HTTP Strict Transport Security"
+    )
+    security_csp_enabled: bool = Field(default=True, description="Enable Content Security Policy")
+    security_csp_report_uri: str | None = Field(
+        default=None, description="URI for CSP violation reports"
+    )
+
     # Logging Configuration
     log_level: str = Field(default="INFO")
     log_format: Literal["json", "text"] = Field(default="json")

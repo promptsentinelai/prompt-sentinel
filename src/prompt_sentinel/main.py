@@ -45,6 +45,7 @@ from pydantic import BaseModel, Field
 from prompt_sentinel import __version__
 from prompt_sentinel.api.auth.routes import router as auth_router
 from prompt_sentinel.api.experiments import experiment_router
+from prompt_sentinel.api.security_headers import SecurityHeadersMiddleware
 from prompt_sentinel.api_docs import (
     API_DESCRIPTION,
     API_TITLE,
@@ -270,14 +271,51 @@ app = FastAPI(
 # Use custom OpenAPI schema
 app.openapi = lambda: custom_openapi_schema(app)
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add CORS middleware with production-ready configuration
+if settings.cors_enabled:
+    # Parse comma-separated origins
+    allowed_origins = [
+        origin.strip() for origin in settings.cors_allow_origins.split(",") if origin.strip()
+    ]
+
+    # Parse comma-separated methods and headers
+    allowed_methods = [
+        method.strip() for method in settings.cors_allow_methods.split(",") if method.strip()
+    ]
+    allowed_headers = [
+        header.strip() for header in settings.cors_allow_headers.split(",") if header.strip()
+    ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=settings.cors_allow_credentials,
+        allow_methods=allowed_methods,
+        allow_headers=allowed_headers,
+        max_age=settings.cors_max_age,
+    )
+
+    logger.info(
+        "CORS enabled",
+        origins=allowed_origins,
+        credentials=settings.cors_allow_credentials,
+        methods=allowed_methods,
+    )
+
+# Add security headers middleware
+if settings.security_headers_enabled:
+    app.add_middleware(
+        SecurityHeadersMiddleware,
+        settings=settings,
+        enable_hsts=settings.security_hsts_enabled,
+        enable_csp=settings.security_csp_enabled,
+        report_uri=settings.security_csp_report_uri,
+    )
+    logger.info(
+        "Security headers enabled",
+        hsts=settings.security_hsts_enabled,
+        csp=settings.security_csp_enabled,
+    )
 
 # Add authentication middleware
 auth_config = get_auth_config()

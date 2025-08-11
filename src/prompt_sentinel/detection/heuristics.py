@@ -218,9 +218,9 @@ class HeuristicDetector:
         # Determine verdict based on confidence
         verdict = self._determine_verdict(adjusted_confidence, all_reasons)
 
-        # If no threats detected, return 0.0 confidence (no threats)
+        # If no threats detected, return high confidence for benign
         if not all_reasons:
-            adjusted_confidence = 0.0  # No threats detected
+            adjusted_confidence = 0.95  # High confidence it's safe
 
         return verdict, all_reasons, adjusted_confidence
 

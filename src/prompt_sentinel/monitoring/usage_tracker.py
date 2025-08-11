@@ -256,6 +256,8 @@ class UsageTracker:
         latency_ms: float,
         success: bool = True,
         metadata: dict | None = None,
+        client_id: str | None = None,
+        **kwargs: Any,
     ) -> None:
         """Track a generic request (heuristic detection, etc).
 
@@ -264,7 +266,14 @@ class UsageTracker:
             latency_ms: Request latency in milliseconds
             success: Whether the request succeeded
             metadata: Additional metadata
+            client_id: Optional client identifier
+            **kwargs: Additional keyword arguments
         """
+        # Merge metadata with client_id if provided
+        request_metadata = metadata or {}
+        if client_id:
+            request_metadata["client_id"] = client_id
+
         api_call = ApiCall(
             provider=Provider.HEURISTIC,
             model="heuristic",
@@ -274,7 +283,7 @@ class UsageTracker:
             cost_usd=0.0,
             success=success,
             endpoint=endpoint,
-            metadata=metadata or {},
+            metadata=request_metadata,
         )
 
         self.api_calls.append(api_call)

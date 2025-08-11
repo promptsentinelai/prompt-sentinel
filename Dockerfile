@@ -1,7 +1,19 @@
-# Multi-stage Dockerfile for PromptSentinel
+# Multi-stage Dockerfile for PromptSentinel - Alpine Edition
+# This Alpine-based image has significantly fewer vulnerabilities
 
 # Stage 1: Builder
-FROM python:3.11-slim as builder
+FROM python:3.13-alpine as builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers \
+    python3-dev \
+    libffi-dev \
+    openssl-dev \
+    cargo \
+    build-base
 
 # Install UV for fast dependency installation
 RUN pip install --no-cache-dir uv
@@ -16,28 +28,32 @@ COPY src/ ./src/
 RUN uv pip install --system --no-cache .
 
 # Stage 2: Runtime
-FROM python:3.11-slim
+FROM python:3.13-alpine
 
-# Create non-root user
-RUN useradd -m -u 1000 sentinel && \
-    mkdir -p /app && \
-    chown -R sentinel:sentinel /app
+# Install runtime dependencies only
+RUN apk add --no-cache \
+    curl \
+    libgcc \
+    libstdc++ \
+    libgomp \
+    && rm -rf /var/cache/apk/*
 
-# Install runtime dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        curl \
-        && rm -rf /var/lib/apt/lists/*
+# Create non-root user with specific UID
+RUN adduser -D -u 1000 -h /app sentinel
 
 WORKDIR /app
 
 # Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code
+# Copy application code with correct ownership
 COPY --chown=sentinel:sentinel src/ ./src/
 COPY --chown=sentinel:sentinel corpus/ ./corpus/
+
+# Create necessary directories
+RUN mkdir -p /app/config && \
+    chown -R sentinel:sentinel /app
 
 # Switch to non-root user
 USER sentinel

@@ -8,6 +8,8 @@
 
 A production-ready defensive security microservice for detecting and mitigating prompt injection attacks, PII exposure, and other security threats in LLM-based systems. PromptSentinel provides real-time protection using multi-layered detection strategies with sub-100ms response times.
 
+> **Important**: Prompt injection is a fundamental challenge in LLM security that requires a defense-in-depth approach. PromptSentinel serves as a critical defensive layer but should be combined with architectural constraints, proper prompt design, and application-level validation for comprehensive protection. [Learn more about our security philosophy](#what-promptsentinel-does-and-doesnt-do).
+
 ## 🚀 Key Features
 
 - **Multi-Layer Detection**: Combines heuristic patterns, LLM classification, and PII detection
@@ -31,6 +33,8 @@ A production-ready defensive security microservice for detecting and mitigating 
 ## 📋 Table of Contents
 
 - [Quick Start](#-quick-start)
+- [What PromptSentinel Does (and Doesn't Do)](#what-promptsentinel-does-and-doesnt-do)
+- [Security Best Practices](#-security-best-practices)
 - [Installation](#-installation) 
 - [API Documentation](#-api-documentation)
 - [Understanding Confidence Scores](#understanding-confidence-scores)
@@ -95,6 +99,83 @@ make test-api       # Test API endpoints
 make quality        # Run code quality checks
 make docker-build   # Build Docker image
 ```
+
+## What PromptSentinel Does (and Doesn't Do)
+
+### ✅ What We Do
+
+PromptSentinel is a **defensive security layer** that:
+
+- **Detects prompt injection attempts** using multiple techniques:
+  - Heuristic pattern matching for known attack vectors
+  - LLM-based contextual analysis for sophisticated attempts
+  - SQL injection and code injection pattern detection
+  - Instruction override and role manipulation detection
+- **Identifies and handles PII** in prompts before they reach your LLM
+- **Provides real-time verdicts** (allow/flag/block/strip) with confidence scores
+- **Learns from new attacks** through ML pattern discovery
+- **Offers format validation** to encourage secure prompt design
+- **Delivers sub-100ms responses** for production use cases
+
+### ⚠️ What We Don't Do
+
+PromptSentinel is **not**:
+
+- **A complete security solution**: We're one layer in your defense-in-depth strategy
+- **An LLM firewall**: We detect threats but can't prevent execution if verdicts are ignored
+- **An agent controller**: We don't constrain what actions your LLM can take
+- **100% protection**: As security researchers note, "99% protection is a failing grade" - no single tool can prevent all prompt injections
+
+### 🎯 Our Security Philosophy
+
+Prompt injection stems from the fundamental challenge of mixing trusted instructions with untrusted user input - what researchers call the "string concatenation problem." While there's no perfect solution, PromptSentinel significantly raises the bar for attackers by:
+
+1. **Making attacks harder**: Multiple detection layers catch different attack types
+2. **Providing fast feedback**: Real-time detection enables immediate response
+3. **Encouraging good practices**: Format validation promotes secure prompt design
+4. **Continuous improvement**: ML discovers new patterns from actual attacks
+
+## 🛡️ Security Best Practices
+
+To build secure LLM applications, combine PromptSentinel with these recommendations:
+
+### 1. **Architectural Constraints**
+- **Limit LLM capabilities**: Don't give LLMs access to sensitive operations without human approval
+- **Remove the "lethal trifecta"**: Avoid simultaneously providing:
+  - Access to private/sensitive data
+  - Ability to communicate externally
+  - Processing of untrusted content
+- **Implement least privilege**: Only grant the minimum permissions needed
+
+### 2. **Prompt Design**
+- **Use role separation**: Clearly separate system instructions from user input
+- **Avoid string concatenation**: Don't directly concatenate user input with instructions
+- **Implement structured formats**: Use our format validation to ensure proper message structure
+- **Add security context**: Include security instructions in system prompts
+
+### 3. **Defense in Depth**
+```
+User Input → PromptSentinel → Input Validation → LLM → Output Validation → Action
+                ↓                    ↓                        ↓              ↓
+             [Detect]            [Sanitize]              [Verify]      [Audit]
+```
+
+### 4. **Monitoring and Response**
+- **Log all detections**: Track blocked/flagged attempts for analysis
+- **Set up alerts**: Get notified of high-confidence attacks
+- **Regular reviews**: Analyze false positives to tune detection
+- **Update patterns**: Keep detection rules current with emerging threats
+
+### 5. **Application-Level Validation**
+- **Validate LLM outputs**: Don't trust LLM responses blindly
+- **Implement rate limiting**: Use our built-in rate limiting or add application-level limits
+- **Sandbox operations**: Run risky operations in isolated environments
+- **Human-in-the-loop**: Require approval for consequential actions
+
+### 📚 Further Reading
+- [Simon Willison on Prompt Injection](https://simonwillison.net/) - Comprehensive research on the challenge
+- [OWASP LLM Top 10](https://owasp.org/www-project-top-10-for-large-language-model-applications/) - Security risks in LLM applications
+- [Google DeepMind CaMeL](https://arxiv.org/abs/2409.02849) - Advanced agent security approaches
 
 ## 🔧 Installation
 

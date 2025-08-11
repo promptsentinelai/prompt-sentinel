@@ -131,6 +131,15 @@ ignore = [
     "E501",  # line too long (handled by black)
     "B008",  # do not perform function calls in argument defaults
     "S101",  # use of assert detected
+    "S104",  # hardcoded bind to all interfaces (0.0.0.0) - acceptable for containers
+    "S105",  # hardcoded password in string literal (false positive for enum values)
+    "S108",  # hardcoded temp file paths in tests
+    "S110",  # try-except-pass (acceptable for error recovery testing)
+    "S311",  # random module for non-cryptographic use (tests and experiments)
+    "S324",  # insecure hash function (MD5 for non-cryptographic hashing in experiments)
+    "E402",  # module level import not at top of file (test files with skip markers)
+    "S106",  # hardcoded password in function arguments (test fixtures)
+    "S112",  # try-except-continue (acceptable for resilient testing)
 ]
 exclude = [
     ".bzr",

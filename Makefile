@@ -7,7 +7,7 @@ UV := uv
 DOCKER := docker
 DOCKER_COMPOSE := docker-compose
 PROJECT_NAME := prompt-sentinel
-MAIN_IMAGE := promptsentinel/prompt-sentinel:latest
+MAIN_IMAGE := promptsentinelai/prompt-sentinel:latest
 SRC_DIR := src/prompt_sentinel
 TEST_DIR := tests
 

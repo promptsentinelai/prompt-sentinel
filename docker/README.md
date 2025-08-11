@@ -1,8 +1,8 @@
 # PromptSentinel - LLM Security Microservice
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/promptsentinel/prompt-sentinel)](https://hub.docker.com/r/promptsentinel/prompt-sentinel)
-[![Docker Image Size](https://img.shields.io/docker/image-size/promptsentinel/prompt-sentinel)](https://hub.docker.com/r/promptsentinel/prompt-sentinel)
-[![Docker Image Version](https://img.shields.io/docker/v/promptsentinel/prompt-sentinel)](https://hub.docker.com/r/promptsentinel/prompt-sentinel)
+[![Docker Pulls](https://img.shields.io/docker/pulls/promptsentinelai/prompt-sentinel)](https://hub.docker.com/r/promptsentinelai/prompt-sentinel)
+[![Docker Image Size](https://img.shields.io/docker/image-size/promptsentinelai/prompt-sentinel)](https://hub.docker.com/r/promptsentinelai/prompt-sentinel)
+[![Docker Image Version](https://img.shields.io/docker/v/promptsentinelai/prompt-sentinel)](https://hub.docker.com/r/promptsentinelai/prompt-sentinel)
 
 PromptSentinel is a production-ready defensive security microservice for detecting and mitigating prompt injection attacks, PII exposure, and other security threats in LLM-based systems.
 
@@ -11,7 +11,7 @@ PromptSentinel is a production-ready defensive security microservice for detecti
 ```bash
 docker run -p 8080:8080 \
   -e ANTHROPIC_API_KEY=your-key \
-  promptsentinel/prompt-sentinel:latest
+  promptsentinelai/prompt-sentinel:latest
 ```
 
 ## Features
@@ -70,7 +70,7 @@ version: '3.8'
 
 services:
   prompt-sentinel:
-    image: promptsentinel/prompt-sentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     ports:
       - "8080:8080"
     environment:
@@ -86,7 +86,7 @@ version: '3.8'
 
 services:
   prompt-sentinel:
-    image: promptsentinel/prompt-sentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     ports:
       - "8080:8080"
     environment:

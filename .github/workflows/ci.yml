@@ -19,7 +19,7 @@ jobs:
     name: Quick Tests (PR)
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.11', '3.12']
-    
+
     services:
       redis:
         image: redis:7-alpine
@@ -226,7 +226,8 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     needs: [lint]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Only build Docker images for releases (when commit message starts with 'release:')
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:')
 
     steps:
       - name: Checkout code
@@ -269,7 +270,8 @@ jobs:
     name: API Integration Test
     runs-on: ubuntu-latest
     needs: docker
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Only run API tests when Docker images are built (for releases)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:')
 
     services:
       redis:
@@ -340,7 +342,8 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
-    needs: [test-full, lint, security, docker]
+    needs: [test-full, lint, security]
+    # Docker job will run in parallel with release job, both triggered by 'release:' commit message
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:')
 
     steps:

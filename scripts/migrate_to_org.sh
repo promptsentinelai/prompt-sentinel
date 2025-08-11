@@ -80,4 +80,4 @@ echo "3. Update git remote: git remote set-url origin https://github.com/${NEW_G
 echo "4. Commit changes: git add -A && git commit -m 'chore: migrate repository to promptsentinelai organization'"
 echo "5. Push to new repository: git push origin main"
 echo "6. Update Docker Hub credentials in GitHub Secrets"
-echo "7. Test CI/CD pipeline with a new commit"
+echo "7. Test CI/CD pipeline with a new commit"# Migration Complete

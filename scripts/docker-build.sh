@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-IMAGE_NAME="promptsentinel/prompt-sentinel"
+IMAGE_NAME="promptsentinelai/prompt-sentinel"
 TAG="${1:-latest}"
 PLATFORM="${2:-linux/amd64}"
 

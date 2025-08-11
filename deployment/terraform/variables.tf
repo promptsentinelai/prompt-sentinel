@@ -38,7 +38,7 @@ variable "allowed_cidr_blocks" {
 variable "container_image" {
   description = "Docker image for PromptSentinel"
   type        = string
-  default     = "promptsentinel/prompt-sentinel:latest"
+  default     = "promptsentinelai/prompt-sentinel:latest"
 }
 
 variable "task_cpu" {

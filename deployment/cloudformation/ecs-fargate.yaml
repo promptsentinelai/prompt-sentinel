@@ -25,7 +25,7 @@ Parameters:
 
   ContainerImage:
     Type: String
-    Default: promptsentinel/prompt-sentinel:latest
+    Default: promptsentinelai/prompt-sentinel:latest
     Description: Docker image for PromptSentinel
 
   TaskCpu:

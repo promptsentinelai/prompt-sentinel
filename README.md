@@ -55,12 +55,12 @@ A production-ready defensive security microservice for detecting and mitigating 
 
 ```bash
 # Pull from Docker Hub
-docker pull promptsentinel/prompt-sentinel:latest
+docker pull promptsentinelai/prompt-sentinel:latest
 
 # Run with your API keys
 docker run -p 8080:8080 \
   -e ANTHROPIC_API_KEY=your-key \
-  promptsentinel/prompt-sentinel:latest
+  promptsentinelai/prompt-sentinel:latest
 
 # Or use docker-compose
 wget https://raw.githubusercontent.com/promptsentinelai/prompt-sentinel/main/docker-compose.yml
@@ -1088,7 +1088,7 @@ spec:
     spec:
       containers:
       - name: prompt-sentinel
-        image: promptsentinel/prompt-sentinel:latest
+        image: promptsentinelai/prompt-sentinel:latest
         resources:
           requests:
             memory: "256Mi"
@@ -1250,6 +1250,7 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
 
 ## 🙏 Acknowledgments
 
+- [Python Software Foundation](https://www.python.org/psf-landing/) for the Python programming language
 - OpenAI, Anthropic, and Google for LLM APIs
 - FastAPI team for the excellent framework
 - UV team for the blazing-fast package manager
@@ -1268,7 +1269,7 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
 - **Redis Caching**: 98% performance improvement with optional Redis support
 - **Comprehensive Testing**: 1,653 tests with 100% pass rate, 61% code coverage
 - **API Documentation**: Full OpenAPI/Swagger support with interactive UI
-- **Docker Support**: Official images available at `promptsentinel/prompt-sentinel`
+- **Docker Support**: Official images available at `promptsentinelai/prompt-sentinel`
 - **Kubernetes Ready**: Helm charts and deployment configurations included
 
 ### 🚧 In Development
@@ -1285,6 +1286,6 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
 
 ---
 
-**Built with ❤️ for securing AI applications**
+**Built with ❤️ + ☕️ & 🥃 for securing all the things**
 
 *Version: 1.0.0 | Status: Production Ready*

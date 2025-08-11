@@ -19,7 +19,7 @@ The application provides a unified API that supports:
 Usage:
     Run directly: python -m prompt_sentinel.main
     Via uvicorn: uvicorn prompt_sentinel.main:app --reload
-    Via Docker: docker run promptsentinel/prompt-sentinel
+    Via Docker: docker run promptsentinelai/prompt-sentinel
 
 Environment:
     Configure via environment variables or .env file.

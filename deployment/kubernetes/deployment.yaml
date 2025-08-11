@@ -24,7 +24,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: prompt-sentinel
-        image: promptsentinel/prompt-sentinel:latest
+        image: promptsentinelai/prompt-sentinel:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

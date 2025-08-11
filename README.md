@@ -1,7 +1,7 @@
 # 🛡️ PromptSentinel
 
 [![CI/CD Pipeline](https://github.com/promptsentinelai/prompt-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/promptsentinelai/prompt-sentinel/actions)
-[![Docker Pulls](https://img.shields.io/docker/pulls/promptsentinel/prompt-sentinel)](https://hub.docker.com/r/promptsentinel/prompt-sentinel)
+[![Docker Pulls](https://img.shields.io/docker/pulls/promptsentinelai/prompt-sentinel)](https://hub.docker.com/r/promptsentinelai/prompt-sentinel)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116+-green.svg)](https://fastapi.tiangolo.com/)
 [![License: ELv2](https://img.shields.io/badge/License-ELv2-purple.svg)](https://github.com/promptsentinelai/prompt-sentinel/blob/main/LICENSE)
@@ -1268,11 +1268,11 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
 - **Redis Caching**: 98% performance improvement with optional Redis support
 - **Comprehensive Testing**: 1,653 tests with 100% pass rate, 61% code coverage
 - **API Documentation**: Full OpenAPI/Swagger support with interactive UI
+- **Docker Support**: Official images available at `promptsentinel/prompt-sentinel`
 - **Kubernetes Ready**: Helm charts and deployment configurations included
 
 ### 🚧 In Development
 - **SDK Libraries**: Python, JavaScript, and Go SDKs (implemented, pending package registry publication)
-- **Docker Support**: Official images available at `promptsentinel/prompt-sentinel`
 - **A/B Testing Framework**: Experimentation system for optimizing detection strategies
 - **Grafana Dashboards**: Monitoring dashboards (templates available, pending refinement)
 

@@ -2,6 +2,9 @@ package promptsentinel
 
 import "time"
 
+// Version is the current version of the PromptSentinel Go SDK
+const Version = "1.0.0"
+
 // Role represents the role of a message in a conversation.
 // Used to provide context for role-based detection and proper
 // separation of system instructions from user input.

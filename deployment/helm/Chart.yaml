@@ -2,8 +2,8 @@ apiVersion: v2
 name: prompt-sentinel
 description: A defensive security microservice for detecting and mitigating prompt injection attacks in LLM-based systems
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 1.0.0
+appVersion: "1.0.0"
 keywords:
   - security
   - llm

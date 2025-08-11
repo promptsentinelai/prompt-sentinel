@@ -459,7 +459,7 @@ PromptSentinel supports flexible authentication to fit different deployment scen
 |------|----------|-------------|
 | `none` | Sidecar/Internal | No authentication required - for trusted environments |
 | `optional` | Development/Mixed | API keys improve rate limits but aren't required |
-| `required` | Public | API keys mandatory for all requests |
+| `required` | Public Access/Sensitive Info | API keys mandatory for all requests |
 
 ### Deployment Scenarios
 
@@ -564,13 +564,13 @@ GEMINI_MODEL=gemini-1.5-flash
 # Detection Configuration
 DETECTION_MODE=strict              # strict, moderate, permissive
 CONFIDENCE_THRESHOLD=0.7           # 0.0-1.0
-HEURISTIC_ENABLED=true            # Pattern-based detection
-LLM_CLASSIFICATION_ENABLED=true   # AI-based classification
-PII_DETECTION_ENABLED=true        # PII detection
+HEURISTIC_ENABLED=true             # Pattern-based detection
+LLM_CLASSIFICATION_ENABLED=true    # AI-based classification
+PII_DETECTION_ENABLED=true         # PII detection
 
 # PII Configuration
-PII_REDACTION_MODE=mask           # mask, remove, hash, reject
-PII_TYPES_TO_DETECT=all           # all, or: credit_card,ssn,email,phone
+PII_REDACTION_MODE=mask            # mask, remove, hash, reject
+PII_TYPES_TO_DETECT=all            # all, or: credit_card,ssn,email,phone
 PII_CONFIDENCE_THRESHOLD=0.7
 
 # Redis Cache (Optional)
@@ -1187,11 +1187,11 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
 - **Redis Caching**: 98% performance improvement with optional Redis support
 - **Comprehensive Testing**: 1,653 tests with 100% pass rate, 61% code coverage
 - **API Documentation**: Full OpenAPI/Swagger support with interactive UI
-- **Docker Support**: Official images available at `promptsentinel/prompt-sentinel`
 - **Kubernetes Ready**: Helm charts and deployment configurations included
 
 ### 🚧 In Development
 - **SDK Libraries**: Python, JavaScript, and Go SDKs (implemented, pending package registry publication)
+- **Docker Support**: Official images available at `promptsentinel/prompt-sentinel`
 - **A/B Testing Framework**: Experimentation system for optimizing detection strategies
 - **Grafana Dashboards**: Monitoring dashboards (templates available, pending refinement)
 

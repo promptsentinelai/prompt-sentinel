@@ -26,7 +26,6 @@ class TestProviderFailover:
             patch("prompt_sentinel.detection.llm_classifier.AnthropicProvider"),
             patch("prompt_sentinel.detection.llm_classifier.OpenAIProvider"),
         ):
-
             manager = LLMClassifierManager(["anthropic", "openai"])
 
             # Setup providers
@@ -67,7 +66,6 @@ class TestProviderFailover:
             patch("prompt_sentinel.detection.llm_classifier.OpenAIProvider"),
             patch("prompt_sentinel.detection.llm_classifier.GeminiProvider"),
         ):
-
             manager = LLMClassifierManager(["anthropic", "openai", "gemini"])
 
             # Setup providers

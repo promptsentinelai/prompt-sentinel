@@ -419,7 +419,6 @@ class PatternManager:
             managed.status == PatternStatus.CANDIDATE
             and total_evaluations >= self.min_samples_for_promotion
         ):
-
             if perf.precision >= self.min_precision and perf.recall >= self.min_recall:
                 # Promote to testing
                 managed.status = PatternStatus.TESTING
@@ -557,7 +556,9 @@ class PatternManager:
             patterns_data = [managed.to_dict() for managed in self.patterns.values()]
 
             await cache_manager.set(
-                "ml:managed_patterns", json.dumps(patterns_data), ttl=86400 * 30  # 30 days
+                "ml:managed_patterns",
+                json.dumps(patterns_data),
+                ttl=86400 * 30,  # 30 days
             )
 
             logger.info("Saved patterns to cache", count=len(patterns_data))

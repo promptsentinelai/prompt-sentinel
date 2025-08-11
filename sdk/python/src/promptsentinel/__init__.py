@@ -4,17 +4,17 @@ PromptSentinel Python SDK
 A Python client library for interacting with the PromptSentinel API.
 """
 
-from .client import PromptSentinel, AsyncPromptSentinel
+from .client import AsyncPromptSentinel, PromptSentinel
 from .models import (
+    AuthenticationError,
+    DetectionMode,
     DetectionRequest,
     DetectionResponse,
     Message,
-    Role,
-    Verdict,
-    DetectionMode,
     PromptSentinelError,
     RateLimitError,
-    AuthenticationError,
+    Role,
+    Verdict,
 )
 from .version import __version__
 

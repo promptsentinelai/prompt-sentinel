@@ -102,27 +102,27 @@ config:
   logLevel: INFO
   logFormat: json
   debug: false
-  
+
   # Detection Configuration
   detectionMode: strict  # strict, moderate, permissive
   confidenceThreshold: 0.7
   maxPromptLength: 10000
-  
+
   # Feature Flags
   heuristicEnabled: true
   llmClassificationEnabled: true
   piiDetectionEnabled: true
-  
+
   # PII Configuration
   piiRedactionMode: mask  # mask, remove, hash, reject
   piiTypesToDetect: all
   piiConfidenceThreshold: 0.7
-  
+
   # Cache Configuration
   cacheTtlLlm: 3600
   cacheTtlDetection: 600
   cacheTtlPii: 300
-  
+
   # Provider Configuration
   llmProviderOrder: "anthropic,openai,gemini"
   anthropicModel: "claude-3-haiku-20240307"
@@ -175,7 +175,7 @@ opentelemetry:
   enabled: false
   endpoint: "http://otel-collector:4318"
   serviceName: "prompt-sentinel"
-  
+
 # Network Policies
 networkPolicy:
   enabled: true

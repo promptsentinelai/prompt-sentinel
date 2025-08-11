@@ -248,7 +248,6 @@ class TestWorkflowEngine:
             "prompt_sentinel.automation.workflow.external_api_call",
             side_effect=Exception("Service unavailable"),
         ):
-
             execution = await workflow_engine.execute_workflow(
                 workflow_id=workflow_id["workflow_id"], input_data={}
             )
@@ -416,7 +415,6 @@ class TestWorkflowSteps:
             patch("prompt_sentinel.automation.steps.api_call") as mock_api,
             patch("prompt_sentinel.automation.steps.lookup_data") as mock_lookup,
         ):
-
             mock_api.return_value = {"risk_level": "high", "account_type": "premium"}
             mock_lookup.return_value = {"threat_type": "injection", "severity": "critical"}
 
@@ -485,7 +483,6 @@ class TestWorkflowSteps:
             patch("prompt_sentinel.automation.steps.send_slack_message") as mock_slack,
             patch("prompt_sentinel.automation.steps.send_email") as mock_email,
         ):
-
             mock_slack.return_value = {"sent": True, "message_id": "slack_123"}
             mock_email.return_value = {"sent": True, "message_id": "email_456"}
 

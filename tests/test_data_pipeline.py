@@ -347,7 +347,6 @@ class TestDataTransformation:
             ),
             patch("prompt_sentinel.pipeline.transform.api_call", return_value=mock_ip_data),
         ):
-
             # Data to enrich
             base_data = [
                 {

@@ -316,7 +316,9 @@ class StatisticalAnalyzer:
 
             # Calculate required sample size
             required_sample_size = self._calculate_required_sample_size(
-                effect_size, alpha, 0.8  # 80% power
+                effect_size,
+                alpha,
+                0.8,  # 80% power
             )
 
             return ExperimentResult(

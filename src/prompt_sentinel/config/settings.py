@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     )
 
     # API Configuration
-    api_host: str = Field(default="0.0.0.0")  # nosec B104 - Docker requires binding to all interfaces
+    api_host: str = Field(default="0.0.0.0")  # nosec B104 - Docker needs all interfaces
     api_port: int = Field(default=8080)
     api_env: Literal["development", "staging", "production"] = Field(default="development")
     debug: bool = Field(default=False)

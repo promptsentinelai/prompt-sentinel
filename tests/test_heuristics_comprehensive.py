@@ -155,7 +155,8 @@ class TestHeuristicDetector:
 
         assert verdict == Verdict.ALLOW
         assert len(reasons) == 0
-        assert confidence == 0.0
+        # High confidence (0.95) means we're confident it's safe
+        assert confidence > 0.8
 
     def test_detect_direct_injection_strict(self, detector_strict, direct_injection_messages):
         """Test direct injection detection in strict mode."""

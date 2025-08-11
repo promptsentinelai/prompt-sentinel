@@ -123,7 +123,7 @@ jobs:
       - name: Run integration tests with Redis
         run: |
           source .venv/bin/activate
-          pytest tests/test_cache.py tests/test_integration.py -v
+          pytest tests/test_cache_manager_comprehensive.py tests/test_integration.py -v
         env:
           REDIS_ENABLED: true
           REDIS_HOST: localhost

@@ -2,6 +2,8 @@
 
 import base64
 import re
+from datetime import datetime, timedelta
+from typing import Any
 
 from prompt_sentinel.models.schemas import (
     DetectionCategory,
@@ -15,7 +17,7 @@ from prompt_sentinel.models.schemas import (
 class HeuristicDetector:
     """Pattern-based detection for common injection techniques."""
 
-    def __init__(self, detection_mode: str = "strict", pattern_manager=None):
+    def __init__(self, detection_mode: str = "strict", pattern_manager: Any | None = None) -> None:
         """
         Initialize the heuristic detector.
 
@@ -28,19 +30,21 @@ class HeuristicDetector:
         self._init_patterns()
 
         # ML-discovered patterns cache
-        self.ml_patterns = []
-        self.ml_patterns_last_update = None
+        self.ml_patterns: list[Any] = []
+        self.ml_patterns_last_update: datetime | None = None
 
-    def _init_patterns(self):
+    def _init_patterns(self) -> None:
         """Initialize detection patterns based on mode."""
         # Direct injection patterns
         self.direct_injection_patterns = [
             # Instruction override attempts
-            (r"ignore (all )?(previous|prior|above)", 0.9, "Instruction override attempt"),
-            (r"disregard (all )?(previous|prior|above)", 0.9, "Instruction override attempt"),
+            (r"ignore (all )?(previous|prior|above|your)", 0.9, "Instruction override attempt"),
+            (r"disregard (all )?(previous|prior|above|your)", 0.9, "Instruction override attempt"),
             (r"forget (everything|all|what)", 0.85, "Memory reset attempt"),
             (r"new instructions?:?", 0.8, "New instruction injection"),
             (r"update.{0,20}(instruction|directive|command)", 0.8, "Instruction update attempt"),
+            (r"from now on", 0.85, "Behavior modification attempt"),
+            (r"you will (now |)ignore", 0.9, "Instruction override attempt"),
             # Role play and impersonation
             (
                 r"(you are|you're) (now |going to be )(a |an |the )?(evil|malicious|hacker|admin|developer|dan|unrestricted|unfiltered)",
@@ -50,15 +54,26 @@ class HeuristicDetector:
             (r"act (as|like) (a|an)", 0.8, "Role playing request"),
             (r"pretend (to be|you)", 0.85, "Impersonation attempt"),
             (r"roleplay as", 0.85, "Role playing request"),
+            (
+                r"(i'm|i am) (the|actually the) (assistant|system|admin)",
+                0.9,
+                "Role reversal attempt",
+            ),
+            (r"you're (the|actually the) (user|human)", 0.9, "Role reversal attempt"),
             # System prompt extraction
             (
                 r"(what|tell me|show me).{0,20}(system|initial|original) (prompt|instruction)",
                 0.9,
                 "System prompt extraction attempt",
             ),
-            (r"repeat.{0,20}(instruction|prompt|directive)", 0.85, "Prompt leak attempt"),
             (
-                r"(print|output|display|show).{0,20}(above|previous|prior)",
+                r"repeat.{0,20}(instruction|prompt|directive|everything|all)",
+                0.85,
+                "Prompt leak attempt",
+            ),
+            (r"repeat everything above", 0.9, "Prompt extraction attempt"),
+            (
+                r"(print|output|display|show).{0,20}(above|previous|prior|your)",
                 0.8,
                 "Content extraction",
             ),
@@ -83,22 +98,49 @@ class HeuristicDetector:
             (r"bypass.{0,20}(restriction|filter|safety)", 0.9, "Bypass attempt"),
         ]
 
-        # Encoding attack patterns
+        # Encoding attack patterns (case-sensitive, checked separately)
         self.encoding_patterns = [
             (r"[A-Za-z0-9+/]{50,}={0,2}", 0.7, "Potential base64 encoding"),
             (r"\\x[0-9a-fA-F]{2}", 0.8, "Hex encoding detected"),
             (r"\\u[0-9a-fA-F]{4}", 0.8, "Unicode encoding detected"),
             (r"%[0-9a-fA-F]{2}", 0.6, "URL encoding detected"),
             (r"&(#x?[0-9a-fA-F]+|[a-z]+);", 0.6, "HTML entity encoding"),
+            (r"[\u200b\u200c\u200d\ufeff]", 0.8, "Zero-width character detected"),
+        ]
+
+        # Encoding execution patterns (case-insensitive)
+        self.encoding_exec_patterns = [
+            (r"(eval|exec)\s*\(\s*(atob|btoa|decode|base64)", 0.9, "Encoded execution attempt"),
+            (r"atob\s*\(", 0.85, "Base64 decode attempt"),
+            (r"base64\s*(decode|encode)", 0.8, "Base64 operation detected"),
         ]
 
         # Context switching patterns
         self.context_switching_patterns = [
-            (r"###.{0,20}(system|user|assistant)", 0.8, "Role delimiter injection"),
+            (
+                r"###.*?(SYSTEM|USER|ASSISTANT|OVERRIDE|ADMIN).*?###",
+                0.9,
+                "Role delimiter injection",
+            ),
             (r"(end of|close) (conversation|chat|session)", 0.7, "Context termination attempt"),
             (r"(start|begin) (new|another) (conversation|session)", 0.7, "Context reset attempt"),
             (r"\n{3,}", 0.5, "Excessive newlines for context break"),
             (r"={10,}", 0.6, "Separator injection"),
+            (r"---+\s*END\s+OF\s+USER\s+INPUT\s*---+", 0.9, "End of input boundary injection"),
+            (r"</\w+>\s*<(system|admin|root)", 0.85, "XML tag context switch"),
+            (r"\[\[(CONTEXT_SWITCH|SYSTEM|ADMIN)\]\]", 0.8, "Custom delimiter injection"),
+            (r"```[\s\S]*?}\s*(System|system)\.", 0.75, "Code block escape attempt"),
+            (
+                r"^\s*(SYSTEM|System):\s*(Grant|Override|Ignore|Bypass)",
+                0.9,
+                "System command injection",
+            ),
+            (r"<<(SYSTEM|ADMIN|ROOT)>>", 0.85, "Custom system tag injection"),
+            (
+                r"(System|Assistant|Admin):\s*(You are now|I will now)",
+                0.9,
+                "Role declaration injection",
+            ),
         ]
 
         # Adjust thresholds based on detection mode
@@ -203,6 +245,19 @@ class HeuristicDetector:
                         )
                     )
 
+        # Check encoding execution patterns (case-insensitive)
+        for pattern, confidence, description in self.encoding_exec_patterns:
+            if re.search(pattern, content_lower):
+                reasons.append(
+                    DetectionReason(
+                        category=DetectionCategory.ENCODING_ATTACK,
+                        description=description,
+                        confidence=confidence,
+                        source="heuristic",
+                        patterns_matched=[pattern],
+                    )
+                )
+
         # Check context switching
         for pattern, confidence, description in self.context_switching_patterns:
             if re.search(pattern, content, re.MULTILINE):
@@ -268,8 +323,17 @@ class HeuristicDetector:
                         # Check if decoded content contains text
                         if any(32 <= b < 127 for b in decoded):
                             return True
-                    except Exception:
+                    except Exception:  # noqa: S110
+                        # Base64 decode can fail for invalid strings
                         pass
+            # For zero-width characters, always return True if matched
+            elif (
+                r"\u200b" in pattern
+                or r"\u200c" in pattern
+                or r"\u200d" in pattern
+                or r"\ufeff" in pattern
+            ):
+                return True
             # For other encoding patterns, just return True if pattern matched
             elif any(enc in pattern for enc in [r"\\x", r"\\u", r"%", r"&"]):
                 return True
@@ -296,26 +360,23 @@ class HeuristicDetector:
         content_lower = content.lower()
         return any(keyword in content_lower for keyword in role_keywords)
 
-    def _update_ml_patterns(self):
+    def _update_ml_patterns(self) -> None:
         """Update ML-discovered patterns from pattern manager."""
         if not self.pattern_manager:
             return
 
         try:
             # Get active patterns from manager
-            from datetime import datetime, timedelta
-
             # Update every 5 minutes
             if (
                 not self.ml_patterns_last_update
                 or datetime.utcnow() - self.ml_patterns_last_update > timedelta(minutes=5)
             ):
-
                 self.ml_patterns = self.pattern_manager.get_active_patterns()
                 self.ml_patterns_last_update = datetime.utcnow()
 
-        except Exception:
-            # Silently fail to not break detection
+        except Exception:  # noqa: S110
+            # Silently fail to not break detection - ML patterns are optional
             pass
 
     def _check_ml_patterns(self, content: str) -> list[tuple[str, float, str]]:
@@ -336,8 +397,8 @@ class HeuristicDetector:
                             f"ML Pattern: {pattern.description}",
                         )
                     )
-            except Exception:
-                # Skip failed patterns
+            except Exception:  # noqa: S112
+                # Skip failed patterns - pattern may have issues
                 continue
 
         return matches
@@ -351,6 +412,9 @@ class HeuristicDetector:
             "print your directives",
             "display your configuration",
             "tell me your rules",
+            "what were you told",
+            "tell me your instructions",
+            "output your configuration",
         ]
 
         content_lower = content.lower()
@@ -379,9 +443,9 @@ class HeuristicDetector:
         else:
             return Verdict.ALLOW
 
-    def get_statistics(self, messages: list[Message]) -> dict:
+    def get_statistics(self, messages: list[Message]) -> dict[str, Any]:
         """Get detection statistics for messages."""
-        stats = {
+        stats: dict[str, Any] = {
             "total_messages": len(messages),
             "patterns_checked": {
                 "direct_injection": len(self.direct_injection_patterns),

@@ -1,5 +1,6 @@
 """Comprehensive integration tests for PromptSentinel."""
 
+import os
 from unittest.mock import patch
 
 import pytest
@@ -445,6 +446,10 @@ class TestProviderFailover:
         """Setup test client."""
         self.client = TestClient(app)
 
+    @pytest.mark.skipif(
+        os.getenv("LLM_CLASSIFICATION_ENABLED", "true").lower() == "false",
+        reason="LLM classification disabled - provider failover not applicable",
+    )
     @patch("prompt_sentinel.providers.anthropic_provider.AnthropicProvider.classify")
     @patch("prompt_sentinel.providers.openai_provider.OpenAIProvider.classify")
     def test_provider_failover(self, mock_openai, mock_anthropic):

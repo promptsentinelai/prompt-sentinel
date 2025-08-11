@@ -23,9 +23,10 @@ Environment:
 
 import time
 import uuid
+from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from prompt_sentinel.experiments import ExperimentManager
@@ -116,7 +117,7 @@ app_start_time: datetime = datetime.utcnow()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application lifecycle for startup and shutdown operations.
 
     Handles initialization of the detection system and health checks for
@@ -295,7 +296,7 @@ except ImportError:
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def log_requests(request: Request, call_next: Callable) -> Any:
     """Log all incoming requests and their responses for monitoring.
 
     Captures request metadata, processes the request, and logs the response
@@ -351,7 +352,7 @@ async def log_requests(request: Request, call_next):
     description="Check service health and provider status",
     include_in_schema=False,  # Hide from docs since it's a duplicate
 )
-async def health_check_legacy():
+async def health_check_legacy() -> HealthResponse:
     """Legacy health check endpoint for backward compatibility."""
     return await health_check()
 
@@ -363,7 +364,7 @@ async def health_check_legacy():
     summary="Health check",
     description="Check service health and provider status",
 )
-async def health_check():
+async def health_check() -> HealthResponse:
     """Health check endpoint for monitoring service availability.
 
     Provides comprehensive health status including:
@@ -483,7 +484,7 @@ async def health_check():
     summary="Detailed health check",
     description="Comprehensive health check with component status",
 )
-async def detailed_health_check():
+async def detailed_health_check() -> dict:
     """Detailed health check with component-level status information.
 
     Returns comprehensive health information including:
@@ -611,7 +612,7 @@ async def detailed_health_check():
     summary="Liveness probe",
     description="Kubernetes liveness probe endpoint",
 )
-async def liveness_probe():
+async def liveness_probe() -> dict:
     """Simple liveness probe for Kubernetes.
 
     Returns 200 if the service is alive, regardless of dependency health.
@@ -625,7 +626,7 @@ async def liveness_probe():
     summary="Readiness probe",
     description="Kubernetes readiness probe endpoint",
 )
-async def readiness_probe():
+async def readiness_probe() -> dict:
     """Readiness probe for Kubernetes.
 
     Returns 200 if the service is ready to accept traffic.
@@ -657,7 +658,7 @@ async def readiness_probe():
     description="Detect prompt injections with support for both simple strings and role-based messages",
     responses=RESPONSES,
 )
-async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
+async def detect(request: UnifiedDetectionRequest | SimplePromptRequest) -> DetectionResponse:
     """Unified prompt injection detection endpoint.
 
     Accepts either:
@@ -756,7 +757,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
     description="Perform deep analysis including all detection methods and format validation",
     responses=RESPONSES,
 )
-async def analyze(request: AnalysisRequest):
+async def analyze(request: AnalysisRequest) -> AnalysisResponse:
     """Comprehensive prompt analysis with per-message threat assessment.
 
     Performs in-depth analysis of multi-message conversations, providing:
@@ -946,7 +947,7 @@ class FormatAssistRequest(BaseModel):
     summary="Format assistance",
     description="Validate prompt format and provide security recommendations",
 )
-async def format_assist(request: FormatAssistRequest):
+async def format_assist(request: FormatAssistRequest) -> dict:
     """Help developers format prompts with proper role separation for security.
 
     Analyzes raw prompt text and generates properly formatted message structures
@@ -1058,7 +1059,7 @@ async def format_assist(request: FormatAssistRequest):
     summary="Security recommendations",
     description="Get best practices for secure prompt design",
 )
-async def get_recommendations():
+async def get_recommendations() -> dict:
     """Get comprehensive guidelines for secure prompt design.
 
     Provides best practices, examples, and security tips for creating
@@ -1136,7 +1137,7 @@ async def get_recommendations():
     summary="Cache statistics",
     description="Get Redis cache statistics and performance metrics",
 )
-async def get_cache_stats():
+async def get_cache_stats() -> dict:
     """Get cache statistics and status.
 
     Provides cache hit/miss rates, memory usage, and connection status.
@@ -1173,7 +1174,7 @@ async def get_cache_stats():
     summary="Clear cache",
     description="Clear cache entries matching pattern",
 )
-async def clear_cache(pattern: str | None = "*"):
+async def clear_cache(pattern: str | None = "*") -> dict:
     """Clear cache entries matching a pattern.
 
     Removes cached entries to force fresh computation. Useful for
@@ -1207,7 +1208,7 @@ async def clear_cache(pattern: str | None = "*"):
     summary="Cache health",
     description="Check Redis cache connection and health",
 )
-async def cache_health_check():
+async def cache_health_check() -> dict:
     """Check cache connection health.
 
     Performs a quick health check on the Redis connection.
@@ -1239,7 +1240,7 @@ async def cache_health_check():
     description="Automatically route to optimal detection strategy based on prompt complexity",
     responses=RESPONSES,
 )
-async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request):
+async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request) -> DetectionResponse:
     """Intelligent routing-based detection endpoint (v3 API).
 
     Analyzes prompt complexity and automatically routes to the optimal
@@ -1372,7 +1373,7 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request):
     summary="Analyze complexity",
     description="Analyze prompt complexity without performing detection",
 )
-async def analyze_complexity(prompt: str):
+async def analyze_complexity(prompt: str) -> dict:
     """Analyze prompt complexity without performing detection.
 
     Useful for understanding how the routing system would handle
@@ -1419,7 +1420,7 @@ async def analyze_complexity(prompt: str):
     summary="Routing metrics",
     description="Get intelligent routing performance metrics and strategy distribution",
 )
-async def get_routing_metrics():
+async def get_routing_metrics() -> dict:
     """Get routing system performance metrics.
 
     Provides insights into routing decisions, strategy distribution,
@@ -1470,7 +1471,9 @@ async def get_routing_metrics():
     summary="Complexity metrics",
     description="Get detailed complexity metrics and risk indicators",
 )
-async def get_complexity_metrics(prompt: str | None = None, include_distribution: bool = True):
+async def get_complexity_metrics(
+    prompt: str | None = None, include_distribution: bool = True
+) -> dict:
     """Get comprehensive prompt complexity metrics.
 
     Provides detailed complexity analysis and system-wide complexity distribution.
@@ -1593,7 +1596,9 @@ async def get_complexity_metrics(prompt: str | None = None, include_distribution
     summary="API usage",
     description="Get API usage statistics, costs, and performance metrics",
 )
-async def get_usage_metrics(time_window_hours: int | None = None, include_breakdown: bool = True):
+async def get_usage_metrics(
+    time_window_hours: int | None = None, include_breakdown: bool = True
+) -> dict:
     """Get API usage metrics and statistics.
 
     Provides comprehensive usage tracking including costs, tokens,
@@ -1659,7 +1664,7 @@ async def get_usage_metrics(time_window_hours: int | None = None, include_breakd
     summary="Budget status",
     description="Check current budget usage and alerts",
 )
-async def get_budget_status(check_next_cost: float | None = 0.0):
+async def get_budget_status(check_next_cost: float | None = 0.0) -> dict:
     """Get current budget status and alerts.
 
     Monitors spending against configured budgets and provides
@@ -1806,7 +1811,7 @@ async def configure_budget(
     daily_limit: float | None = None,
     monthly_limit: float | None = None,
     block_on_exceeded: bool | None = None,
-):
+) -> dict:
     """Configure budget limits dynamically.
 
     Updates budget configuration at runtime without restart.

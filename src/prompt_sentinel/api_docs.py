@@ -1,6 +1,6 @@
 """OpenAPI documentation enhancements for PromptSentinel API."""
 
-from typing import Any
+from typing import Any, cast
 
 # API metadata
 API_TITLE = "PromptSentinel API"
@@ -192,10 +192,10 @@ EXAMPLES = {
 
 
 # Custom OpenAPI schema modifications
-def custom_openapi_schema(app) -> dict[str, Any]:
+def custom_openapi_schema(app: Any) -> dict[str, Any]:
     """Generate custom OpenAPI schema with enhanced documentation."""
     if app.openapi_schema:
-        return app.openapi_schema
+        return cast(dict[str, Any], app.openapi_schema)
 
     from fastapi.openapi.utils import get_openapi
 
@@ -234,7 +234,7 @@ def custom_openapi_schema(app) -> dict[str, Any]:
 
     # Cache the schema
     app.openapi_schema = openapi_schema
-    return app.openapi_schema
+    return cast(dict[str, Any], app.openapi_schema)
 
 
 # Response status descriptions

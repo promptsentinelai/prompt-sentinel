@@ -9,6 +9,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 import structlog
 
@@ -28,7 +29,7 @@ class ExtractedPattern:
     description: str
     examples: list[str]
     created_at: datetime
-    metadata: dict[str, any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
@@ -102,7 +103,7 @@ class PatternExtractor:
             ],
         }
 
-    async def extract_patterns(self, cluster: any, events: list[any]) -> list[ExtractedPattern]:
+    async def extract_patterns(self, cluster: Any, events: list[Any]) -> list[ExtractedPattern]:
         """Extract patterns from a cluster.
 
         Args:
@@ -112,7 +113,7 @@ class PatternExtractor:
         Returns:
             List of extracted patterns
         """
-        patterns = []
+        patterns: list[ExtractedPattern] = []
 
         # Get prompts from events
         prompts = []
@@ -153,10 +154,10 @@ class PatternExtractor:
         return patterns[:10]
 
     def _extract_common_substrings(
-        self, prompts: list[str], cluster: any
+        self, prompts: list[str], cluster: Any
     ) -> list[ExtractedPattern]:
         """Extract common substrings from prompts."""
-        patterns = []
+        patterns: list[ExtractedPattern] = []
 
         if len(prompts) < 2:
             return patterns
@@ -202,10 +203,10 @@ class PatternExtractor:
         return patterns
 
     def _match_templates(
-        self, prompts: list[str], category: str, cluster: any
+        self, prompts: list[str], category: str, cluster: Any
     ) -> list[ExtractedPattern]:
         """Match prompts against template patterns."""
-        patterns = []
+        patterns: list[ExtractedPattern] = []
 
         # Get templates for category
         templates = self.pattern_templates.get(category, [])
@@ -238,12 +239,12 @@ class PatternExtractor:
 
         return patterns
 
-    def _extract_ngram_patterns(self, prompts: list[str], cluster: any) -> list[ExtractedPattern]:
+    def _extract_ngram_patterns(self, prompts: list[str], cluster: Any) -> list[ExtractedPattern]:
         """Extract n-gram based patterns."""
-        patterns = []
+        patterns: list[ExtractedPattern] = []
 
         # Extract word n-grams
-        ngram_counts = Counter()
+        ngram_counts: Counter[str] = Counter()
 
         for prompt in prompts:
             words = prompt.lower().split()
@@ -282,9 +283,9 @@ class PatternExtractor:
 
         return patterns
 
-    def _extract_diff_patterns(self, prompts: list[str], cluster: any) -> list[ExtractedPattern]:
+    def _extract_diff_patterns(self, prompts: list[str], cluster: Any) -> list[ExtractedPattern]:
         """Extract patterns using differential analysis."""
-        patterns = []
+        patterns: list[ExtractedPattern] = []
 
         if len(prompts) < 3:
             return patterns

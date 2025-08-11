@@ -50,7 +50,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             Response from the endpoint or error response
         """
         # Skip auth for health checks and docs
-        if request.url.path in ["/health", "/docs", "/redoc", "/openapi.json"]:
+        if request.url.path in ["/health", "/api/v1/health", "/docs", "/redoc", "/openapi.json"]:
             request.state.client = Client(
                 client_id="system",
                 client_name="System",

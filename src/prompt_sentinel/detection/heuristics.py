@@ -38,14 +38,28 @@ class HeuristicDetector:
         # Direct injection patterns
         self.direct_injection_patterns = [
             # Instruction override attempts
-            (r"ignore (all )?(previous|prior|above|your)", 0.9, "Instruction override attempt"),
-            (r"disregard (all )?(previous|prior|above|your)", 0.9, "Instruction override attempt"),
+            (
+                r"ignore (all )?(previous|prior|above|your|instructions?)",
+                0.9,
+                "Instruction override attempt",
+            ),
+            (
+                r"disregard (all )?(previous|prior|above|your|instructions?)",
+                0.9,
+                "Instruction override attempt",
+            ),
+            (r"(override|forget|ignore|disregard) instructions", 0.85, "Instruction manipulation"),
             (r"forget (everything|all|what)", 0.85, "Memory reset attempt"),
             (r"new instructions?:?", 0.8, "New instruction injection"),
             (r"update.{0,20}(instruction|directive|command)", 0.8, "Instruction update attempt"),
             (r"from now on", 0.85, "Behavior modification attempt"),
             (r"you will (now |)ignore", 0.9, "Instruction override attempt"),
             # Role play and impersonation
+            (
+                r"(you are|you're) now(?!\s*(a|an|the)\s*(user|human))",
+                0.8,
+                "Role manipulation attempt",
+            ),
             (
                 r"(you are|you're) (now |going to be )(a |an |the )?(evil|malicious|hacker|admin|developer|dan|unrestricted|unfiltered)",
                 0.85,

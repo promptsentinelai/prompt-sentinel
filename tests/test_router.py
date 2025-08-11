@@ -326,8 +326,13 @@ class TestIntelligentRouter:
         assert decision.experiment_override is True
         assert "experiment" in decision.reasoning.lower()
 
-    def test_determine_strategy_standard_mode(self, router):
+    @patch("prompt_sentinel.routing.router.settings")
+    def test_determine_strategy_standard_mode(self, mock_settings, router):
         """Test strategy determination in standard mode."""
+        # Enable LLM and PII detection for this test
+        mock_settings.llm_classification_enabled = True
+        mock_settings.pii_detection_enabled = True
+
         test_cases = [
             (ComplexityLevel.TRIVIAL, DetectionStrategy.HEURISTIC_CACHED),
             (ComplexityLevel.SIMPLE, DetectionStrategy.HEURISTIC_CACHED),
@@ -350,11 +355,18 @@ class TestIntelligentRouter:
                 complexity_score, performance_mode=False
             )
 
-            assert strategy == expected_strategy
+            assert strategy == expected_strategy, (
+                f"For {complexity_level}, expected {expected_strategy} but got {strategy}"
+            )
             assert reasoning is not None
 
-    def test_determine_strategy_performance_mode(self, router):
+    @patch("prompt_sentinel.routing.router.settings")
+    def test_determine_strategy_performance_mode(self, mock_settings, router):
         """Test strategy determination in performance mode."""
+        # Enable LLM and PII detection for this test
+        mock_settings.llm_classification_enabled = True
+        mock_settings.pii_detection_enabled = True
+
         test_cases = [
             (ComplexityLevel.TRIVIAL, DetectionStrategy.HEURISTIC_ONLY),
             (ComplexityLevel.SIMPLE, DetectionStrategy.HEURISTIC_CACHED),
@@ -380,8 +392,13 @@ class TestIntelligentRouter:
             assert strategy == expected_strategy
             assert "performance mode" in reasoning.lower()
 
-    def test_determine_strategy_critical_risks(self, router):
+    @patch("prompt_sentinel.routing.router.settings")
+    def test_determine_strategy_critical_risks(self, mock_settings, router):
         """Test strategy determination with critical risk indicators."""
+        # Enable LLM and PII detection for this test
+        mock_settings.llm_classification_enabled = True
+        mock_settings.pii_detection_enabled = True
+
         critical_risks = [
             [RiskIndicator.INSTRUCTION_OVERRIDE],
             [RiskIndicator.CODE_INJECTION],

@@ -39,7 +39,7 @@ class TokenUsage:
     completion_tokens: int = 0
     total_tokens: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.total_tokens == 0:
             self.total_tokens = self.prompt_tokens + self.completion_tokens
 
@@ -139,7 +139,7 @@ class UsageTracker:
         )
 
         # Provider-specific metrics
-        self.provider_metrics = defaultdict(
+        self.provider_metrics: defaultdict[str, dict[str, Any]] = defaultdict(
             lambda: {
                 "requests": 0,
                 "tokens": 0,
@@ -227,7 +227,7 @@ class UsageTracker:
 
         return api_call
 
-    async def track_cache_hit(self, endpoint: str, latency_ms: float):
+    async def track_cache_hit(self, endpoint: str, latency_ms: float) -> None:
         """Track a cache hit (no API cost).
 
         Args:
@@ -279,7 +279,7 @@ class UsageTracker:
 
         return round(input_cost + output_cost, 6)
 
-    async def _update_metrics(self, api_call: ApiCall):
+    async def _update_metrics(self, api_call: ApiCall) -> None:
         """Update aggregated metrics.
 
         Args:
@@ -365,7 +365,7 @@ class UsageTracker:
         # Update by_provider in metrics
         self.metrics.by_provider = dict(self.provider_metrics)
 
-    async def _persist_call(self, api_call: ApiCall):
+    async def _persist_call(self, api_call: ApiCall) -> None:
         """Persist API call to cache.
 
         Args:
@@ -409,7 +409,7 @@ class UsageTracker:
 
         await cache_manager.set(day_key, daily_metrics, ttl=30 * 24 * 3600)  # 30 days
 
-    async def _load_persisted_metrics(self):
+    async def _load_persisted_metrics(self) -> None:
         """Load persisted metrics from cache on startup."""
         if not cache_manager.connected:
             return
@@ -494,7 +494,7 @@ class UsageTracker:
         Returns:
             Dictionary mapping provider/model to cost
         """
-        breakdown = defaultdict(float)
+        breakdown: defaultdict[str, float] = defaultdict(float)
 
         for call in self.api_calls:
             if group_by == "provider":
@@ -522,7 +522,9 @@ class UsageTracker:
             return []
 
         # Group calls by period
-        periods = defaultdict(lambda: {"requests": 0, "tokens": 0, "cost": 0.0, "avg_latency": 0.0})
+        periods: defaultdict[str, dict[str, float]] = defaultdict(
+            lambda: {"requests": 0, "tokens": 0, "cost": 0.0, "avg_latency": 0.0}
+        )
 
         for call in self.api_calls:
             if period == "minute":
@@ -547,7 +549,7 @@ class UsageTracker:
 
         return list(reversed(trend))
 
-    def clear_old_data(self, retention_hours: int | None = None):
+    def clear_old_data(self, retention_hours: int | None = None) -> None:
         """Clear data older than retention period.
 
         Args:

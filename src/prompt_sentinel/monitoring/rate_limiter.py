@@ -173,11 +173,11 @@ class RateLimiter:
         self.load_history: list = []
 
         # Background tasks (started in initialize)
-        self._cleanup_task = None
-        self._adjust_task = None
+        self._cleanup_task: asyncio.Task | None = None
+        self._adjust_task: asyncio.Task | None = None
         self._initialized = False
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize background tasks."""
         if self._initialized:
             return
@@ -360,7 +360,7 @@ class RateLimiter:
 
         return False
 
-    async def _cleanup_old_clients(self):
+    async def _cleanup_old_clients(self) -> None:
         """Remove inactive client buckets to save memory."""
         while True:
             await asyncio.sleep(300)  # Every 5 minutes
@@ -386,7 +386,7 @@ class RateLimiter:
             except Exception as e:
                 logger.error("Client cleanup error", error=str(e))
 
-    async def _adjust_rates(self):
+    async def _adjust_rates(self) -> None:
         """Adaptively adjust rate limits based on load."""
         while True:
             await asyncio.sleep(60)  # Every minute
@@ -455,7 +455,7 @@ class RateLimiter:
             },
         }
 
-    def reset_client(self, client_id: str):
+    def reset_client(self, client_id: str) -> None:
         """Reset rate limits for a specific client.
 
         Args:

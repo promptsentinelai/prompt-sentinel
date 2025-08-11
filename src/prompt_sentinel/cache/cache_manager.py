@@ -48,7 +48,7 @@ class CacheManager:
         client: Redis client instance (if connected)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize cache manager with optional Redis connection."""
         self.enabled = settings.redis_enabled
         self.client: redis.Redis | None = None
@@ -60,7 +60,7 @@ class CacheManager:
         if self.enabled:
             self._initialize_client()
 
-    def _initialize_client(self):
+    def _initialize_client(self) -> None:
         """Initialize Redis client with connection pooling."""
         try:
             # Create connection pool for better resource management
@@ -115,7 +115,7 @@ class CacheManager:
             self.connected = False
             return False
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """Gracefully disconnect from Redis."""
         if self.client and self.connected:
             try:
@@ -183,7 +183,7 @@ class CacheManager:
                             cached["_cache_stale"] = True
                         return cached
                 except Exception:
-                    pass
+                    logger.debug("Cache stale check failed, re-raising original error")
             raise
 
         # Try to cache the result, but don't fail if Redis is down

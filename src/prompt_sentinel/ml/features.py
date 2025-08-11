@@ -276,7 +276,7 @@ class FeatureExtractor:
 
     def _extract_char_ngrams(self, text: str) -> dict[str, int]:
         """Extract character n-grams."""
-        ngrams = Counter()
+        ngrams: Counter[str] = Counter()
         text_lower = text.lower()
 
         for n in range(self.ngram_range[0], self.ngram_range[1] + 1):
@@ -290,7 +290,7 @@ class FeatureExtractor:
 
     def _extract_word_ngrams(self, words: list[str]) -> dict[str, int]:
         """Extract word n-grams."""
-        ngrams = Counter()
+        ngrams: Counter[str] = Counter()
         words_lower = [w.lower() for w in words]
 
         for n in range(self.ngram_range[0], min(self.ngram_range[1] + 1, len(words) + 1)):

@@ -37,6 +37,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from prompt_sentinel import __version__
+from prompt_sentinel.api.auth.routes import router as auth_router
 from prompt_sentinel.api.experiments import experiment_router
 from prompt_sentinel.api_docs import (
     API_DESCRIPTION,
@@ -127,7 +128,8 @@ async def lifespan(app: FastAPI):
     Yields:
         Control back to FastAPI after startup tasks complete
     """
-    global detector, router, usage_tracker, budget_manager, rate_limiter, experiment_manager, pattern_manager, processor
+    global detector, router, usage_tracker, budget_manager, rate_limiter
+    global experiment_manager, pattern_manager, processor
 
     # Startup
     logger.info("Starting PromptSentinel", version=__version__)
@@ -278,8 +280,6 @@ app.add_middleware(
 )
 
 # Include authentication API routes (admin endpoints)
-from prompt_sentinel.api.auth.routes import router as auth_router
-
 app.include_router(auth_router, prefix="/api/v1")
 
 # Include experiment management API routes
@@ -341,6 +341,19 @@ async def log_requests(request: Request, call_next):
 
 
 # API Routes
+
+
+@app.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["System"],
+    summary="Health check",
+    description="Check service health and provider status",
+    include_in_schema=False,  # Hide from docs since it's a duplicate
+)
+async def health_check_legacy():
+    """Legacy health check endpoint for backward compatibility."""
+    return await health_check()
 
 
 @app.get(
@@ -541,9 +554,8 @@ async def detailed_health_check():
 
     # Check ML pattern discovery
     try:
-        from prompt_sentinel.ml.manager import PatternManager
-
-        # Note: This would need to be initialized at startup
+        # Note: Pattern manager would need to be initialized at startup
+        # from prompt_sentinel.ml.manager import PatternManager
         components["ml_patterns"] = {"status": "healthy", "enabled": True}
     except ImportError:
         components["ml_patterns"] = {
@@ -687,7 +699,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
         try:
             messages = request.to_messages()
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid role in message: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Invalid role in message: {str(e)}") from e
         check_format = request.config.get("check_format", False) if request.config else False
         use_routing = (
             request.config.get("use_intelligent_routing", False) if request.config else False
@@ -714,7 +726,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
             check_format = False
             use_routing = False
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}") from e
 
     # Use intelligent routing if enabled and router available
     if use_routing and router:
@@ -730,7 +742,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest):
         return response
     except Exception as e:
         logger.error("Detection failed", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}") from e
 
 
 # All detection functionality is now handled by the unified /api/v1/detect endpoint above
@@ -849,7 +861,7 @@ async def analyze(request: AnalysisRequest):
         )
     except Exception as e:
         logger.error("Analysis failed", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}") from e
 
 
 @app.post(
@@ -1260,7 +1272,7 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request):
     try:
         messages = request.to_messages()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid input format: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid input format: {str(e)}") from e
 
     # Validate input
     if len(messages) > 100:
@@ -1351,7 +1363,7 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request):
         return response
     except Exception as e:
         logger.error("Routed detection failed", error=str(e))
-        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}") from e
 
 
 @app.get(
@@ -1728,7 +1740,9 @@ async def get_rate_limit_status(client_id: str | None = None):
         from prompt_sentinel.monitoring.rate_limiter import Priority
 
         allowed, wait_time = await rate_limiter.check_rate_limit(
-            client_id=client_id, tokens=100, priority=Priority.NORMAL  # Check for typical request
+            client_id=client_id,
+            tokens=100,
+            priority=Priority.NORMAL,  # Check for typical request
         )
         client_status = {"allowed": allowed, "wait_time_seconds": wait_time}
 
@@ -1964,7 +1978,7 @@ async def benchmark_strategies(request: UnifiedDetectionRequest):
     try:
         messages = request.to_messages()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}") from e
 
     # Benchmark each strategy
     import time

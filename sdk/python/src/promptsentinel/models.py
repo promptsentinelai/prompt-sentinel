@@ -1,13 +1,15 @@
 """Data models for PromptSentinel SDK."""
 
-from enum import Enum
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from enum import Enum
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
 class Role(str, Enum):
     """Message role in conversation."""
+
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
@@ -15,6 +17,7 @@ class Role(str, Enum):
 
 class Verdict(str, Enum):
     """Detection verdict."""
+
     ALLOW = "allow"
     BLOCK = "block"
     FLAG = "flag"
@@ -24,6 +27,7 @@ class Verdict(str, Enum):
 
 class DetectionMode(str, Enum):
     """Detection sensitivity mode."""
+
     STRICT = "strict"
     MODERATE = "moderate"
     PERMISSIVE = "permissive"
@@ -31,117 +35,132 @@ class DetectionMode(str, Enum):
 
 class Message(BaseModel):
     """Conversation message."""
+
     role: Role
     content: str
 
 
 class DetectionReason(BaseModel):
     """Detailed reason for detection verdict."""
+
     category: str
     description: str
     confidence: float
     source: str
-    patterns_matched: List[str] = Field(default_factory=list)
+    patterns_matched: list[str] = Field(default_factory=list)
 
 
 class DetectionRequest(BaseModel):
     """Request for detection endpoint."""
-    messages: Optional[List[Message]] = None
-    prompt: Optional[str] = None
+
+    messages: list[Message] | None = None
+    prompt: str | None = None
     check_format: bool = True
     use_cache: bool = True
-    detection_mode: Optional[DetectionMode] = None
+    detection_mode: DetectionMode | None = None
 
 
 class DetectionResponse(BaseModel):
     """Response from detection endpoint."""
+
     verdict: Verdict
     confidence: float
-    reasons: List[DetectionReason] = Field(default_factory=list)
-    categories: List[str] = Field(default_factory=list)
-    modified_prompt: Optional[str] = None
+    reasons: list[DetectionReason] = Field(default_factory=list)
+    categories: list[str] = Field(default_factory=list)
+    modified_prompt: str | None = None
     pii_detected: bool = False
-    pii_types: List[str] = Field(default_factory=list)
-    format_issues: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
+    pii_types: list[str] = Field(default_factory=list)
+    format_issues: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
     processing_time_ms: float
     timestamp: datetime
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
     # V3 specific fields
-    routing_metadata: Optional[Dict[str, Any]] = None
+    routing_metadata: dict[str, Any] | None = None
 
 
 class BatchDetectionRequest(BaseModel):
     """Request for batch detection."""
-    prompts: List[Dict[str, str]]
+
+    prompts: list[dict[str, str]]
 
 
 class BatchDetectionResponse(BaseModel):
     """Response from batch detection."""
-    results: List[Dict[str, Any]]
+
+    results: list[dict[str, Any]]
     processed: int
     timestamp: datetime
 
 
 class UsageMetrics(BaseModel):
     """API usage metrics."""
+
     request_count: int
-    token_usage: Dict[str, int]
-    cost_breakdown: Dict[str, float]
-    provider_stats: Dict[str, Any]
+    token_usage: dict[str, int]
+    cost_breakdown: dict[str, float]
+    provider_stats: dict[str, Any]
     time_period: str
 
 
 class BudgetStatus(BaseModel):
     """Budget status information."""
-    current_usage: Dict[str, float]
-    budget_limits: Dict[str, float]
-    alerts: List[Dict[str, Any]]
-    projections: Dict[str, float]
+
+    current_usage: dict[str, float]
+    budget_limits: dict[str, float]
+    alerts: list[dict[str, Any]]
+    projections: dict[str, float]
 
 
 class ComplexityAnalysis(BaseModel):
     """Prompt complexity analysis."""
+
     complexity_level: str
     complexity_score: float
-    metrics: Dict[str, float]
-    risk_indicators: List[str]
-    recommendations: List[str]
+    metrics: dict[str, float]
+    risk_indicators: list[str]
+    recommendations: list[str]
 
 
 class HealthStatus(BaseModel):
     """Service health status."""
+
     status: str
     version: str
-    providers: Dict[str, Dict[str, Any]]
-    cache: Dict[str, Any]
-    detection_methods: List[str]
+    providers: dict[str, dict[str, Any]]
+    cache: dict[str, Any]
+    detection_methods: list[str]
 
 
 # Exceptions
 class PromptSentinelError(Exception):
     """Base exception for PromptSentinel SDK."""
+
     pass
 
 
 class AuthenticationError(PromptSentinelError):
     """Authentication failed."""
+
     pass
 
 
 class RateLimitError(PromptSentinelError):
     """Rate limit exceeded."""
-    def __init__(self, message: str, retry_after: Optional[int] = None):
+
+    def __init__(self, message: str, retry_after: int | None = None):
         super().__init__(message)
         self.retry_after = retry_after
 
 
 class ValidationError(PromptSentinelError):
     """Request validation failed."""
+
     pass
 
 
 class ServiceUnavailableError(PromptSentinelError):
     """Service temporarily unavailable."""
+
     pass

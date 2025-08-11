@@ -685,7 +685,6 @@ class TestSystemIntegration:
             patch("prompt_sentinel.detection.llm_classifier.OpenAIProvider"),
             patch("prompt_sentinel.detection.llm_classifier.GeminiProvider"),
         ):
-
             manager = LLMClassifierManager(config)
 
             # Make all providers fail

@@ -19,7 +19,8 @@ logger = structlog.get_logger()
 
 # Security scheme for API key
 api_key_header = APIKeyHeader(
-    name="X-API-Key", auto_error=False  # Don't auto-error, handle in dependency
+    name="X-API-Key",
+    auto_error=False,  # Don't auto-error, handle in dependency
 )
 
 

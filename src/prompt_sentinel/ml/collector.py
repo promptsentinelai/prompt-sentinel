@@ -362,7 +362,9 @@ class PatternCollector:
 
             # Save to cache with TTL
             await cache_manager.set(
-                "ml:pattern_events", json.dumps(events_data), ttl=86400 * 7  # Keep for 7 days
+                "ml:pattern_events",
+                json.dumps(events_data),
+                ttl=86400 * 7,  # Keep for 7 days
             )
 
             # Save statistics

@@ -428,7 +428,8 @@ class TestBackwardCompatibility:
         """Test gradual rollout of migrations."""
         # Configure gradual rollout
         await compatibility_manager.configure_rollout(
-            feature="new_detection_logic", percentage=20  # 20% of traffic
+            feature="new_detection_logic",
+            percentage=20,  # 20% of traffic
         )
 
         # Test traffic routing

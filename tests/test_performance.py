@@ -230,7 +230,6 @@ class TestLLMClassifierPerformance:
             ),
             patch("prompt_sentinel.detection.llm_classifier.GeminiProvider"),
         ):
-
             manager = LLMClassifierManager(config)
 
             messages = [Message(role=Role.USER, content="test")]
@@ -283,7 +282,7 @@ class TestLLMClassifierPerformance:
 
             print(f"\nFirst call: {first_call:.2f}ms")
             print(f"Cached call: {cached_call:.2f}ms")
-            print(f"Speed improvement: {first_call/cached_call:.1f}x")
+            print(f"Speed improvement: {first_call / cached_call:.1f}x")
 
             # Cached call should be faster (at least 2x)
             # Note: In tests without real LLM calls, the difference may be smaller

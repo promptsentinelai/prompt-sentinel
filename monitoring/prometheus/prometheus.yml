@@ -27,7 +27,7 @@ scrape_configs:
         labels:
           service: 'promptsentinel'
           component: 'api'
-    
+
     # Enable metric relabeling
     metric_relabel_configs:
       # Drop high-cardinality histogram buckets if needed
@@ -35,7 +35,7 @@ scrape_configs:
         regex: '.*_bucket'
         target_label: __tmp_bucket
         replacement: '${1}'
-      
+
       # Keep important metrics
       - source_labels: [__name__]
         regex: 'promptsentinel_.*|process_.*|python_.*'

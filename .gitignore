@@ -85,3 +85,6 @@ CLAUDE.md
 *-backup
 .env.backup
 Dockerfile.debian-backup
+
+# Local Vault integration (contains sensitive scripts)
+.local/

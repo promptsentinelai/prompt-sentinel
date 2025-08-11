@@ -38,6 +38,66 @@ def get_severity_counts(vulnerabilities):
     return counts
 
 
+def format_sbom_section(artifacts_dir):
+    """Format SBOM section for the report."""
+    sbom_dir = artifacts_dir / "sbom"
+
+    if not sbom_dir.exists():
+        return "No SBOMs generated yet. Run scan with SNYK_TOKEN to generate SBOMs."
+
+    # Check for SBOM summary
+    summary_file = sbom_dir / "sbom-summary.json"
+    if summary_file.exists():
+        try:
+            with open(summary_file) as f:
+                summary = json.load(f)
+
+            lines = []
+            lines.append(f"Generated at: {summary.get('generated_at', 'Unknown')}")
+            lines.append("")
+
+            if summary.get("sboms"):
+                lines.append("### Generated SBOMs")
+                lines.append("")
+                lines.append("| Component | Format | Components/Packages | File |")
+                lines.append("|-----------|--------|-------------------|------|")
+
+                for sbom in summary["sboms"]:
+                    name = sbom["name"].replace("-sbom", "").replace("_", " ").title()
+                    format_type = sbom["format"]
+                    count = sbom.get("component_count", sbom.get("package_count", "N/A"))
+                    filename = sbom["file"]
+                    lines.append(f"| {name} | {format_type} | {count} | `{filename}` |")
+
+                lines.append("")
+                lines.append("### SBOM Formats")
+                lines.append(
+                    "- **SPDX**: Software Package Data Exchange - ISO/IEC 5962:2021 standard"
+                )
+                lines.append(
+                    "- **CycloneDX**: OWASP standard for software supply chain component analysis"
+                )
+            else:
+                lines.append("No SBOMs successfully generated.")
+
+            return "\n".join(lines)
+        except Exception:
+            pass
+
+    # Fallback: list any SBOM files found
+    sbom_files = list(sbom_dir.glob("*.json"))
+    if sbom_files:
+        lines = []
+        lines.append("### Available SBOM Files")
+        lines.append("")
+        for sbom_file in sbom_files:
+            if not sbom_file.name.endswith("-summary.json"):
+                lines.append(f"- `{sbom_file.name}`")
+        return "\n".join(lines)
+
+    return "No SBOMs generated. Ensure SNYK_TOKEN is set for SBOM generation."
+
+
 def main():
     """Generate the security scan report."""
     # Paths
@@ -225,12 +285,17 @@ snyk test --all-projects
 snyk container test promptsentinel-prompt-sentinel:latest
 ```
 
+## Software Bill of Materials (SBOM)
+
+{format_sbom_section(artifacts_dir)}
+
 ## Artifacts Location
 
 All detailed scan reports are stored in:
 - `security/artifacts/snyk/` - Snyk scan results
 - `security/artifacts/npm/` - NPM audit results
 - `security/artifacts/go/` - Go vulnerability results
+- `security/artifacts/sbom/` - Software Bill of Materials (SBOM) files
 
 ---
 

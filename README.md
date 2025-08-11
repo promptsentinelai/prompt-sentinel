@@ -4,7 +4,7 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/promptsentinel/prompt-sentinel)](https://hub.docker.com/r/promptsentinel/prompt-sentinel)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116+-green.svg)](https://fastapi.tiangolo.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: ELv2](https://img.shields.io/badge/License-ELv2-purple.svg)](https://github.com/rhoska/prompt-sentinel/blob/main/LICENSE)
 
 A production-ready defensive security microservice for detecting and mitigating prompt injection attacks, PII exposure, and other security threats in LLM-based systems. PromptSentinel provides real-time protection using multi-layered detection strategies with sub-100ms response times.
 
@@ -218,7 +218,7 @@ curl "http://localhost:8080/api/v1/metrics/complexity"
 **Configuration:** Budget and rate limits are now configurable via environment variables:
 ```bash
 # Budget Configuration
-BUDGET_HOURLY_LIMIT=10.0        # Maximum spend per hour in USD
+BUDGET_HOURLY_LIMIT=10.0         # Maximum spend per hour in USD
 BUDGET_DAILY_LIMIT=100.0         # Maximum spend per day in USD
 BUDGET_MONTHLY_LIMIT=1000.0      # Maximum spend per month in USD
 BUDGET_BLOCK_ON_EXCEEDED=true    # Block requests when budget exceeded
@@ -453,13 +453,13 @@ Detection mode affects confidence thresholds for verdicts:
 
 PromptSentinel supports flexible authentication to fit different deployment scenarios:
 
-### Authentication Modes
+### Recommended Authentication Modes
 
 | Mode | Use Case | Description |
 |------|----------|-------------|
 | `none` | Sidecar/Internal | No authentication required - for trusted environments |
 | `optional` | Development/Mixed | API keys improve rate limits but aren't required |
-| `required` | SaaS/Public | API keys mandatory for all requests |
+| `required` | Public | API keys mandatory for all requests |
 
 ### Deployment Scenarios
 
@@ -485,7 +485,7 @@ AUTH_BYPASS_NETWORKS=10.0.0.0/8,172.16.0.0/12
 AUTH_BYPASS_HEADERS=X-Internal-Service:true
 ```
 
-#### 3. Public SaaS (Required Auth)
+#### 3. Public Deployment (Required Auth)
 ```bash
 AUTH_MODE=required
 AUTH_ENFORCE_HTTPS=true
@@ -527,12 +527,20 @@ curl -X POST http://localhost:8080/api/v1/detect \
 
 ### Rate Limiting
 
-| Client Type | Requests/Min | Tokens/Min |
-|-------------|--------------|------------|
-| Anonymous | 10 | 1,000 |
-| Free Tier | 60 | 10,000 |
-| Pro Tier | 300 | 50,000 |
-| Enterprise | Unlimited | Unlimited |
+PromptSentinel includes configurable rate limiting to prevent abuse and manage resource usage. These limits are fully configurable based on your deployment needs:
+
+```bash
+# Configure rate limits via environment variables
+RATE_LIMIT_REQUESTS_PER_MINUTE=60           # Global requests per minute
+RATE_LIMIT_TOKENS_PER_MINUTE=10000          # Global tokens per minute  
+RATE_LIMIT_CLIENT_REQUESTS_PER_MINUTE=20    # Per-client requests per minute
+
+# For authenticated vs unauthenticated clients (when AUTH_MODE=optional)
+AUTH_UNAUTHENTICATED_RPM=10                 # Requests per minute for anonymous clients
+AUTH_UNAUTHENTICATED_TPM=1000               # Tokens per minute for anonymous clients
+```
+
+Rate limits are enforced using a token bucket algorithm and can be adjusted based on your infrastructure capacity and security requirements.
 
 ## ⚙️ Configuration
 
@@ -1140,7 +1148,24 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Elastic License 2.0 (ELv2) - see the [LICENSE](LICENSE) file for details.
+
+### What this means for you:
+
+✅ **You CAN:**
+- Use PromptSentinel commercially in your products and services
+- Modify and distribute the code
+- Integrate it into your applications (SaaS, on-premise, etc.)
+- Use it internally in your organization
+- Create plugins and extensions
+
+❌ **You CANNOT:**
+- Offer PromptSentinel as a hosted/managed service to third parties
+- Remove or circumvent license key functionality
+- Remove copyright and license notices
+
+### Why ELv2?
+We chose the Elastic License 2.0 to ensure PromptSentinel remains free for companies to use while preventing cloud providers from offering it as a competing service without contributing back to the project.
 
 ## 🙏 Acknowledgments
 

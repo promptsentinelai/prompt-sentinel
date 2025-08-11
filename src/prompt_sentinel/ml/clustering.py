@@ -1,3 +1,8 @@
+# Copyright 2025 PromptSentinel
+# Licensed under the Elastic License 2.0; you may not use this file except
+# in compliance with the Elastic License 2.0. You may obtain a copy of the
+# License at https://www.elastic.co/licensing/elastic-license
+
 """Clustering engine for pattern discovery.
 
 Implements various clustering algorithms to discover groups of similar attacks.

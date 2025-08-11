@@ -74,3 +74,14 @@ CLAUDE.md
 .terraform.lock.hcl
 *.tfvars
 !terraform.tfvars.example
+
+# Security scanning
+# Keep artifacts as proof of scanning - they contain no sensitive data
+# security/artifacts/
+*.snyk
+
+# Backup files
+*.backup
+*-backup
+.env.backup
+Dockerfile.debian-backup

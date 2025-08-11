@@ -98,6 +98,22 @@ class HeuristicDetector:
             (r"execute:?", 0.8, "Command execution attempt"),
         ]
 
+        # SQL/Code injection patterns
+        self.sql_code_patterns = [
+            (
+                r"'.*?(DROP|DELETE|INSERT|UPDATE|ALTER|EXEC|EXECUTE).*?(TABLE|FROM|INTO)",
+                0.9,
+                "SQL injection attempt",
+            ),
+            (r";\s*(DROP|DELETE|INSERT|UPDATE|ALTER)", 0.85, "SQL command injection"),
+            (r"--\s*$", 0.7, "SQL comment injection"),
+            (r"OR\s+1\s*=\s*1", 0.8, "SQL logic manipulation"),
+            (r"UNION\s+(ALL\s+)?SELECT", 0.85, "SQL UNION injection"),
+            (r"<script[^>]*>.*?</script>", 0.9, "Script tag injection"),
+            (r"javascript:", 0.8, "JavaScript protocol injection"),
+            (r"on\w+\s*=", 0.7, "Event handler injection"),
+        ]
+
         # Jailbreak patterns
         self.jailbreak_patterns = [
             (r"dan (mode|prompt)", 0.95, "DAN jailbreak attempt"),
@@ -114,7 +130,7 @@ class HeuristicDetector:
 
         # Encoding attack patterns (case-sensitive, checked separately)
         self.encoding_patterns = [
-            (r"[A-Za-z0-9+/]{50,}={0,2}", 0.7, "Potential base64 encoding"),
+            (r"[A-Za-z0-9+/]{20,}={0,2}", 0.7, "Potential base64 encoding"),
             (r"\\x[0-9a-fA-F]{2}", 0.8, "Hex encoding detected"),
             (r"\\u[0-9a-fA-F]{4}", 0.8, "Unicode encoding detected"),
             (r"%[0-9a-fA-F]{2}", 0.6, "URL encoding detected"),
@@ -132,7 +148,7 @@ class HeuristicDetector:
         # Context switching patterns
         self.context_switching_patterns = [
             (
-                r"###.*?(SYSTEM|USER|ASSISTANT|OVERRIDE|ADMIN).*?###",
+                r"###.*?(SYSTEM|USER|ASSISTANT|OVERRIDE|ADMIN|system|user|assistant|override|admin)",
                 0.9,
                 "Role delimiter injection",
             ),
@@ -221,6 +237,19 @@ class HeuristicDetector:
         # Check direct injection patterns
         for pattern, confidence, description in self.direct_injection_patterns:
             if re.search(pattern, content_lower):
+                reasons.append(
+                    DetectionReason(
+                        category=DetectionCategory.DIRECT_INJECTION,
+                        description=description,
+                        confidence=confidence,
+                        source="heuristic",
+                        patterns_matched=[pattern],
+                    )
+                )
+
+        # Check SQL/Code injection patterns
+        for pattern, confidence, description in self.sql_code_patterns:
+            if re.search(pattern, content, re.IGNORECASE):
                 reasons.append(
                     DetectionReason(
                         category=DetectionCategory.DIRECT_INJECTION,
@@ -330,7 +359,7 @@ class HeuristicDetector:
         try:
             # Check for base64 pattern
             if r"[A-Za-z0-9+/]" in pattern:
-                matches = re.findall(r"[A-Za-z0-9+/]{50,}={0,2}", content)
+                matches = re.findall(r"[A-Za-z0-9+/]{20,}={0,2}", content)
                 for match in matches:
                     try:
                         decoded = base64.b64decode(match)

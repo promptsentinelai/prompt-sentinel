@@ -435,6 +435,36 @@ restart: stop run-redis ## Restart services
 	@echo "$(GREEN)✓ Services restarted$(NC)"
 
 # ============================================================================
+# Security Scanning
+# ============================================================================
+
+.PHONY: security-scan
+security-scan: ## Run complete security vulnerability scan
+	@echo "$(GREEN)Running security scan...$(NC)"
+	@cd security/scripts && ./run_security_scan.sh
+
+.PHONY: security-report
+security-report: ## Generate security scan report from existing artifacts
+	@echo "$(GREEN)Generating security report...$(NC)"
+	@python3 security/scripts/generate_report.py
+	@echo "$(GREEN)Report generated: security/SECURITY_SCAN_REPORT.md$(NC)"
+
+.PHONY: security-clean
+security-clean: ## Clean security scan artifacts
+	@echo "$(YELLOW)Cleaning security artifacts...$(NC)"
+	@rm -rf security/artifacts/snyk/*.json
+	@rm -rf security/artifacts/npm/*.json
+	@rm -rf security/artifacts/go/*.json
+	@echo "$(GREEN)Security artifacts cleaned$(NC)"
+
+.PHONY: security-quick
+security-quick: ## Quick security scan (Python deps only)
+	@echo "$(GREEN)Running quick security scan...$(NC)"
+	@snyk test --skip-unresolved --json > security/artifacts/snyk/python-report.json 2>/dev/null || true
+	@echo "Python vulnerabilities: $$(jq '.vulnerabilities | length' security/artifacts/snyk/python-report.json 2>/dev/null || echo '?')"
+	@python3 security/scripts/generate_report.py
+
+# ============================================================================
 # CI/CD
 # ============================================================================
 

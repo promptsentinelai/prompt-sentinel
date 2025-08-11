@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "Could not detect package manager for file: temp_requirements.txt",
+  "path": "/Users/rhoska/Code/Personal/PromptSentinel/sdk/python"
+}

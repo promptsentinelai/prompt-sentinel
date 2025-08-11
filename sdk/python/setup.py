@@ -13,7 +13,7 @@ setup(
     description="Python SDK for PromptSentinel - LLM Security Service",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/rhoska/prompt-sentinel",
+    url="https://github.com/promptsentinelai/prompt-sentinel",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[

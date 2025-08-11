@@ -235,7 +235,7 @@ def main():
         report += f"- **Status:** Scanned\n- **Vulnerabilities:** {get_vulnerability_count(reports['sdk_go'])}\n"
 
     report += (
-        """- **Module:** github.com/rhoska/prompt-sentinel/sdk/go
+        """- **Module:** github.com/promptsentinelai/prompt-sentinel/sdk/go
 - **Artifact:** `artifacts/snyk/sdk-go-report.json`
 
 ## Security Improvements

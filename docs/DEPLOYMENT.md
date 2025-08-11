@@ -464,7 +464,7 @@ scrape_configs:
 Import dashboard ID: `PS-001` from Grafana.com or use our template:
 
 ```bash
-curl -O https://raw.githubusercontent.com/rhoska/prompt-sentinel/main/deployment/grafana-dashboard.json
+curl -O https://raw.githubusercontent.com/promptsentinelai/prompt-sentinel/main/deployment/grafana-dashboard.json
 ```
 
 ## 🔒 Security Best Practices
@@ -613,7 +613,7 @@ Before deploying to production:
 
 ## 🆘 Support
 
-- GitHub Issues: https://github.com/rhoska/prompt-sentinel/issues
+- GitHub Issues: https://github.com/promptsentinelai/prompt-sentinel/issues
 - Documentation: https://docs.promptsentinel.ai
 - Docker Hub: https://hub.docker.com/r/promptsentinel/prompt-sentinel
 

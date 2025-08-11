@@ -51,7 +51,7 @@ Comprehensive security scanning completed with **zero vulnerabilities** across a
 
 #### Go SDK (`sdk/go/`)
 - **Status:** Not yet scanned
-- **Module:** github.com/rhoska/prompt-sentinel/sdk/go
+- **Module:** github.com/promptsentinelai/prompt-sentinel/sdk/go
 - **Artifact:** `artifacts/snyk/sdk-go-report.json`
 
 ## Security Improvements

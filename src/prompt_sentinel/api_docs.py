@@ -234,7 +234,7 @@ def custom_openapi_schema(app: Any) -> dict[str, Any]:
     # Add external documentation
     openapi_schema["externalDocs"] = {
         "description": "PromptSentinel GitHub Repository",
-        "url": "https://github.com/rhoska/prompt-sentinel",
+        "url": "https://github.com/promptsentinelai/prompt-sentinel",
     }
 
     # Cache the schema

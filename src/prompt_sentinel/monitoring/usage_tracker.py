@@ -250,6 +250,36 @@ class UsageTracker:
         self.metrics.cache_hits += 1
         await self._update_metrics(api_call)
 
+    async def track_request(
+        self,
+        endpoint: str,
+        latency_ms: float,
+        success: bool = True,
+        metadata: dict | None = None,
+    ) -> None:
+        """Track a generic request (heuristic detection, etc).
+
+        Args:
+            endpoint: Endpoint that was called
+            latency_ms: Request latency in milliseconds
+            success: Whether the request succeeded
+            metadata: Additional metadata
+        """
+        api_call = ApiCall(
+            provider=Provider.HEURISTIC,
+            model="heuristic",
+            timestamp=datetime.now(),
+            tokens=TokenUsage(),
+            latency_ms=latency_ms,
+            cost_usd=0.0,
+            success=success,
+            endpoint=endpoint,
+            metadata=metadata or {},
+        )
+
+        self.api_calls.append(api_call)
+        await self._update_metrics(api_call)
+
     def _calculate_cost(self, provider: Provider, model: str, tokens: TokenUsage) -> float:
         """Calculate cost for API call.
 

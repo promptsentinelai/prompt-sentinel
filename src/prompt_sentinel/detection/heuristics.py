@@ -112,6 +112,8 @@ class HeuristicDetector:
             (r"<script[^>]*>.*?</script>", 0.9, "Script tag injection"),
             (r"javascript:", 0.8, "JavaScript protocol injection"),
             (r"on\w+\s*=", 0.7, "Event handler injection"),
+            (r"\.\.[\\/]", 0.85, "Path traversal attempt"),  # Detects ../ and ..\
+            (r"/etc/(passwd|shadow|hosts)", 0.9, "System file access attempt"),
         ]
 
         # Jailbreak patterns
@@ -216,9 +218,9 @@ class HeuristicDetector:
         # Determine verdict based on confidence
         verdict = self._determine_verdict(adjusted_confidence, all_reasons)
 
-        # If no threats detected, return high confidence for benign
+        # If no threats detected, return 0.0 confidence (no threats)
         if not all_reasons:
-            adjusted_confidence = 0.95  # High confidence it's safe
+            adjusted_confidence = 0.0  # No threats detected
 
         return verdict, all_reasons, adjusted_confidence
 

@@ -149,6 +149,7 @@ class Settings(BaseSettings):
     log_format: Literal["json", "text"] = Field(default="json")
     enable_metrics: bool = Field(default=True)
     enable_tracing: bool = Field(default=False)
+    otel_exporter_otlp_endpoint: str = Field(default="http://localhost:4318")
 
     # Corpus Management
     corpus_auto_update: bool = Field(default=False)

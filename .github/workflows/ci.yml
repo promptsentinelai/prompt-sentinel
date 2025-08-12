@@ -382,7 +382,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(grep "__version__" src/prompt_sentinel/__init__.py | cut -d'"' -f2)
+          VERSION=$(grep "^__version__" src/prompt_sentinel/__init__.py | cut -d'"' -f2)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Release

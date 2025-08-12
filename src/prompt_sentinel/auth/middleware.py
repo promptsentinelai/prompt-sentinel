@@ -75,6 +75,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             )
             return await call_next(request)
 
+        client = None  # Initialize client variable
         try:
             # Determine client based on auth mode and request
             client = await self._get_client(request)
@@ -103,7 +104,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
 
             # Add client ID to response headers for tracking
-            if client.client_id != "system":
+            # Check if client exists and has the expected attributes
+            if client and hasattr(client, "client_id") and client.client_id != "system":
                 response.headers["X-Client-ID"] = client.client_id
 
             return response

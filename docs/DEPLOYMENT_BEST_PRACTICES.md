@@ -38,7 +38,7 @@ spec:
           value: "http://localhost:8080"
         
       - name: promptsentinel
-        image: promptsentinel/promptsentinel:latest
+        image: promptsentinelai/prompt-sentinel:latest
         ports:
         - containerPort: 8080
         env:
@@ -95,7 +95,7 @@ spec:
     spec:
       containers:
       - name: promptsentinel
-        image: promptsentinel/promptsentinel:latest
+        image: promptsentinelai/prompt-sentinel:latest
         env:
         - name: AUTHENTICATION_MODE
           value: "required"
@@ -188,7 +188,7 @@ version: '3.8'
 
 services:
   promptsentinel:
-    image: promptsentinel/promptsentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     ports:
       - "8080:8080"
     environment:
@@ -210,7 +210,7 @@ version: '3.8'
 
 services:
   promptsentinel:
-    image: promptsentinel/promptsentinel:staging
+    image: promptsentinelai/prompt-sentinel:staging
     ports:
       - "8080:8080"
     environment:
@@ -236,7 +236,7 @@ version: '3.8'
 
 services:
   promptsentinel:
-    image: promptsentinel/promptsentinel:v1.0.0
+    image: promptsentinelai/prompt-sentinel:v1.0.0
     deploy:
       replicas: 3
       restart_policy:
@@ -324,13 +324,13 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 
 ```bash
 # Scan for vulnerabilities
-docker scan promptsentinel/promptsentinel:latest
+docker scan promptsentinelai/prompt-sentinel:latest
 
 # Use Trivy for comprehensive scanning
-trivy image promptsentinel/promptsentinel:latest
+trivy image promptsentinelai/prompt-sentinel:latest
 
 # Snyk container scanning
-snyk container test promptsentinel/promptsentinel:latest
+snyk container test promptsentinelai/prompt-sentinel:latest
 ```
 
 ## Kubernetes Deployment
@@ -398,7 +398,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: promptsentinel
-        image: promptsentinel/promptsentinel:v1.0.0
+        image: promptsentinelai/prompt-sentinel:v1.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -499,7 +499,7 @@ spec:
 replicaCount: 3
 
 image:
-  repository: promptsentinel/promptsentinel
+  repository: promptsentinelai/prompt-sentinel
   tag: v1.0.0
   pullPolicy: IfNotPresent
 
@@ -564,7 +564,7 @@ monitoring:
   "containerDefinitions": [
     {
       "name": "promptsentinel",
-      "image": "promptsentinel/promptsentinel:latest",
+      "image": "promptsentinelai/prompt-sentinel:latest",
       "portMappings": [
         {
           "containerPort": 8080,
@@ -645,7 +645,7 @@ spec:
       {
         "name": "promptsentinel",
         "properties": {
-          "image": "promptsentinel/promptsentinel:latest",
+          "image": "promptsentinelai/prompt-sentinel:latest",
           "ports": [
             {
               "port": 8080,

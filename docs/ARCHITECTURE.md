@@ -22,7 +22,7 @@ PromptSentinel follows a microservice architecture with clear separation of conc
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         Clients                             │
-│  (Web Apps, Mobile Apps, APIs, SDKs)                       │
+│  (Web Apps, Mobile Apps, APIs, SDKs)                        │
 └─────────────┬───────────────────────────────────────────────┘
               │
               ▼
@@ -34,20 +34,20 @@ PromptSentinel follows a microservice architecture with clear separation of conc
               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                  PromptSentinel Core                        │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                  FastAPI Application                 │   │
-│  │  • Request Validation  • Response Formatting         │   │
-│  └─────────────┬───────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                  FastAPI Application                │    │
+│  │  • Request Validation  • Response Formatting        │    │
+│  └─────────────┬───────────────────────────────────────┘    │
 │                │                                            │
-│  ┌─────────────▼───────────────────────────────────────┐   │
-│  │              Detection Pipeline                      │   │
-│  │  • Heuristic Engine  • LLM Classifier  • PII Scanner│   │
-│  └─────────────┬───────────────────────────────────────┘   │
+│  ┌─────────────▼───────────────────────────────────────┐    │
+│  │              Detection Pipeline                     │    │
+│  │  • Heuristic Engine  • LLM Classifier  • PII Scanner│    │
+│  └─────────────┬───────────────────────────────────────┘    │
 │                │                                            │
-│  ┌─────────────▼───────────────────────────────────────┐   │
-│  │                 Provider Layer                       │   │
-│  │  • Anthropic  • OpenAI  • Gemini  • Failover Logic  │   │
-│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────▼───────────────────────────────────────┐    │
+│  │                 Provider Layer                      │    │
+│  │  • Anthropic  • OpenAI  • Gemini  • Failover Logic  │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
               │
               ▼

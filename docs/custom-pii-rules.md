@@ -49,14 +49,14 @@ custom_pii_rules:
     severity: "high"                 # low, medium, high, critical
     patterns:
       - regex: "EMP[0-9]{6}"
-        confidence: 0.95              # 0.0 to 1.0
+        confidence: 0.95             # 0.0 to 1.0
         description: "Standard employee ID format"
       - regex: "E[0-9]{8}"
         confidence: 0.85
         description: "Legacy employee ID format"
     redaction:
-      mask_format: "EMP-****"         # Custom masking pattern
-      hash_prefix: "EMP_"             # Prefix for hash redaction
+      mask_format: "EMP-****"        # Custom masking pattern
+      hash_prefix: "EMP_"            # Prefix for hash redaction
 
   - name: "internal_api_key"
     description: "Internal API keys"
@@ -420,6 +420,6 @@ Example detection response:
 
 For questions or issues with custom PII rules:
 
-1. Check the [documentation](https://github.com/rhoska/PromptSentinel/docs)
-2. Review [example configurations](https://github.com/rhoska/PromptSentinel/examples)
-3. Submit issues to the [GitHub repository](https://github.com/rhoska/PromptSentinel/issues)
+1. Check the [documentation](https://github.com/promptsentinelai/prompt-sentinel/docs)
+2. Review [example configurations](https://github.com/promptsentinelai/prompt-sentinel/examples)
+3. Submit issues to the [GitHub repository](https://github.com/promptsentinelai/prompt-sentinel/issues)

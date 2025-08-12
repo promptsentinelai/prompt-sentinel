@@ -941,7 +941,7 @@ services:
     restart: unless-stopped
     
   promptsentinel:
-    image: promptsentinel/promptsentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     ports:
       - "8080:8080"
     environment:
@@ -1186,7 +1186,7 @@ process.on('SIGTERM', () => {
 
 ## Additional Resources
 
-- [PromptSentinel Documentation](https://github.com/promptsentinel/promptsentinel)
+- [PromptSentinel Documentation](https://github.com/promptsentinelai/prompt-sentinel)
 - [Express.js Documentation](https://expressjs.com/)
 - [API Examples](../API_EXAMPLES.md)
 - [Security Best Practices](../../README.md#security-best-practices)

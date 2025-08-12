@@ -648,7 +648,7 @@ services:
       - redis
     
   promptsentinel:
-    image: promptsentinel/promptsentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     ports:
       - "8080:8080"
     environment:
@@ -775,7 +775,7 @@ if __name__ == "__main__":
 
 ## Additional Resources
 
-- [PromptSentinel Documentation](https://github.com/promptsentinel/promptsentinel)
+- [PromptSentinel Documentation](https://github.com/promptsentinelai/prompt-sentinel)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [API Examples](../API_EXAMPLES.md)
 - [Security Best Practices](../../README.md#security-best-practices)

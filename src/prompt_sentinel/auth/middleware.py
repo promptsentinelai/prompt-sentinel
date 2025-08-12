@@ -81,6 +81,15 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             client = await self._get_client(request)
 
             # Store client in request state
+            # Ensure client is a Client object, not a dict (defensive against bad mocks)
+            if not isinstance(client, Client):
+                logger.error(
+                    "Invalid client object type",
+                    client_type=type(client).__name__,
+                    path=request.url.path,
+                )
+                raise TypeError(f"Expected Client object, got {type(client).__name__}")
+
             request.state.client = client
             request.state.client_id = client.client_id
             request.state.auth_method = client.auth_method

@@ -74,3 +74,6 @@ CLAUDE.md
 .terraform.lock.hcl
 *.tfvars
 !terraform.tfvars.example
+# CI/Test artifacts
+coverage.xml
+tests/experiments.db

@@ -72,7 +72,7 @@ PromptSentinel is now ready for production use! This release represents months o
 ### 🔒 Security
 
 - **Zero Vulnerabilities**: Clean security scan across all components
-- **SBOM Generation**: Software Bill of Materials for compliance
+- **SBOM Generation**: Planned (currently requires Snyk Enterprise plan)
 - **Secret Management**: Multiple secure options documented
 - **License**: Elastic License 2.0 for commercial protection
 

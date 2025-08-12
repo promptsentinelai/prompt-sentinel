@@ -203,129 +203,13 @@ else
     echo '{"skipped": true, "reason": "SDK not found"}' > "$ARTIFACTS_DIR/snyk/sdk-go-report.json"
 fi
 
-echo -e "${YELLOW}[6/6] Generating Software Bill of Materials (SBOM)...${NC}"
-cd "$PROJECT_ROOT"
+echo -e "${YELLOW}[6/6] SBOM Generation - SKIPPED${NC}"
+echo -e "${YELLOW}Note: Snyk SBOM generation requires an Enterprise plan.${NC}"
+echo -e "${YELLOW}TODO: Implement SBOM generation using open-source tools (cyclonedx-py or syft)${NC}"
 
-# Create SBOM directory
+# Create placeholder for future SBOM implementation
 mkdir -p "$ARTIFACTS_DIR/sbom"
-
-# Generate SBOM for Python project
-echo "Generating SBOM for Python dependencies..."
-if [ -n "${SNYK_TOKEN}" ] && [ -n "${SNYK_ORG_ID}" ]; then
-    # Generate SBOM in SPDX format with org ID
-    snyk sbom --org="${SNYK_ORG_ID}" --format=spdx2.3+json --file=requirements.txt > "$ARTIFACTS_DIR/sbom/python-sbom.spdx.json" 2>/dev/null || {
-        echo -e "${YELLOW}Warning: Could not generate SPDX SBOM, trying CycloneDX format...${NC}"
-        snyk sbom --org="${SNYK_ORG_ID}" --format=cyclonedx1.4+json --file=requirements.txt > "$ARTIFACTS_DIR/sbom/python-sbom.cdx.json" 2>/dev/null || {
-            echo -e "${YELLOW}Warning: SBOM generation failed${NC}"
-            echo '{"error": "SBOM generation failed"}' > "$ARTIFACTS_DIR/sbom/python-sbom.json"
-        }
-    }
-elif [ -n "${SNYK_TOKEN}" ]; then
-    # Try without org ID (may fail)
-    snyk sbom --format=cyclonedx1.4+json --file=requirements.txt > "$ARTIFACTS_DIR/sbom/python-sbom.cdx.json" 2>/dev/null || {
-        echo -e "${YELLOW}Warning: SBOM generation requires SNYK_ORG_ID${NC}"
-        echo '{"error": "Org ID required"}' > "$ARTIFACTS_DIR/sbom/python-sbom.json"
-    }
-else
-    echo -e "${YELLOW}Warning: SBOM generation requires SNYK_TOKEN and SNYK_ORG_ID${NC}"
-    echo '{"error": "Authentication required"}' > "$ARTIFACTS_DIR/sbom/python-sbom.json"
-fi
-
-# Generate SBOM for Docker container if image exists
-if docker images | grep -q "promptsentinel-prompt-sentinel"; then
-    echo "Generating SBOM for Docker container..."
-    if [ -n "${SNYK_ORG_ID}" ]; then
-        snyk sbom --org="${SNYK_ORG_ID}" --format=cyclonedx1.4+json --docker promptsentinel-prompt-sentinel:latest > "$ARTIFACTS_DIR/sbom/container-sbom.cdx.json" 2>/dev/null || {
-            echo -e "${YELLOW}Warning: Could not generate container SBOM${NC}"
-            echo '{"error": "Container SBOM generation failed"}' > "$ARTIFACTS_DIR/sbom/container-sbom.json"
-        }
-    else
-        echo -e "${YELLOW}Skipping container SBOM (requires SNYK_ORG_ID)${NC}"
-        echo '{"error": "Org ID required"}' > "$ARTIFACTS_DIR/sbom/container-sbom.json"
-    fi
-fi
-
-# Generate SBOM for JavaScript SDK if exists
-if [ -d "sdk/javascript" ] && [ -f "sdk/javascript/package.json" ]; then
-    echo "Generating SBOM for JavaScript SDK..."
-    cd sdk/javascript
-    if [ -n "${SNYK_ORG_ID}" ]; then
-        snyk sbom --org="${SNYK_ORG_ID}" --format=cyclonedx1.4+json > "$ARTIFACTS_DIR/sbom/sdk-js-sbom.cdx.json" 2>/dev/null || {
-            echo -e "${YELLOW}Warning: Could not generate JavaScript SDK SBOM${NC}"
-            echo '{"error": "JS SDK SBOM generation failed"}' > "$ARTIFACTS_DIR/sbom/sdk-js-sbom.json"
-        }
-    else
-        echo '{"error": "Org ID required"}' > "$ARTIFACTS_DIR/sbom/sdk-js-sbom.json"
-    fi
-    cd "$PROJECT_ROOT"
-fi
-
-# Generate SBOM for Go SDK if exists
-if [ -d "sdk/go" ] && [ -f "sdk/go/go.mod" ]; then
-    echo "Generating SBOM for Go SDK..."
-    cd sdk/go
-    if [ -n "${SNYK_ORG_ID}" ]; then
-        snyk sbom --org="${SNYK_ORG_ID}" --format=cyclonedx1.4+json > "$ARTIFACTS_DIR/sbom/sdk-go-sbom.cdx.json" 2>/dev/null || {
-            echo -e "${YELLOW}Warning: Could not generate Go SDK SBOM${NC}"
-            echo '{"error": "Go SDK SBOM generation failed"}' > "$ARTIFACTS_DIR/sbom/sdk-go-sbom.json"
-        }
-    else
-        echo '{"error": "Org ID required"}' > "$ARTIFACTS_DIR/sbom/sdk-go-sbom.json"
-    fi
-    cd "$PROJECT_ROOT"
-fi
-
-# Generate a summary of SBOMs
-echo "Creating SBOM summary..."
-python3 -c "
-import json
-import os
-from pathlib import Path
-
-sbom_dir = Path('$ARTIFACTS_DIR/sbom')
-summary = {
-    'generated_at': '$(date -u +"%Y-%m-%dT%H:%M:%SZ")',
-    'sboms': []
-}
-
-for sbom_file in sbom_dir.glob('*.json'):
-    if sbom_file.name.endswith(('.spdx.json', '.cdx.json')):
-        try:
-            with open(sbom_file) as f:
-                data = json.load(f)
-                sbom_info = {
-                    'name': sbom_file.stem,
-                    'format': 'SPDX' if 'spdx' in sbom_file.suffix else 'CycloneDX',
-                    'file': sbom_file.name,
-                    'size_bytes': sbom_file.stat().st_size
-                }
-                
-                # Extract component count based on format
-                if 'components' in data:  # CycloneDX
-                    sbom_info['component_count'] = len(data.get('components', []))
-                elif 'packages' in data:  # SPDX
-                    sbom_info['package_count'] = len(data.get('packages', []))
-                
-                summary['sboms'].append(sbom_info)
-        except Exception as e:
-            print(f'Error processing {sbom_file}: {e}')
-
-# Write summary
-with open(sbom_dir / 'sbom-summary.json', 'w') as f:
-    json.dump(summary, f, indent=2)
-
-print(f'SBOM Summary: {len(summary[\"sboms\"])} SBOMs generated')
-for sbom in summary['sboms']:
-    print(f\"  - {sbom['name']}: {sbom.get('component_count', sbom.get('package_count', 'N/A'))} components\")
-" 2>/dev/null || echo -e "${YELLOW}Could not create SBOM summary${NC}"
-
-# Check if any SBOMs were generated
-SBOM_COUNT=$(ls -1 "$ARTIFACTS_DIR/sbom"/*.json 2>/dev/null | wc -l)
-if [ "$SBOM_COUNT" -gt 0 ]; then
-    echo -e "${GREEN}Generated $SBOM_COUNT SBOM file(s)${NC}"
-else
-    echo -e "${YELLOW}No SBOMs generated (authentication may be required)${NC}"
-fi
+echo '{"status": "disabled", "reason": "Snyk Enterprise plan required", "alternative": "Use cyclonedx-py or syft"}' > "$ARTIFACTS_DIR/sbom/sbom-status.json"
 
 echo ""
 echo -e "${GREEN}=== Scan Complete ===${NC}"

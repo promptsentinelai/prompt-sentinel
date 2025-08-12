@@ -1,7 +1,7 @@
 # Security Vulnerability Scan Report
 
-**Date:** August 11, 2025  
-**Tool:** Snyk CLI v1.1298.2  
+**Date:** August 11, 2025
+**Tool:** Snyk CLI v1.1298.2
 **Project:** PromptSentinel
 
 ## Executive Summary
@@ -99,14 +99,34 @@ snyk test --all-projects
 snyk container test promptsentinel-prompt-sentinel:latest
 ```
 
+## Software Bill of Materials (SBOM)
+
+**⚠️ SBOM Generation is Currently Disabled**
+
+SBOM generation through Snyk requires an Enterprise plan. We are planning to implement SBOM generation using open-source alternatives.
+
+### Alternative Solutions
+
+For immediate SBOM generation needs, use:
+```bash
+# Option 1: CycloneDX for Python
+pip install cyclonedx-bom
+cyclonedx-py -r requirements.txt -o sbom.json --format json
+
+# Option 2: Syft (universal SBOM generator)
+curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+syft packages . -o cyclonedx-json > sbom.json
+```
+
 ## Artifacts Location
 
 All detailed scan reports are stored in:
 - `security/artifacts/snyk/` - Snyk scan results
 - `security/artifacts/npm/` - NPM audit results
 - `security/artifacts/go/` - Go vulnerability results
+- `security/artifacts/sbom/` - Software Bill of Materials (SBOM) files
 
 ---
 
-*Report generated on {current_date}*  
+*Report generated on August 11, 2025*
 *Next scheduled scan: Before next release*

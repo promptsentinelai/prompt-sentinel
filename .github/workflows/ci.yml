@@ -277,15 +277,9 @@ jobs:
       - name: Determine platforms
         id: platforms
         run: |
-          # Build for amd64 only by default (fast builds ~10 minutes)
-          # Build for both amd64 and arm64 only for tagged releases
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "platforms=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
-            echo "Building multi-platform image (amd64 + arm64) for release"
-          else
-            echo "platforms=linux/amd64" >> $GITHUB_OUTPUT
-            echo "Building single platform image (amd64 only) for faster builds"
-          fi
+          # Temporarily force amd64-only for testing API integration
+          echo "platforms=linux/amd64" >> $GITHUB_OUTPUT
+          echo "Building single platform image (amd64 only) for testing"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

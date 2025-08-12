@@ -25,24 +25,13 @@ from prompt_sentinel.main import app
 class TestAPIKeyAuthentication:
     """Test API key authentication integration."""
 
-    def setup_method(self):
-        """Setup test client."""
-        from prompt_sentinel import main
-        from prompt_sentinel.detection.detector import PromptDetector
-        from prompt_sentinel.detection.prompt_processor import PromptProcessor
-
-        # Initialize detector if not already initialized
-        if main.detector is None:
-            main.detector = PromptDetector()
-            main.processor = PromptProcessor()
-
-        self.client = TestClient(app)
-
-        # Initialize auth components for testing
-        from prompt_sentinel.auth.api_key_manager import APIKeyManager
-
-        if not main.api_key_manager:
-            main.api_key_manager = APIKeyManager()
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test client with proper lifecycle."""
+        with TestClient(app) as client:
+            self.client = client
+            yield
+            # Cleanup happens automatically when exiting context
 
     def test_valid_api_key_access(self):
         """Test access with valid API key."""
@@ -137,21 +126,13 @@ class TestAPIKeyAuthentication:
 class TestRateLimiting:
     """Test rate limiting functionality."""
 
-    def setup_method(self):
-        """Setup test client and rate limiter."""
-        self.client = TestClient(app)
-
-        # Initialize rate limiter for testing
-        from prompt_sentinel import main
-        from prompt_sentinel.monitoring.rate_limiter import RateLimitConfig, RateLimiter
-
-        if not main.rate_limiter:
-            config = RateLimitConfig(
-                requests_per_minute=60,  # 60 requests per minute
-                client_requests_per_minute=30,  # 30 requests per minute per client
-                burst_multiplier=1.5,
-            )
-            main.rate_limiter = RateLimiter(config)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test client with proper lifecycle."""
+        with TestClient(app) as client:
+            self.client = client
+            yield
+            # Cleanup happens automatically when exiting context
 
     def test_rate_limit_enforcement(self):
         """Test that rate limits are enforced."""
@@ -249,9 +230,13 @@ class TestRateLimiting:
 class TestAuthenticationMiddleware:
     """Test authentication middleware integration."""
 
-    def setup_method(self):
-        """Setup test client."""
-        self.client = TestClient(app)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test client with proper lifecycle."""
+        with TestClient(app) as client:
+            self.client = client
+            yield
+            # Cleanup happens automatically when exiting context
 
     def test_middleware_request_processing(self):
         """Test that auth middleware processes requests."""
@@ -321,9 +306,13 @@ class TestAuthenticationMiddleware:
 class TestPermissionSystem:
     """Test permission and authorization system."""
 
-    def setup_method(self):
-        """Setup test client."""
-        self.client = TestClient(app)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test client with proper lifecycle."""
+        with TestClient(app) as client:
+            self.client = client
+            yield
+            # Cleanup happens automatically when exiting context
 
     def test_endpoint_permissions(self):
         """Test permission checks for different endpoints."""
@@ -406,9 +395,13 @@ class TestPermissionSystem:
 class TestSecurityFeatures:
     """Test additional security features."""
 
-    def setup_method(self):
-        """Setup test client."""
-        self.client = TestClient(app)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test client with proper lifecycle."""
+        with TestClient(app) as client:
+            self.client = client
+            yield
+            # Cleanup happens automatically when exiting context
 
     def test_sql_injection_in_headers(self):
         """Test SQL injection attempts in headers."""
@@ -474,9 +467,13 @@ class TestSecurityFeatures:
 class TestAuthenticationIntegration:
     """Test full authentication flow integration."""
 
-    def setup_method(self):
-        """Setup test client."""
-        self.client = TestClient(app)
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test client with proper lifecycle."""
+        with TestClient(app) as client:
+            self.client = client
+            yield
+            # Cleanup happens automatically when exiting context
 
     def test_full_authentication_flow(self):
         """Test complete authentication flow."""

@@ -90,3 +90,19 @@ Dockerfile.debian-backup
 
 # Local Vault integration (contains sensitive scripts)
 .local/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Disabled/temporary files
+*.disabled
+*.tmp
+*.temp
+
+# Build outputs (SDKs)
+sdk/javascript/dist/
+sdk/go/bin/
+sdk/python/build/

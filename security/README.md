@@ -47,7 +47,7 @@ This will:
 3. Scan Python SDK
 4. Scan JavaScript SDK
 5. Scan Go SDK (if Go is installed)
-6. Generate Software Bill of Materials (SBOM)
+6. ~~Generate Software Bill of Materials (SBOM)~~ *Currently disabled*
 7. Generate consolidated report
 
 ### Other Commands
@@ -55,7 +55,7 @@ This will:
 make security-report  # Regenerate report from existing artifacts
 make security-quick   # Quick Python-only scan
 make security-clean   # Clean artifacts (not recommended)
-make sbom             # Generate Software Bill of Materials only
+make sbom             # SBOM generation (currently disabled - requires Snyk Enterprise)
 ```
 
 ## Artifacts
@@ -118,25 +118,40 @@ Add to your CI pipeline:
 
 ## Software Bill of Materials (SBOM)
 
-The security scan now generates SBOMs in industry-standard formats:
+**⚠️ SBOM Generation is Currently Disabled**
 
-- **CycloneDX** - OWASP standard for software supply chain component analysis
-- **SPDX** - Software Package Data Exchange (ISO/IEC 5962:2021 standard)
+SBOM generation through Snyk requires an Enterprise plan. We are planning to implement SBOM generation using open-source alternatives.
 
-SBOMs provide:
+### Future Implementation
+
+When enabled, SBOMs will provide:
 - Complete dependency inventory
 - License information
 - Component versions and hashes
 - Supply chain transparency
 
-Generated SBOMs are stored in `security/artifacts/sbom/` and include:
-- `python-sbom.cdx.json` - Python dependencies SBOM
-- `container-sbom.cdx.json` - Docker container SBOM
-- `sdk-*-sbom.cdx.json` - SDK SBOMs (when available)
+### Alternative Solutions
+
+For immediate SBOM generation needs, consider using:
+
+```bash
+# Option 1: CycloneDX for Python
+pip install cyclonedx-bom
+cyclonedx-py -r requirements.txt -o sbom.json --format json
+
+# Option 2: Syft (universal SBOM generator)
+curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+syft packages . -o cyclonedx-json > sbom.json
+```
+
+### Planned SBOM Formats
+
+- **CycloneDX** - OWASP standard for software supply chain component analysis
+- **SPDX** - Software Package Data Exchange (ISO/IEC 5962:2021 standard)
 
 ## Tools Used
 
-- **Snyk CLI** - Primary vulnerability scanner and SBOM generator
+- **Snyk CLI** - Primary vulnerability scanner ~~and SBOM generator~~ (SBOM requires Enterprise plan)
 - **npm audit** - JavaScript dependency scanner
 - **govulncheck** - Go vulnerability checker (when available)
 

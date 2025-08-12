@@ -42,8 +42,27 @@ def format_sbom_section(artifacts_dir):
     """Format SBOM section for the report."""
     sbom_dir = artifacts_dir / "sbom"
 
+    # SBOM generation is currently disabled
+    return """**⚠️ SBOM Generation is Currently Disabled**
+
+SBOM generation through Snyk requires an Enterprise plan. We are planning to implement SBOM generation using open-source alternatives.
+
+### Alternative Solutions
+
+For immediate SBOM generation needs, use:
+```bash
+# Option 1: CycloneDX for Python
+pip install cyclonedx-bom
+cyclonedx-py -r requirements.txt -o sbom.json --format json
+
+# Option 2: Syft (universal SBOM generator)
+curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+syft packages . -o cyclonedx-json > sbom.json
+```"""
+
+    # Keep the original logic below for future use when we implement open-source SBOM
     if not sbom_dir.exists():
-        return "No SBOMs generated yet. Run scan with SNYK_TOKEN to generate SBOMs."
+        return "No SBOMs generated yet. SBOM generation is currently disabled."
 
     # Check for SBOM summary
     summary_file = sbom_dir / "sbom-summary.json"
@@ -255,7 +274,7 @@ def main():
 - **Container Security:** ✅ Hardened
 - **Supply Chain Security:** """
         + ("✅ Clean" if total_vulns == 0 else "⚠️ Issues Found")
-        + """
+        + f"""
 
 ## Recommendations
 

@@ -23,7 +23,7 @@ Usage:
     result = await detector.detect(messages)
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "PromptSentinel Team"
 
 from prompt_sentinel.config.settings import settings

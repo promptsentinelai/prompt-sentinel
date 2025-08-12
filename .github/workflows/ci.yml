@@ -279,7 +279,7 @@ jobs:
         run: |
           # Force amd64-only for faster builds during testing
           echo "platforms=linux/amd64" >> $GITHUB_OUTPUT
-          echo "Building single platform image (amd64 only) for testing"
+          echo "Building single platform image (amd64 only)"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

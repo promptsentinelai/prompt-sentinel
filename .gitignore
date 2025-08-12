@@ -77,3 +77,5 @@ CLAUDE.md
 # CI/Test artifacts
 coverage.xml
 tests/experiments.db
+coverage.xml
+/tests/experiments.db

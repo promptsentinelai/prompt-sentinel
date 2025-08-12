@@ -51,7 +51,9 @@ class GeminiProvider(LLMProvider):
             "gemini-1.5-flash": "gemini-1.5-flash",
         }
 
-        model_name = self.model_mapping.get(self.model, self.model)
+        model_name = (
+            self.model_mapping.get(self.model, self.model) if self.model else "gemini-1.5-flash"
+        )
         self.model_instance = genai.GenerativeModel(model_name)
 
         # Configure generation settings

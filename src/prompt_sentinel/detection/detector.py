@@ -29,6 +29,7 @@ Key Features:
 
 import logging
 import time
+from typing import Any
 
 from prompt_sentinel.config.settings import settings
 from prompt_sentinel.detection.custom_pii_loader import CustomPIIRulesLoader
@@ -60,7 +61,7 @@ class PromptDetector:
         pii_detector: Optional PII detection and redaction system
     """
 
-    def __init__(self, pattern_manager=None):
+    def __init__(self, pattern_manager: Any = None) -> None:
         """Initialize the detector with configured components.
 
         Sets up all detection subsystems based on configuration settings.
@@ -92,14 +93,14 @@ class PromptDetector:
 
             self.pii_detector = PIIDetector(pii_config, custom_rules_loader)
         else:
-            self.pii_detector = None
+            self.pii_detector = None  # type: ignore[assignment]
 
     async def detect(
         self,
         messages: list[Message],
         check_format: bool = True,
-        use_heuristics: bool = None,
-        use_llm: bool = None,
+        use_heuristics: bool | None = None,
+        use_llm: bool | None = None,
     ) -> DetectionResponse:
         """Perform comprehensive detection on messages.
 
@@ -151,7 +152,7 @@ class PromptDetector:
                         category=DetectionCategory.BENIGN,
                         description="⚠️ NO DETECTION METHODS ENABLED - Request allowed without security checks",
                         confidence=0.0,
-                        source="system",
+                        source="heuristic",  # Use valid source value
                     )
                 ],
                 metadata={
@@ -259,7 +260,7 @@ class PromptDetector:
         processing_time_ms = (time.time() - start_time) * 1000
 
         # Build metadata
-        metadata = {
+        metadata: dict[str, Any] = {
             "detection_mode": settings.detection_mode,
             "heuristics_used": use_heuristics,
             "llm_used": use_llm,

@@ -34,7 +34,7 @@ class LLMClassifierManager:
         self.providers: dict[str, LLMProvider] = {}
         self._initialize_providers()
 
-    def _initialize_providers(self):
+    def _initialize_providers(self) -> None:
         """Initialize configured providers."""
         provider_classes = {
             "anthropic": AnthropicProvider,
@@ -48,7 +48,8 @@ class LLMClassifierManager:
             if config.get("api_key") and provider_name in provider_classes:
                 try:
                     provider_class = provider_classes[provider_name]
-                    self.providers[provider_name] = provider_class(config)
+                    # Instantiate the concrete provider class
+                    self.providers[provider_name] = provider_class(config)  # type: ignore[abstract]
                     print(f"Initialized {provider_name} provider")
                 except Exception as e:
                     print(f"Failed to initialize {provider_name}: {e}")
@@ -104,7 +105,7 @@ class LLMClassifierManager:
                 ):
                     logger.debug("LLM classification cache hit")
 
-            return result
+            return result  # type: ignore[no-any-return]
 
         # No caching or using all providers
         if use_all_providers:
@@ -188,7 +189,7 @@ class LLMClassifierManager:
                 print(f"Provider {provider_name} failed: {result}")
                 continue
 
-            category, confidence, explanation = result
+            category, confidence, explanation = result  # type: ignore[misc]
 
             reasons.append(
                 DetectionReason(

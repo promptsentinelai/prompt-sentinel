@@ -118,13 +118,13 @@ lsof -i :8080
 netstat -tulpn | grep 8080
 
 # Use a different port
-docker run -p 8081:8080 promptsentinel/promptsentinel
+docker run -p 8081:8080 promptsentinelai/prompt-sentinel
 ```
 
 4. **Memory issues:**
 ```bash
 # Increase Docker memory allocation
-docker run -m 2g promptsentinel/promptsentinel
+docker run -m 2g promptsentinelai/prompt-sentinel
 
 # Check system memory
 free -h
@@ -519,16 +519,16 @@ docker logs promptsentinel
 
 # Common fixes:
 # 1. Ensure image is pulled
-docker pull promptsentinel/promptsentinel:latest
+docker pull promptsentinelai/prompt-sentinel:latest
 
 # 2. Check resource constraints
-docker run -m 2g -c 2 promptsentinel/promptsentinel
+docker run -m 2g -c 2 promptsentinelai/prompt-sentinel
 
 # 3. Verify network
-docker run --network host promptsentinel/promptsentinel
+docker run --network host promptsentinelai/prompt-sentinel
 
 # 4. Debug interactively
-docker run -it --entrypoint /bin/bash promptsentinel/promptsentinel
+docker run -it --entrypoint /bin/bash promptsentinelai/prompt-sentinel
 ```
 
 ### Docker Compose Issues
@@ -886,7 +886,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT="http://jaeger:4317"
 If you're still experiencing issues:
 
 1. **Check the logs** - Most issues are apparent in the logs
-2. **Search existing issues** - [GitHub Issues](https://github.com/promptsentinel/promptsentinel/issues)
+2. **Search existing issues** - [GitHub Issues](https://github.com/promptsentinelai/prompt-sentinel/issues)
 3. **Ask the community** - [Discord Server](https://discord.gg/promptsentinel)
 4. **Contact support** - support@promptsentinel.com (Enterprise customers)
 

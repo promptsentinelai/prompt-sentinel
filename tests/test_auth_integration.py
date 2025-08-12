@@ -18,6 +18,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
+from prompt_sentinel.auth.models import AuthMethod, Client, UsageTier
 from prompt_sentinel.main import app
 
 
@@ -45,8 +46,6 @@ class TestAPIKeyAuthentication:
 
     def test_valid_api_key_access(self):
         """Test access with valid API key."""
-        from prompt_sentinel.auth.models import AuthMethod, Client, UsageTier
-
         headers = {"X-API-Key": "test-valid-key"}
 
         with patch(
@@ -73,7 +72,7 @@ class TestAPIKeyAuthentication:
         with patch(
             "prompt_sentinel.auth.api_key_manager.APIKeyManager.validate_api_key"
         ) as mock_validate:
-            mock_validate.return_value = {"valid": False, "reason": "Invalid key"}
+            mock_validate.return_value = None  # Invalid key returns None
 
             response = self.client.post("/api/v1/detect", json={"prompt": "test"}, headers=headers)
 
@@ -102,7 +101,7 @@ class TestAPIKeyAuthentication:
         with patch(
             "prompt_sentinel.auth.api_key_manager.APIKeyManager.validate_api_key"
         ) as mock_validate:
-            mock_validate.return_value = {"valid": False, "reason": "Key expired", "expired": True}
+            mock_validate.return_value = None  # Expired key returns None
 
             response = self.client.post("/api/v1/detect", json={"prompt": "test"}, headers=headers)
 
@@ -116,12 +115,14 @@ class TestAPIKeyAuthentication:
         with patch(
             "prompt_sentinel.auth.api_key_manager.APIKeyManager.validate_api_key"
         ) as mock_validate:
-            mock_validate.return_value = {
-                "valid": True,
-                "key_id": "read-only",
-                "scopes": ["read"],  # No write access
-                "rate_limit": {"requests_per_minute": 100},
-            }
+            # Return a Client object for valid key with read-only permissions
+            mock_validate.return_value = Client(
+                client_id="read-only",
+                client_name="Read Only Client",
+                auth_method=AuthMethod.API_KEY,
+                usage_tier=UsageTier.FREE,
+                scopes=["read"],
+            )
 
             # Read operation should work
             response = self.client.post("/api/v1/detect", json={"prompt": "test"}, headers=headers)
@@ -376,11 +377,14 @@ class TestPermissionSystem:
         with patch(
             "prompt_sentinel.auth.api_key_manager.APIKeyManager.validate_api_key"
         ) as mock_validate:
-            mock_validate.return_value = {
-                "valid": True,
-                "scopes": ["read"],  # Only read permissions
-                "rate_limit": {"requests_per_minute": 100},
-            }
+            # Return a Client object for valid key with read-only permissions
+            mock_validate.return_value = Client(
+                client_id="read-only-test",
+                client_name="Read Only Test",
+                auth_method=AuthMethod.API_KEY,
+                usage_tier=UsageTier.FREE,
+                scopes=["read"],
+            )
 
             # Read operations should work
             read_endpoints = [
@@ -484,12 +488,14 @@ class TestAuthenticationIntegration:
         with patch(
             "prompt_sentinel.auth.api_key_manager.APIKeyManager.validate_api_key"
         ) as mock_validate:
-            mock_validate.return_value = {
-                "valid": True,
-                "key_id": "test-123",
-                "scopes": ["read", "write"],
-                "rate_limit": {"requests_per_minute": 100},
-            }
+            # Return a Client object for valid key
+            mock_validate.return_value = Client(
+                client_id="test-123",
+                client_name="Test Client",
+                auth_method=AuthMethod.API_KEY,
+                usage_tier=UsageTier.PRO,
+                scopes=["read", "write"],
+            )
 
             response = self.client.post(
                 "/api/v1/detect", json={"prompt": "authenticated test"}, headers=valid_headers

@@ -51,7 +51,12 @@ jobs:
       - name: Generate tags
         id: tags
         run: |
-          BRANCH=${GITHUB_REF#refs/heads/}
+          # Extract branch or tag name properly
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            BRANCH=${GITHUB_REF#refs/tags/}
+          else
+            BRANCH=${GITHUB_REF#refs/heads/}
+          fi
           SHA=${GITHUB_SHA::7}
 
           # Base tags

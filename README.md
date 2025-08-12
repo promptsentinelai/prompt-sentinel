@@ -1289,4 +1289,4 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
 
 **Built with ❤️ + ☕️ & 🥃 for securing all the things**
 
-*Version: 1.0.0 | Status: Production Ready*
+*Version: 1.0.0 | Status: Production Ready | Docker: `promptsentinelai/prompt-sentinel`*

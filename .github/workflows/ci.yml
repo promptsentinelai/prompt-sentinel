@@ -277,7 +277,7 @@ jobs:
       - name: Determine platforms
         id: platforms
         run: |
-          # Temporarily force amd64-only for testing API integration
+          # Force amd64-only for faster builds during testing
           echo "platforms=linux/amd64" >> $GITHUB_OUTPUT
           echo "Building single platform image (amd64 only) for testing"
 

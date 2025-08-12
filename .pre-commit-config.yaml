@@ -2,6 +2,13 @@
 # See https://pre-commit.com for more information
 
 repos:
+  - repo: local
+    hooks:
+      - id: block-ci-artifacts
+        name: Block CI artifacts (coverage.xml, tests/experiments.db)
+        entry: bash -c 'git diff --cached --name-only | grep -E "^(coverage\.xml|tests/experiments\.db)$" >/dev/null && { echo "❌ Refusing to commit CI artifacts"; exit 1; } || exit 0'
+        language: system
+        pass_filenames: false
   # Black - Python code formatter
   - repo: https://github.com/psf/black
     rev: 25.1.0

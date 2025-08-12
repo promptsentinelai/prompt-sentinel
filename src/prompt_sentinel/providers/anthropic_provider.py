@@ -61,7 +61,12 @@ class AnthropicProvider(LLMProvider):
         }
 
         # Use mapped model or default
-        self.model = self.model_mapping.get(self.model, self.model)
+        model_name = (
+            self.model_mapping.get(self.model, self.model)
+            if self.model
+            else "claude-3-haiku-20240307"
+        )
+        self.model = model_name
 
     async def classify(
         self, messages: list[Message], system_prompt: str | None = None
@@ -92,7 +97,7 @@ class AnthropicProvider(LLMProvider):
             # Call Claude API
             response = await asyncio.wait_for(
                 self.client.messages.create(
-                    model=self.model,
+                    model=self.model,  # type: ignore[arg-type]
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
                     system=system,
@@ -102,7 +107,14 @@ class AnthropicProvider(LLMProvider):
             )
 
             # Parse response
-            content = response.content[0].text if response.content else ""
+            # Extract text from the first content block
+            content = ""
+            if response.content and len(response.content) > 0:
+                first_block = response.content[0]
+                if hasattr(first_block, "text"):
+                    content = first_block.text
+                else:
+                    content = str(first_block)
             return self._parse_response(content)
 
         except TimeoutError:
@@ -126,7 +138,9 @@ class AnthropicProvider(LLMProvider):
             # Try a minimal API call
             await asyncio.wait_for(
                 self.client.messages.create(
-                    model=self.model, max_tokens=10, messages=[{"role": "user", "content": "test"}]
+                    model=self.model,  # type: ignore[arg-type]
+                    max_tokens=10,
+                    messages=[{"role": "user", "content": "test"}],
                 ),
                 timeout=5.0,
             )

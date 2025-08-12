@@ -1,0 +1,124 @@
+name: Manual Docker Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Build platforms'
+        required: true
+        default: 'linux/amd64'
+        type: choice
+        options:
+          - 'linux/amd64'
+          - 'linux/amd64,linux/arm64'
+      push:
+        description: 'Push to Docker Hub'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      tag_suffix:
+        description: 'Optional tag suffix (e.g., test, dev)'
+        required: false
+        default: ''
+        type: string
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_IMAGE: promptsentinelai/prompt-sentinel
+
+jobs:
+  docker-build:
+    name: Manual Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: inputs.push == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Generate tags
+        id: tags
+        run: |
+          BRANCH=${GITHUB_REF#refs/heads/}
+          SHA=${GITHUB_SHA::7}
+
+          # Base tags
+          if [ "${{ inputs.push }}" == "true" ]; then
+            TAGS="${{ env.DOCKER_IMAGE }}:${BRANCH}"
+            TAGS="${TAGS},${{ env.DOCKER_IMAGE }}:${BRANCH}-${SHA}"
+
+            # Add suffix tag if provided
+            if [ ! -z "${{ inputs.tag_suffix }}" ]; then
+              TAGS="${TAGS},${{ env.DOCKER_IMAGE }}:${{ inputs.tag_suffix }}"
+            fi
+
+            # Add latest tag for main branch
+            if [ "${BRANCH}" == "main" ]; then
+              TAGS="${TAGS},${{ env.DOCKER_IMAGE }}:latest"
+            fi
+          else
+            # Local build only
+            TAGS="${{ env.DOCKER_IMAGE }}:local-${SHA}"
+          fi
+
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "Generated tags: ${TAGS}"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+
+      - name: Build time estimate
+        run: |
+          if [[ "${{ inputs.platforms }}" == *"arm64"* ]]; then
+            echo "⏱️ Estimated build time: 60-90 minutes (multi-platform)"
+          else
+            echo "⏱️ Estimated build time: 5-15 minutes (amd64 only)"
+          fi
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ inputs.platforms }}
+          push: ${{ inputs.push == 'true' }}
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ steps.meta.outputs.created }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** ${{ inputs.platforms }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Push to registry:** ${{ inputs.push }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** " >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.tags.outputs.tags }}" | tr ',' '\n' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.push }}" == "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📦 Docker Hub" >> $GITHUB_STEP_SUMMARY
+            echo "Images have been pushed to [Docker Hub](https://hub.docker.com/r/${{ env.DOCKER_IMAGE }})" >> $GITHUB_STEP_SUMMARY
+          fi

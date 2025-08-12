@@ -1,0 +1,136 @@
+name: Test Docker Auth
+
+on:
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      debug:
+        description: 'Enable debug output'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  test-auth:
+    name: Test Docker Hub Authentication
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check secrets are set
+        run: |
+          if [ -z "${{ secrets.DOCKER_USERNAME }}" ]; then
+            echo "❌ DOCKER_USERNAME secret is not set!"
+            exit 1
+          else
+            echo "✅ DOCKER_USERNAME secret is set"
+          fi
+
+          if [ -z "${{ secrets.DOCKER_PASSWORD }}" ]; then
+            echo "❌ DOCKER_PASSWORD secret is not set!"
+            exit 1
+          else
+            echo "✅ DOCKER_PASSWORD secret is set"
+          fi
+
+      - name: Test Docker Hub Login with PAT
+        id: docker-login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}  # This should be the PAT
+
+      - name: Verify authentication with pull
+        run: |
+          echo "📥 Testing Docker pull..."
+          docker pull busybox:latest
+          echo "✅ Docker pull successful"
+
+      - name: Test push permissions
+        id: push-test
+        run: |
+          echo "🏷️ Tagging test image..."
+          docker tag busybox:latest ${{ secrets.DOCKER_USERNAME }}/promptsentinel-auth-test:latest
+
+          echo "📤 Testing Docker push..."
+          if docker push ${{ secrets.DOCKER_USERNAME }}/promptsentinel-auth-test:latest; then
+            echo "✅ Docker push successful!"
+            echo "push_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Docker push failed!"
+            echo "push_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Test push with different tag
+        if: steps.push-test.outputs.push_success == 'true'
+        run: |
+          # Test with a timestamp tag to verify we can push multiple tags
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          docker tag busybox:latest ${{ secrets.DOCKER_USERNAME }}/promptsentinel-auth-test:test-${TIMESTAMP}
+          docker push ${{ secrets.DOCKER_USERNAME }}/promptsentinel-auth-test:test-${TIMESTAMP}
+          echo "✅ Multiple tag push successful"
+
+      - name: Verify namespace access
+        if: inputs.debug == 'true'
+        run: |
+          echo "🔍 Debug: Checking Docker Hub API access..."
+          # This will fail gracefully if the token doesn't have API access
+          curl -s -H "Authorization: Bearer ${{ secrets.DOCKER_PASSWORD }}" \
+            "https://hub.docker.com/v2/namespaces/${{ secrets.DOCKER_USERNAME }}/" \
+            | jq -r '.name // "API access not available with this token"' || true
+
+      - name: Clean up test images from registry
+        if: always() && steps.push-test.outputs.push_success == 'true'
+        continue-on-error: true
+        run: |
+          echo "🧹 Attempting to clean up test images..."
+          # Note: This requires delete permissions on the PAT
+          # Will fail gracefully if delete is not allowed
+
+          # Get token for Docker Hub API (different from registry auth)
+          TOKEN=$(curl -s -H "Content-Type: application/json" \
+            -X POST \
+            -d "{\"username\": \"${{ secrets.DOCKER_USERNAME }}\", \"password\": \"${{ secrets.DOCKER_PASSWORD }}\"}" \
+            https://hub.docker.com/v2/users/login/ | jq -r .token)
+
+          if [ ! -z "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
+            # Try to delete the test repository
+            curl -X DELETE \
+              -H "Authorization: Bearer ${TOKEN}" \
+              "https://hub.docker.com/v2/repositories/${{ secrets.DOCKER_USERNAME }}/promptsentinel-auth-test/" \
+              && echo "✅ Test repository deleted" \
+              || echo "ℹ️ Could not delete test repository (may require manual cleanup)"
+          else
+            echo "ℹ️ Skipping cleanup - API token not available"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 📊 Authentication Test Summary"
+          echo ""
+          if [ "${{ steps.push-test.outputs.push_success }}" == "true" ]; then
+            echo "### ✅ SUCCESS: Docker Hub authentication is working!"
+            echo ""
+            echo "Your GitHub Secrets are correctly configured:"
+            echo "- **DOCKER_USERNAME**: Set and valid ✅"
+            echo "- **DOCKER_PASSWORD** (PAT): Set and valid ✅"
+            echo ""
+            echo "You can now run the full Docker build workflow."
+          else
+            echo "### ❌ FAILED: Docker Hub authentication failed"
+            echo ""
+            echo "Please check:"
+            echo "1. **DOCKER_USERNAME** is your Docker Hub username (not email)"
+            echo "2. **DOCKER_PASSWORD** is a Personal Access Token (not your password)"
+            echo "3. The PAT has 'Read & Write' permissions"
+            echo "4. The PAT hasn't expired"
+            echo ""
+            echo "To create a new PAT:"
+            echo "1. Go to https://hub.docker.com/settings/security"
+            echo "2. Click 'New Access Token'"
+            echo "3. Give it 'Read & Write' permissions"
+            echo "4. Copy the token and update DOCKER_PASSWORD secret"
+          fi

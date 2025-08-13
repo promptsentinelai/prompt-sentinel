@@ -1,6 +1,6 @@
 # PromptSentinel JavaScript/TypeScript SDK
 
-Official JavaScript/TypeScript SDK for [PromptSentinel](https://github.com/rhoska/prompt-sentinel) - LLM Prompt Injection Detection Service.
+Official JavaScript/TypeScript SDK for [PromptSentinel](https://github.com/promptsentinelai/prompt-sentinel) - LLM Prompt Injection Detection Service.
 
 ## Installation
 
@@ -182,6 +182,62 @@ try {
 }
 ```
 
+### Threat Intelligence
+
+```typescript
+// Add a new threat intelligence feed
+const feed = await client.addThreatFeed({
+  name: 'MITRE ATT&CK Patterns',
+  description: 'Common LLM attack patterns',
+  type: 'json',
+  url: 'https://example.com/threat-feed.json',
+  refresh_interval: 3600,  // Update hourly
+  priority: 5
+});
+console.log(`Feed added: ${feed.id}`);
+
+// List all active threat feeds
+const feeds = await client.listThreatFeeds();
+feeds.forEach(f => {
+  console.log(`${f.name}: ${f.enabled ? 'Active' : 'Inactive'}`);
+});
+
+// Get threat indicators
+const indicators = await client.getThreatIndicators({
+  technique: 'jailbreak',
+  minConfidence: 0.8
+});
+console.log(`Found ${indicators.length} high-confidence jailbreak patterns`);
+
+// Search for specific threat patterns
+const results = await client.searchThreatIndicators('DAN mode');
+results.forEach(indicator => {
+  console.log(`Pattern: ${indicator.pattern} (${indicator.confidence * 100}% confidence)`);
+});
+
+// Report false positive
+if (response.verdict === Verdict.BLOCK && isActuallyFine) {
+  await client.reportFalsePositive(
+    response.threat_indicator_id,
+    'Legitimate academic discussion'
+  );
+}
+
+// Confirm true positive
+if (response.verdict === Verdict.BLOCK && confirmedMalicious) {
+  await client.confirmTruePositive(
+    response.threat_indicator_id,
+    'Confirmed jailbreak attempt'
+  );
+}
+
+// Get threat statistics
+const stats = await client.getThreatStatistics();
+console.log(`Active indicators: ${stats.active_indicators}`);
+console.log(`Average confidence: ${stats.average_confidence * 100}%`);
+console.log(`False positive rate: ${stats.false_positives_last_7d / (stats.false_positives_last_7d + stats.true_positives_last_7d) * 100}%`);
+```
+
 ### Helper Methods
 
 ```typescript
@@ -266,6 +322,16 @@ new PromptSentinel(config?: PromptSentinelConfig)
 - `createConversation(systemPrompt, userPrompt)` - Helper to create conversation
 - `isSafe(prompt)` - Check if prompt is safe
 - `getModifiedPrompt(prompt)` - Get sanitized version if available
+- `addThreatFeed(feedData)` - Add a new threat intelligence feed
+- `listThreatFeeds()` - List all threat intelligence feeds
+- `getThreatFeed(feedId)` - Get a specific threat feed
+- `updateThreatFeed(feedId)` - Manually trigger feed update
+- `removeThreatFeed(feedId)` - Remove a threat feed
+- `getThreatIndicators(params?)` - Get active threat indicators
+- `searchThreatIndicators(query, limit?)` - Search threat indicators
+- `reportFalsePositive(indicatorId, reason?)` - Report false positive
+- `confirmTruePositive(indicatorId, details?)` - Confirm true positive
+- `getThreatStatistics()` - Get threat intelligence statistics
 
 ### Types
 
@@ -346,5 +412,5 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- GitHub Issues: https://github.com/rhoska/prompt-sentinel/issues
-- Documentation: https://github.com/rhoska/prompt-sentinel/tree/main/docs
+- GitHub Issues: https://github.com/promptsentinelai/prompt-sentinel/issues
+- Documentation: https://github.com/promptsentinelai/prompt-sentinel/tree/main/docs

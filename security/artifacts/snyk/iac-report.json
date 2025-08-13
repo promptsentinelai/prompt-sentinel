@@ -1,0 +1,1237 @@
+[
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/cloudformation/ecs-fargate.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/cloudformation/ecs-fargate.yaml",
+    "packageManager": "cloudformationconfig",
+    "path": ".",
+    "projectType": "cloudformationconfig",
+    "ok": false,
+    "infrastructureAsCodeIssues": [
+      {
+        "id": "SNYK-CC-AWS-405",
+        "title": "ALB does not drop invalid headers",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Elastic Load Balancing",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-405",
+        "isGeneratedByCustomRule": false,
+        "issue": "The application load balancer is not set to drop invalid headers.",
+        "impact": "Maliciously crafted headers may be accepted by the load balancer",
+        "resolve": "Set `Properties.LoadBalancerAttributes.Key` to `routing.http.drop_invalid_header_fields.enabled` and `Properties.LoadBalancerAttributes.Value` to `true`",
+        "remediation": {
+          "cloudformation": "Set `Properties.LoadBalancerAttributes.Key` to `routing.http.drop_invalid_header_fields.enabled` and `Properties.LoadBalancerAttributes.Value` to `true`",
+          "terraform": "Set `drop_invalid_header_fields` to `true`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "The application load balancer is not set to drop invalid headers.",
+          "impact": "Maliciously crafted headers may be accepted by the load balancer",
+          "resolve": "Set `Properties.LoadBalancerAttributes.Key` to `routing.http.drop_invalid_header_fields.enabled` and `Properties.LoadBalancerAttributes.Value` to `true`"
+        },
+        "publicId": "SNYK-CC-AWS-405",
+        "msg": "Resources[ApplicationLoadBalancer].Properties.LoadBalancerAttributes",
+        "references": [
+          "https://docs.aws.amazon.com/config/latest/developerguide/alb-http-drop-invalid-header-enabled.html"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "Resources[ApplicationLoadBalancer]",
+          "Properties",
+          "LoadBalancerAttributes"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-AWS-407",
+        "title": "ElastiCache automatic backup is disabled",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "ElastiCache",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-407",
+        "isGeneratedByCustomRule": false,
+        "issue": "ElastiCache cluster automatic backup is disabled",
+        "impact": "No cluster backups will be saved automatically, rebuilding after disaster may be more difficult",
+        "resolve": "Set `Properties.SnapshotRetentionLimit` to `1` or more",
+        "remediation": {
+          "cloudformation": "Set `Properties.SnapshotRetentionLimit` to `1` or more",
+          "terraform": "Set `resource.snapshot_retention_limit` to `1` or more"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "ElastiCache cluster automatic backup is disabled",
+          "impact": "No cluster backups will be saved automatically, rebuilding after disaster may be more difficult",
+          "resolve": "Set `Properties.SnapshotRetentionLimit` to `1` or more"
+        },
+        "publicId": "SNYK-CC-AWS-407",
+        "msg": "Resources[RedisCluster].Properties.SnapshotRetentionLimit",
+        "references": [
+          "https://docs.aws.amazon.com/AmazonElastiCache/latest/APIReference/API_Snapshot.html"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "Resources[RedisCluster]",
+          "Properties",
+          "SnapshotRetentionLimit"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-TF-47",
+        "title": "Load balancer endpoint does not enforce HTTPS",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "Elastic Load Balancing",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-47",
+        "isGeneratedByCustomRule": false,
+        "issue": "Load balancer endpoint does not enforce HTTPS",
+        "impact": "The content could be intercepted and manipulated in transit",
+        "resolve": "Set the `Properties.Protocol` attribute to `HTTPS` or `TLS`",
+        "remediation": {
+          "cloudformation": "Set the `Properties.Protocol` attribute to `HTTPS` or `TLS`",
+          "terraform": "Set the `protocol` attribute to `HTTPS` or `TLS`"
+        },
+        "lineNumber": 279,
+        "iacDescription": {
+          "issue": "Load balancer endpoint does not enforce HTTPS",
+          "impact": "The content could be intercepted and manipulated in transit",
+          "resolve": "Set the `Properties.Protocol` attribute to `HTTPS` or `TLS`"
+        },
+        "publicId": "SNYK-CC-TF-47",
+        "msg": "Resources.ALBListener.Properties.Protocol",
+        "references": [
+          "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "Resources",
+          "ALBListener",
+          "Properties",
+          "Protocol"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-TF-48",
+        "title": "Load balancer is internet facing",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Elastic Load Balancing",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-48",
+        "isGeneratedByCustomRule": false,
+        "issue": "Load balancer is internet facing",
+        "impact": "Increases attack vector reachability",
+        "resolve": "Set `Properties.Scheme` attribute to `internal`",
+        "remediation": {
+          "cloudformation": "Set `Properties.Scheme` attribute to `internal`",
+          "terraform": "Set `internal` attribute to `true`"
+        },
+        "lineNumber": 239,
+        "iacDescription": {
+          "issue": "Load balancer is internet facing",
+          "impact": "Increases attack vector reachability",
+          "resolve": "Set `Properties.Scheme` attribute to `internal`"
+        },
+        "publicId": "SNYK-CC-TF-48",
+        "msg": "Resources.ApplicationLoadBalancer.Properties.Scheme",
+        "references": [
+          "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-internet-facing-load-balancers.html"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "Resources",
+          "ApplicationLoadBalancer",
+          "Properties",
+          "Scheme"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-AWS-421",
+        "title": "Secrets Manager is not encrypted with customer managed key",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Secrets Manager",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-421",
+        "isGeneratedByCustomRule": false,
+        "issue": "Secrets Manager is not encrypted with customer managed key",
+        "impact": "Scope of use of the encryption key cannot be controlled via KMS/IAM policies",
+        "resolve": "Set `Properties.KmsKeyId` attribute to customer managed key id",
+        "remediation": {
+          "cloudformation": "Set `Properties.KmsKeyId` attribute to customer managed key id",
+          "terraform": "Set `kms_key_id` attribute to customer managed key id"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "Secrets Manager is not encrypted with customer managed key",
+          "impact": "Scope of use of the encryption key cannot be controlled via KMS/IAM policies",
+          "resolve": "Set `Properties.KmsKeyId` attribute to customer managed key id"
+        },
+        "publicId": "SNYK-CC-AWS-421",
+        "msg": "Resources[ApiKeysSecret].Properties.KmsKeyId",
+        "references": [
+          "https://docs.aws.amazon.com/kms/latest/developerguide/services-secrets-manager.html"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "Resources[ApiKeysSecret]",
+          "Properties",
+          "KmsKeyId"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-AWS-415",
+        "title": "CloudWatch log group not encrypted with managed key",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "CloudWatch",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-415",
+        "isGeneratedByCustomRule": false,
+        "issue": "Log group is not encrypted with customer managed key",
+        "impact": "Scope of use of the key cannot be controlled via KMS/IAM policies",
+        "resolve": "Set `Properties.KmsKeyId` attribute with customer managed key id",
+        "remediation": {
+          "cloudformation": "Set `Properties.KmsKeyId` attribute with customer managed key id",
+          "terraform": "Set `kms_key_id` attribute with customer managed key id"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "Log group is not encrypted with customer managed key",
+          "impact": "Scope of use of the key cannot be controlled via KMS/IAM policies",
+          "resolve": "Set `Properties.KmsKeyId` attribute with customer managed key id"
+        },
+        "publicId": "SNYK-CC-AWS-415",
+        "msg": "Resources[LogGroup].Properties.KmsKeyId",
+        "references": [
+          "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html",
+          "https://docs.aws.amazon.com/whitepapers/latest/kms-best-practices/aws-managed-and-customer-managed-cmks.html"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "Resources[LogGroup]",
+          "Properties",
+          "KmsKeyId"
+        ],
+        "compliance": []
+      }
+    ]
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/configmap.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/configmap.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": true,
+    "infrastructureAsCodeIssues": []
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/deployment.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/deployment.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": false,
+    "infrastructureAsCodeIssues": [
+      {
+        "id": "SNYK-CC-K8S-11",
+        "title": "Container's or Pod's  UID could clash with host's UID",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Deployment",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-K8S-11",
+        "isGeneratedByCustomRule": false,
+        "issue": "`runAsUser` value is set to low UID",
+        "impact": "UID of the container processes could clash with host's UIDs and lead to unintentional authorization bypass",
+        "resolve": "Set `securityContext.runAsUser` value to greater or equal than 10'000. SecurityContext can be set on both `pod` and `container` level. If both are set, then the container level takes precedence",
+        "remediation": {
+          "kubernetes": "Set `securityContext.runAsUser` value to greater or equal than 10'000. SecurityContext can be set on both `pod` and `container` level. If both are set, then the container level takes precedence",
+          "terraform": "Set `security_context.run_as_user` value to greater or equal than 10'000"
+        },
+        "lineNumber": 65,
+        "iacDescription": {
+          "issue": "`runAsUser` value is set to low UID",
+          "impact": "UID of the container processes could clash with host's UIDs and lead to unintentional authorization bypass",
+          "resolve": "Set `securityContext.runAsUser` value to greater or equal than 10'000. SecurityContext can be set on both `pod` and `container` level. If both are set, then the container level takes precedence"
+        },
+        "publicId": "SNYK-CC-K8S-11",
+        "msg": "input.spec.template.spec.containers[prompt-sentinel].securityContext.runAsUser",
+        "references": [
+          "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container",
+          "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod",
+          "https://kubernetes.io/blog/2016/08/security-best-practices-kubernetes-deployment/"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "input",
+          "spec",
+          "template",
+          "spec",
+          "containers[prompt-sentinel]",
+          "securityContext",
+          "runAsUser"
+        ],
+        "compliance": []
+      }
+    ]
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/hpa.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/hpa.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": true,
+    "infrastructureAsCodeIssues": []
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/ingress.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/ingress.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": true,
+    "infrastructureAsCodeIssues": []
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/namespace.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/namespace.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": true,
+    "infrastructureAsCodeIssues": []
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/rbac.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/rbac.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": false,
+    "infrastructureAsCodeIssues": [
+      {
+        "id": "SNYK-CC-K8S-47",
+        "title": "Role or ClusterRole with dangerous permissions",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "Role",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-K8S-47",
+        "isGeneratedByCustomRule": false,
+        "issue": "A role was found using a dangerous permissions",
+        "impact": "Using this role grants dangerous permissions. For a ClusterRole this would be considered high severity.",
+        "resolve": "Consider removing these permissions",
+        "remediation": {
+          "kubernetes": "Consider removing these permissions",
+          "terraform": "Consider removing these permissions"
+        },
+        "lineNumber": 19,
+        "iacDescription": {
+          "issue": "A role was found using a dangerous permissions",
+          "impact": "Using this role grants dangerous permissions. For a ClusterRole this would be considered high severity.",
+          "resolve": "Consider removing these permissions"
+        },
+        "publicId": "SNYK-CC-K8S-47",
+        "msg": "rules[0].resources",
+        "references": [
+          "https://kubernetes.io/docs/reference/access-authn-authz/rbac/"
+        ],
+        "path": [
+          "[DocId: 1]",
+          "rules[0]",
+          "resources"
+        ],
+        "compliance": []
+      }
+    ]
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/redis.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/redis.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": false,
+    "infrastructureAsCodeIssues": [
+      {
+        "id": "SNYK-CC-K8S-9",
+        "title": "Container is running without privilege escalation control",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "Pod",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-K8S-9",
+        "isGeneratedByCustomRule": false,
+        "issue": "`allowPrivilegeEscalation` attribute is not set to `false`",
+        "impact": "Processes could elevate current privileges via known vectors, for example SUID binaries",
+        "resolve": "Set `spec.{containers, initContainers}.securityContext.allowPrivilegeEscalation` to `false`",
+        "remediation": {
+          "kubernetes": "Set `spec.{containers, initContainers}.securityContext.allowPrivilegeEscalation` to `false`",
+          "terraform": "Set `spec.container.security_context.allow_privilege_escalation` to `false`"
+        },
+        "lineNumber": 20,
+        "iacDescription": {
+          "issue": "`allowPrivilegeEscalation` attribute is not set to `false`",
+          "impact": "Processes could elevate current privileges via known vectors, for example SUID binaries",
+          "resolve": "Set `spec.{containers, initContainers}.securityContext.allowPrivilegeEscalation` to `false`"
+        },
+        "publicId": "SNYK-CC-K8S-9",
+        "msg": "spec.template.spec.containers[redis].securityContext.allowPrivilegeEscalation",
+        "references": [
+          "https://www.kernel.org/doc/html/latest/userspace-api/no_new_privs.html"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "spec",
+          "template",
+          "spec",
+          "containers[redis]",
+          "securityContext",
+          "allowPrivilegeEscalation"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-K8S-10",
+        "title": "Container or Pod is running without root user control",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "Deployment",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-K8S-10",
+        "isGeneratedByCustomRule": false,
+        "issue": "Container or Pod is running without root user control",
+        "impact": "Container or Pod could be running with full administrative privileges",
+        "resolve": "Set `securityContext.runAsNonRoot` to `true`",
+        "remediation": {
+          "kubernetes": "Set `securityContext.runAsNonRoot` to `true`",
+          "terraform": "Set `security_context.run_as_non_root` to `true`"
+        },
+        "lineNumber": 20,
+        "iacDescription": {
+          "issue": "Container or Pod is running without root user control",
+          "impact": "Container or Pod could be running with full administrative privileges",
+          "resolve": "Set `securityContext.runAsNonRoot` to `true`"
+        },
+        "publicId": "SNYK-CC-K8S-10",
+        "msg": "input.spec.template.spec.containers[redis].securityContext.runAsNonRoot",
+        "description": "",
+        "references": [
+          "https://kubernetes.io/blog/2016/08/security-best-practices-kubernetes-deployment/"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "input",
+          "spec",
+          "template",
+          "spec",
+          "containers[redis]",
+          "securityContext",
+          "runAsNonRoot"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-K8S-6",
+        "title": "Container does not drop all default capabilities",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "Deployment",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-K8S-6",
+        "isGeneratedByCustomRule": false,
+        "issue": "All default capabilities are not explicitly dropped",
+        "impact": "Containers are running with potentially unnecessary privileges",
+        "resolve": "Add `ALL` to `securityContext.capabilities.drop` list, and add only required capabilities in `securityContext.capabilities.add`",
+        "remediation": {
+          "kubernetes": "Add `ALL` to `securityContext.capabilities.drop` list, and add only required capabilities in `securityContext.capabilities.add`",
+          "terraform": "Add `ALL` to `spec.container.security_context.capabilities.drop` list, and add only required capabilities to `spec.container.security_context.capabilities.add`, ensuring it also does not contain `ALL`"
+        },
+        "lineNumber": 20,
+        "iacDescription": {
+          "issue": "All default capabilities are not explicitly dropped",
+          "impact": "Containers are running with potentially unnecessary privileges",
+          "resolve": "Add `ALL` to `securityContext.capabilities.drop` list, and add only required capabilities in `securityContext.capabilities.add`"
+        },
+        "publicId": "SNYK-CC-K8S-6",
+        "msg": "input.spec.template.spec.containers[redis].securityContext.capabilities.drop",
+        "references": [
+          "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+          "https://linux-audit.com/linux-capabilities-hardening-linux-binaries-by-removing-setuid/"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "input",
+          "spec",
+          "template",
+          "spec",
+          "containers[redis]",
+          "securityContext",
+          "capabilities",
+          "drop"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-K8S-8",
+        "title": "Container is running with writable root filesystem",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Pod",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-K8S-8",
+        "isGeneratedByCustomRule": false,
+        "issue": "`readOnlyRootFilesystem` attribute is not set to `true`",
+        "impact": "Compromised process could abuse writable root filesystem to elevate privileges",
+        "resolve": "Set `spec.{containers, initContainers}.securityContext.readOnlyRootFilesystem` to `true`",
+        "remediation": {
+          "kubernetes": "Set `spec.{containers, initContainers}.securityContext.readOnlyRootFilesystem` to `true`",
+          "terraform": "Set `security_context.read_only_root_filesystem` to `true`"
+        },
+        "lineNumber": 20,
+        "iacDescription": {
+          "issue": "`readOnlyRootFilesystem` attribute is not set to `true`",
+          "impact": "Compromised process could abuse writable root filesystem to elevate privileges",
+          "resolve": "Set `spec.{containers, initContainers}.securityContext.readOnlyRootFilesystem` to `true`"
+        },
+        "publicId": "SNYK-CC-K8S-8",
+        "msg": "spec.template.spec.containers[redis].securityContext.readOnlyRootFilesystem",
+        "references": [
+          "https://kubernetes.io/blog/2016/08/security-best-practices-kubernetes-deployment/"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "spec",
+          "template",
+          "spec",
+          "containers[redis]",
+          "securityContext",
+          "readOnlyRootFilesystem"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-K8S-11",
+        "title": "Container's or Pod's  UID could clash with host's UID",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Deployment",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-K8S-11",
+        "isGeneratedByCustomRule": false,
+        "issue": "`runAsUser` value is set to low UID",
+        "impact": "UID of the container processes could clash with host's UIDs and lead to unintentional authorization bypass",
+        "resolve": "Set `securityContext.runAsUser` value to greater or equal than 10'000. SecurityContext can be set on both `pod` and `container` level. If both are set, then the container level takes precedence",
+        "remediation": {
+          "kubernetes": "Set `securityContext.runAsUser` value to greater or equal than 10'000. SecurityContext can be set on both `pod` and `container` level. If both are set, then the container level takes precedence",
+          "terraform": "Set `security_context.run_as_user` value to greater or equal than 10'000"
+        },
+        "lineNumber": 20,
+        "iacDescription": {
+          "issue": "`runAsUser` value is set to low UID",
+          "impact": "UID of the container processes could clash with host's UIDs and lead to unintentional authorization bypass",
+          "resolve": "Set `securityContext.runAsUser` value to greater or equal than 10'000. SecurityContext can be set on both `pod` and `container` level. If both are set, then the container level takes precedence"
+        },
+        "publicId": "SNYK-CC-K8S-11",
+        "msg": "input.spec.template.spec.containers[redis].securityContext.runAsUser",
+        "references": [
+          "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container",
+          "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod",
+          "https://kubernetes.io/blog/2016/08/security-best-practices-kubernetes-deployment/"
+        ],
+        "path": [
+          "[DocId: 0]",
+          "input",
+          "spec",
+          "template",
+          "spec",
+          "containers[redis]",
+          "securityContext",
+          "runAsUser"
+        ],
+        "compliance": []
+      }
+    ]
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/secret.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/secret.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": true,
+    "infrastructureAsCodeIssues": []
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/kubernetes/service.yaml",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/kubernetes/service.yaml",
+    "packageManager": "k8sconfig",
+    "path": ".",
+    "projectType": "k8sconfig",
+    "ok": true,
+    "infrastructureAsCodeIssues": []
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/terraform/main.tf",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/terraform/main.tf",
+    "packageManager": "terraformconfig",
+    "path": ".",
+    "projectType": "terraformconfig",
+    "ok": false,
+    "infrastructureAsCodeIssues": [
+      {
+        "id": "SNYK-CC-TF-48",
+        "title": "Load balancer is internet facing",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Elastic Load Balancing",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-48",
+        "isGeneratedByCustomRule": false,
+        "issue": "Load balancer is internet facing",
+        "impact": "Increases attack vector reachability",
+        "resolve": "Set `internal` attribute to `true`",
+        "remediation": {
+          "cloudformation": "Set `Properties.Scheme` attribute to `internal`",
+          "terraform": "Set `internal` attribute to `true`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "Load balancer is internet facing",
+          "impact": "Increases attack vector reachability",
+          "resolve": "Set `internal` attribute to `true`"
+        },
+        "publicId": "SNYK-CC-TF-48",
+        "msg": "resource.aws_lb[prompt_sentinel].internal",
+        "references": [
+          "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-internet-facing-load-balancers.html"
+        ],
+        "path": [
+          "resource",
+          "aws_lb[prompt_sentinel]",
+          "internal"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-TF-1",
+        "title": "Security Group allows open ingress",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "VPC",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-1",
+        "isGeneratedByCustomRule": false,
+        "issue": "That inbound traffic is allowed to a resource from any source instead of a restricted range",
+        "impact": "That potentially everyone can access your resource",
+        "resolve": "Set `cidr_block` attribute with a more restrictive IP, for example `192.16.0.0/24`",
+        "remediation": {
+          "cloudformation": "Set `Properties.SecurityGroupIngress.CidrIp` attribute with a more restrictive IP, for example `192.16.0.0/24`",
+          "terraform": "Set `cidr_block` attribute with a more restrictive IP, for example `192.16.0.0/24`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "That inbound traffic is allowed to a resource from any source instead of a restricted range",
+          "impact": "That potentially everyone can access your resource",
+          "resolve": "Set `cidr_block` attribute with a more restrictive IP, for example `192.16.0.0/24`"
+        },
+        "publicId": "SNYK-CC-TF-1",
+        "msg": "input.resource.aws_security_group[alb].ingress[0]",
+        "references": [
+          "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html"
+        ],
+        "path": [
+          "input",
+          "resource",
+          "aws_security_group[alb]",
+          "ingress[0]"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-TF-1",
+        "title": "Security Group allows open ingress",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "VPC",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-1",
+        "isGeneratedByCustomRule": false,
+        "issue": "That inbound traffic is allowed to a resource from any source instead of a restricted range",
+        "impact": "That potentially everyone can access your resource",
+        "resolve": "Set `cidr_block` attribute with a more restrictive IP, for example `192.16.0.0/24`",
+        "remediation": {
+          "cloudformation": "Set `Properties.SecurityGroupIngress.CidrIp` attribute with a more restrictive IP, for example `192.16.0.0/24`",
+          "terraform": "Set `cidr_block` attribute with a more restrictive IP, for example `192.16.0.0/24`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "That inbound traffic is allowed to a resource from any source instead of a restricted range",
+          "impact": "That potentially everyone can access your resource",
+          "resolve": "Set `cidr_block` attribute with a more restrictive IP, for example `192.16.0.0/24`"
+        },
+        "publicId": "SNYK-CC-TF-1",
+        "msg": "input.resource.aws_security_group[alb].ingress[1]",
+        "references": [
+          "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html"
+        ],
+        "path": [
+          "input",
+          "resource",
+          "aws_security_group[alb]",
+          "ingress[1]"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-AWS-421",
+        "title": "Secrets Manager is not encrypted with customer managed key",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Secrets Manager",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-421",
+        "isGeneratedByCustomRule": false,
+        "issue": "Secrets Manager is not encrypted with customer managed key",
+        "impact": "Scope of use of the encryption key cannot be controlled via KMS/IAM policies",
+        "resolve": "Set `kms_key_id` attribute to customer managed key id",
+        "remediation": {
+          "cloudformation": "Set `Properties.KmsKeyId` attribute to customer managed key id",
+          "terraform": "Set `kms_key_id` attribute to customer managed key id"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "Secrets Manager is not encrypted with customer managed key",
+          "impact": "Scope of use of the encryption key cannot be controlled via KMS/IAM policies",
+          "resolve": "Set `kms_key_id` attribute to customer managed key id"
+        },
+        "publicId": "SNYK-CC-AWS-421",
+        "msg": "resource.aws_secretsmanager_secret[api_keys].kms_key_id",
+        "references": [
+          "https://docs.aws.amazon.com/kms/latest/developerguide/services-secrets-manager.html"
+        ],
+        "path": [
+          "resource",
+          "aws_secretsmanager_secret[api_keys]",
+          "kms_key_id"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-AWS-405",
+        "title": "ALB does not drop invalid headers",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "Elastic Load Balancing",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-405",
+        "isGeneratedByCustomRule": false,
+        "issue": "The application load balancer is not set to drop invalid headers.",
+        "impact": "Maliciously crafted headers may be accepted by the load balancer",
+        "resolve": "Set `drop_invalid_header_fields` to `true`",
+        "remediation": {
+          "cloudformation": "Set `Properties.LoadBalancerAttributes.Key` to `routing.http.drop_invalid_header_fields.enabled` and `Properties.LoadBalancerAttributes.Value` to `true`",
+          "terraform": "Set `drop_invalid_header_fields` to `true`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "The application load balancer is not set to drop invalid headers.",
+          "impact": "Maliciously crafted headers may be accepted by the load balancer",
+          "resolve": "Set `drop_invalid_header_fields` to `true`"
+        },
+        "publicId": "SNYK-CC-AWS-405",
+        "msg": "resource.aws_lb[prompt_sentinel]",
+        "references": [
+          "https://docs.aws.amazon.com/config/latest/developerguide/alb-http-drop-invalid-header-enabled.html"
+        ],
+        "path": [
+          "resource",
+          "aws_lb[prompt_sentinel]"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-TF-73",
+        "title": "AWS Security Group allows open egress",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "VPC",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-73",
+        "isGeneratedByCustomRule": false,
+        "issue": "The inline security group rule allows open egress",
+        "impact": "Open egress can be used to exfiltrate data to unauthorized destinations, and enable access to potentially malicious resources",
+        "resolve": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`",
+        "remediation": {
+          "cloudformation": "Set `Properties.SecurityGroupEgress.CidrIp` attribute to specific ranges e.g. `192.168.1.0/24`",
+          "terraform": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "The inline security group rule allows open egress",
+          "impact": "Open egress can be used to exfiltrate data to unauthorized destinations, and enable access to potentially malicious resources",
+          "resolve": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`"
+        },
+        "publicId": "SNYK-CC-TF-73",
+        "msg": "resource.aws_security_group[alb].egress",
+        "references": [
+          "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html",
+          "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-best-practices.html"
+        ],
+        "path": [
+          "resource",
+          "aws_security_group[alb]",
+          "egress"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-TF-73",
+        "title": "AWS Security Group allows open egress",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "VPC",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-73",
+        "isGeneratedByCustomRule": false,
+        "issue": "The inline security group rule allows open egress",
+        "impact": "Open egress can be used to exfiltrate data to unauthorized destinations, and enable access to potentially malicious resources",
+        "resolve": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`",
+        "remediation": {
+          "cloudformation": "Set `Properties.SecurityGroupEgress.CidrIp` attribute to specific ranges e.g. `192.168.1.0/24`",
+          "terraform": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "The inline security group rule allows open egress",
+          "impact": "Open egress can be used to exfiltrate data to unauthorized destinations, and enable access to potentially malicious resources",
+          "resolve": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`"
+        },
+        "publicId": "SNYK-CC-TF-73",
+        "msg": "resource.aws_security_group[ecs_tasks].egress",
+        "references": [
+          "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html",
+          "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-best-practices.html"
+        ],
+        "path": [
+          "resource",
+          "aws_security_group[ecs_tasks]",
+          "egress"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-AWS-407",
+        "title": "ElastiCache automatic backup is disabled",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "ElastiCache",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-407",
+        "isGeneratedByCustomRule": false,
+        "issue": "ElastiCache cluster automatic backup is disabled",
+        "impact": "No cluster backups will be saved automatically, rebuilding after disaster may be more difficult",
+        "resolve": "Set `resource.snapshot_retention_limit` to `1` or more",
+        "remediation": {
+          "cloudformation": "Set `Properties.SnapshotRetentionLimit` to `1` or more",
+          "terraform": "Set `resource.snapshot_retention_limit` to `1` or more"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "ElastiCache cluster automatic backup is disabled",
+          "impact": "No cluster backups will be saved automatically, rebuilding after disaster may be more difficult",
+          "resolve": "Set `resource.snapshot_retention_limit` to `1` or more"
+        },
+        "publicId": "SNYK-CC-AWS-407",
+        "msg": "resource.aws_elasticache_cluster[redis]",
+        "references": [
+          "https://docs.aws.amazon.com/AmazonElastiCache/latest/APIReference/API_Snapshot.html"
+        ],
+        "path": [
+          "resource",
+          "aws_elasticache_cluster[redis]"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-TF-73",
+        "title": "AWS Security Group allows open egress",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "VPC",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-73",
+        "isGeneratedByCustomRule": false,
+        "issue": "The inline security group rule allows open egress",
+        "impact": "Open egress can be used to exfiltrate data to unauthorized destinations, and enable access to potentially malicious resources",
+        "resolve": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`",
+        "remediation": {
+          "cloudformation": "Set `Properties.SecurityGroupEgress.CidrIp` attribute to specific ranges e.g. `192.168.1.0/24`",
+          "terraform": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "The inline security group rule allows open egress",
+          "impact": "Open egress can be used to exfiltrate data to unauthorized destinations, and enable access to potentially malicious resources",
+          "resolve": "Set `egress.cidr_blocks` attribute to specific ranges e.g. `192.168.1.0/24`"
+        },
+        "publicId": "SNYK-CC-TF-73",
+        "msg": "resource.aws_security_group[redis].egress",
+        "references": [
+          "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html",
+          "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-best-practices.html"
+        ],
+        "path": [
+          "resource",
+          "aws_security_group[redis]",
+          "egress"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-TF-47",
+        "title": "Load balancer endpoint does not enforce HTTPS",
+        "severity": "medium",
+        "isIgnored": false,
+        "subType": "Elastic Load Balancing",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-TF-47",
+        "isGeneratedByCustomRule": false,
+        "issue": "Load balancer endpoint does not enforce HTTPS",
+        "impact": "The content could be intercepted and manipulated in transit",
+        "resolve": "Set the `protocol` attribute to `HTTPS` or `TLS`",
+        "remediation": {
+          "cloudformation": "Set the `Properties.Protocol` attribute to `HTTPS` or `TLS`",
+          "terraform": "Set the `protocol` attribute to `HTTPS` or `TLS`"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "Load balancer endpoint does not enforce HTTPS",
+          "impact": "The content could be intercepted and manipulated in transit",
+          "resolve": "Set the `protocol` attribute to `HTTPS` or `TLS`"
+        },
+        "publicId": "SNYK-CC-TF-47",
+        "msg": "resource.aws_lb_listener[prompt_sentinel].protocol",
+        "references": [
+          "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html"
+        ],
+        "path": [
+          "resource",
+          "aws_lb_listener[prompt_sentinel]",
+          "protocol"
+        ],
+        "compliance": []
+      },
+      {
+        "id": "SNYK-CC-AWS-415",
+        "title": "CloudWatch log group not encrypted with managed key",
+        "severity": "low",
+        "isIgnored": false,
+        "subType": "CloudWatch",
+        "documentation": "https://security.snyk.io/rules/cloud/SNYK-CC-AWS-415",
+        "isGeneratedByCustomRule": false,
+        "issue": "Log group is not encrypted with customer managed key",
+        "impact": "Scope of use of the key cannot be controlled via KMS/IAM policies",
+        "resolve": "Set `kms_key_id` attribute with customer managed key id",
+        "remediation": {
+          "cloudformation": "Set `Properties.KmsKeyId` attribute with customer managed key id",
+          "terraform": "Set `kms_key_id` attribute with customer managed key id"
+        },
+        "lineNumber": -1,
+        "iacDescription": {
+          "issue": "Log group is not encrypted with customer managed key",
+          "impact": "Scope of use of the key cannot be controlled via KMS/IAM policies",
+          "resolve": "Set `kms_key_id` attribute with customer managed key id"
+        },
+        "publicId": "SNYK-CC-AWS-415",
+        "msg": "resource.aws_cloudwatch_log_group[prompt_sentinel].kms_key_id",
+        "references": [
+          "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html",
+          "https://docs.aws.amazon.com/whitepapers/latest/kms-best-practices/aws-managed-and-customer-managed-cmks.html"
+        ],
+        "path": [
+          "resource",
+          "aws_cloudwatch_log_group[prompt_sentinel]",
+          "kms_key_id"
+        ],
+        "compliance": []
+      }
+    ]
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/terraform/outputs.tf",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/terraform/outputs.tf",
+    "packageManager": "terraformconfig",
+    "path": ".",
+    "projectType": "terraformconfig",
+    "ok": true,
+    "infrastructureAsCodeIssues": []
+  },
+  {
+    "meta": {
+      "isPrivate": true,
+      "isLicensesEnabled": false,
+      "ignoreSettings": {
+        "adminOnly": false,
+        "reasonRequired": false,
+        "disregardFilesystemIgnores": false
+      },
+      "org": "rhoska",
+      "orgPublicId": "106d32b0-b8e4-4c00-b700-03e1b99bd4a3",
+      "policy": ""
+    },
+    "filesystemPolicy": false,
+    "vulnerabilities": [],
+    "dependencyCount": 0,
+    "licensesPolicy": null,
+    "ignoreSettings": null,
+    "targetFile": "deployment/terraform/variables.tf",
+    "projectName": "PromptSentinel",
+    "org": "rhoska",
+    "policy": "",
+    "isPrivate": true,
+    "targetFilePath": "/Users/rhoska/Code/Personal/PromptSentinel/deployment/terraform/variables.tf",
+    "packageManager": "terraformconfig",
+    "path": ".",
+    "projectType": "terraformconfig",
+    "ok": true,
+    "infrastructureAsCodeIssues": []
+  }
+]

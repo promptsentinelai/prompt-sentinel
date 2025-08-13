@@ -9,7 +9,7 @@ This guide covers various deployment options for PromptSentinel, from simple Doc
 PromptSentinel is available on Docker Hub:
 
 ```bash
-docker pull promptsentinel/prompt-sentinel:latest
+docker pull promptsentinelai/prompt-sentinel:latest
 ```
 
 Available tags:
@@ -24,7 +24,7 @@ Available tags:
 
 ```bash
 # Pull the image
-docker pull promptsentinel/prompt-sentinel:latest
+docker pull promptsentinelai/prompt-sentinel:latest
 
 # Run with environment file
 docker run -d \
@@ -32,7 +32,7 @@ docker run -d \
   -p 8080:8080 \
   --env-file .env \
   --restart unless-stopped \
-  promptsentinel/prompt-sentinel:latest
+  promptsentinelai/prompt-sentinel:latest
 ```
 
 ### Docker Compose
@@ -45,7 +45,7 @@ version: '3.8'
 
 services:
   prompt-sentinel:
-    image: promptsentinel/prompt-sentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     ports:
       - "8080:8080"
     env_file:
@@ -66,7 +66,7 @@ version: '3.8'
 
 services:
   prompt-sentinel:
-    image: promptsentinel/prompt-sentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     ports:
       - "8080:8080"
     env_file:
@@ -134,7 +134,7 @@ helm repo add promptsentinel https://charts.promptsentinel.ai
 helm repo update
 
 # Install with custom values
-helm install prompt-sentinel promptsentinel/prompt-sentinel \
+helm install prompt-sentinel promptsentinelai/prompt-sentinel \
   --set image.tag=latest \
   --set secrets.anthropicApiKey=$ANTHROPIC_API_KEY \
   --set redis.enabled=true \
@@ -185,7 +185,7 @@ spec:
     spec:
       containers:
       - name: prompt-sentinel
-        image: promptsentinel/prompt-sentinel:latest
+        image: promptsentinelai/prompt-sentinel:latest
         ports:
         - containerPort: 8080
         env:
@@ -285,7 +285,7 @@ spec:
   "containerDefinitions": [
     {
       "name": "prompt-sentinel",
-      "image": "promptsentinel/prompt-sentinel:latest",
+      "image": "promptsentinelai/prompt-sentinel:latest",
       "portMappings": [
         {
           "containerPort": 8080,
@@ -351,7 +351,7 @@ az group create --name prompt-sentinel-rg --location eastus
 az container create \
   --resource-group prompt-sentinel-rg \
   --name prompt-sentinel \
-  --image promptsentinel/prompt-sentinel:latest \
+  --image promptsentinelai/prompt-sentinel:latest \
   --dns-name-label prompt-sentinel-api \
   --ports 8080 \
   --environment-variables \
@@ -373,7 +373,7 @@ version: '3.8'
 
 services:
   prompt-sentinel-1:
-    image: promptsentinel/prompt-sentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     environment:
       - NODE_ID=1
     deploy:
@@ -383,7 +383,7 @@ services:
           - node.labels.zone == zone-1
 
   prompt-sentinel-2:
-    image: promptsentinel/prompt-sentinel:latest
+    image: promptsentinelai/prompt-sentinel:latest
     environment:
       - NODE_ID=2
     deploy:
@@ -613,9 +613,9 @@ Before deploying to production:
 
 ## 🆘 Support
 
-- GitHub Issues: https://github.com/rhoska/prompt-sentinel/issues
+- GitHub Issues: https://github.com/promptsentinelai/prompt-sentinel/issues
 - Documentation: https://docs.promptsentinel.ai
-- Docker Hub: https://hub.docker.com/r/promptsentinel/prompt-sentinel
+- Docker Hub: https://hub.docker.com/r/promptsentinelai/prompt-sentinel
 
 ---
 

@@ -5,9 +5,10 @@
 
 """Simplified tests for experiment assignments module."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from prompt_sentinel.experiments.assignments import (
     AssignmentContext,
@@ -44,7 +45,7 @@ class TestAssignmentContext:
     def test_initialization_minimal(self):
         """Test assignment context initialization with minimal data."""
         context = AssignmentContext(user_id="user_001")
-        
+
         assert context.user_id == "user_001"
         assert context.session_id is None
         assert context.ip_address is None
@@ -57,16 +58,16 @@ class TestAssignmentContext:
         """Test assignment context initialization with full data."""
         timestamp = datetime.utcnow()
         attributes = {"device": "mobile", "region": "us-east"}
-        
+
         context = AssignmentContext(
             user_id="user_001",
             session_id="sess_123",
             ip_address="192.168.1.1",
             user_agent="Mozilla/5.0",
             attributes=attributes,
-            timestamp=timestamp
+            timestamp=timestamp,
         )
-        
+
         assert context.user_id == "user_001"
         assert context.session_id == "sess_123"
         assert context.ip_address == "192.168.1.1"
@@ -91,7 +92,7 @@ class TestAssignmentService:
             session_id="sess_123",
             ip_address="192.168.1.1",
             user_agent="Mozilla/5.0",
-            attributes={"device": "mobile", "region": "us-east"}
+            attributes={"device": "mobile", "region": "us-east"},
         )
 
     def test_initialization(self, assignment_service):
@@ -113,12 +114,9 @@ class TestAssignmentService:
         mock_experiment.is_active.return_value = False
         mock_experiment.id = "exp_001"
         mock_experiment.status.value = "draft"
-        
-        assignment = await assignment_service.assign_user(
-            assignment_context,
-            mock_experiment
-        )
-        
+
+        assignment = await assignment_service.assign_user(assignment_context, mock_experiment)
+
         assert assignment is None
 
     @pytest.mark.asyncio
@@ -131,37 +129,39 @@ class TestAssignmentService:
     async def test_get_existing_assignment_memory_cache(self, assignment_service):
         """Test getting existing assignment from memory cache."""
         from prompt_sentinel.experiments.config import ExperimentAssignment
-        
+
         # Create assignment in memory cache
         assignment = ExperimentAssignment(
             user_id="user_001",
             experiment_id="exp_001",
             variant_id="control",
-            assigned_at=datetime.utcnow()
+            assigned_at=datetime.utcnow(),
         )
-        
+
         cache_key = "assignment:exp_001:user_001"
         assignment_service.assignments_cache[cache_key] = assignment
-        
+
         result = await assignment_service._get_existing_assignment("user_001", "exp_001")
-        
+
         assert result == assignment
 
     @pytest.mark.asyncio
     async def test_get_existing_assignment_from_redis(self, assignment_service):
         """Test getting existing assignment from Redis."""
-        with patch('prompt_sentinel.experiments.assignments.cache_manager') as mock_cache:
+        with patch("prompt_sentinel.experiments.assignments.cache_manager") as mock_cache:
             mock_cache.connected = True
-            mock_cache.get = AsyncMock(return_value={
-                "user_id": "user_001",
-                "experiment_id": "exp_001",
-                "variant_id": "control",
-                "assigned_at": datetime.utcnow().isoformat(),
-                "sticky": True
-            })
-            
+            mock_cache.get = AsyncMock(
+                return_value={
+                    "user_id": "user_001",
+                    "experiment_id": "exp_001",
+                    "variant_id": "control",
+                    "assigned_at": datetime.utcnow().isoformat(),
+                    "sticky": True,
+                }
+            )
+
             assignment = await assignment_service._get_existing_assignment("user_001", "exp_001")
-            
+
             assert assignment is not None
             assert assignment.user_id == "user_001"
             assert assignment.variant_id == "control"
@@ -170,16 +170,16 @@ class TestAssignmentService:
     async def test_cache_assignment_memory_only(self, assignment_service):
         """Test caching assignment in memory."""
         from prompt_sentinel.experiments.config import ExperimentAssignment
-        
+
         assignment = ExperimentAssignment(
             user_id="user_001",
             experiment_id="exp_001",
             variant_id="control",
-            assigned_at=datetime.utcnow()
+            assigned_at=datetime.utcnow(),
         )
-        
+
         await assignment_service._cache_assignment(assignment)
-        
+
         cache_key = "assignment:exp_001:user_001"
         assert cache_key in assignment_service.assignments_cache
         assert assignment_service.assignments_cache[cache_key] == assignment
@@ -188,47 +188,51 @@ class TestAssignmentService:
         """Test targeting filters pass when no filters configured."""
         mock_experiment = MagicMock()
         mock_experiment.target_filters = {}
-        
+
         result = assignment_service._passes_targeting_filters(assignment_context, mock_experiment)
-        
+
         assert result is True
 
-    def test_passes_targeting_filters_min_requests_pass(self, assignment_service, assignment_context):
+    def test_passes_targeting_filters_min_requests_pass(
+        self, assignment_service, assignment_context
+    ):
         """Test min_requests filter passes."""
         mock_experiment = MagicMock()
         mock_experiment.target_filters = {"min_requests": 10}
         assignment_context.attributes = {"total_requests": 50}
-        
+
         result = assignment_service._passes_targeting_filters(assignment_context, mock_experiment)
-        
+
         assert result is True
 
-    def test_passes_targeting_filters_min_requests_fail(self, assignment_service, assignment_context):
+    def test_passes_targeting_filters_min_requests_fail(
+        self, assignment_service, assignment_context
+    ):
         """Test min_requests filter fails."""
         mock_experiment = MagicMock()
         mock_experiment.target_filters = {"min_requests": 100}
         assignment_context.attributes = {"total_requests": 50}
-        
+
         result = assignment_service._passes_targeting_filters(assignment_context, mock_experiment)
-        
+
         assert result is False
 
     def test_is_in_experiment_sample_full_percentage(self, assignment_service):
         """Test sample inclusion with 100% target percentage."""
         mock_experiment = MagicMock()
         mock_experiment.target_percentage = 1.0
-        
+
         result = assignment_service._is_in_experiment_sample("user_001", mock_experiment)
-        
+
         assert result is True
 
     def test_is_in_experiment_sample_zero_percentage(self, assignment_service):
         """Test sample exclusion with 0% target percentage."""
         mock_experiment = MagicMock()
         mock_experiment.target_percentage = 0.0
-        
+
         result = assignment_service._is_in_experiment_sample("user_001", mock_experiment)
-        
+
         assert result is False
 
     def test_hash_based_assignment_consistent(self, assignment_service):
@@ -236,22 +240,22 @@ class TestAssignmentService:
         # Mock experiment with variants
         mock_experiment = MagicMock()
         mock_experiment.id = "exp_001"
-        
+
         # Mock variants
         control_variant = MagicMock()
         control_variant.id = "control"
         control_variant.traffic_percentage = 0.5
-        
+
         treatment_variant = MagicMock()
         treatment_variant.id = "treatment"
         treatment_variant.traffic_percentage = 0.5
-        
+
         mock_experiment.variants = [control_variant, treatment_variant]
         mock_experiment.get_control_variant.return_value = control_variant
-        
+
         variant1 = assignment_service._hash_based_assignment("user_001", mock_experiment)
         variant2 = assignment_service._hash_based_assignment("user_001", mock_experiment)
-        
+
         assert variant1 == variant2
 
     def test_weighted_assignment_consistent(self, assignment_service):
@@ -259,25 +263,25 @@ class TestAssignmentService:
         # Mock experiment with variants
         mock_experiment = MagicMock()
         mock_experiment.id = "exp_001"
-        
+
         control_variant = MagicMock()
         control_variant.traffic_percentage = 0.5
-        
+
         treatment_variant = MagicMock()
         treatment_variant.traffic_percentage = 0.5
-        
+
         mock_experiment.variants = [control_variant, treatment_variant]
-        
+
         variant1 = assignment_service._weighted_assignment("user_001", mock_experiment)
         variant2 = assignment_service._weighted_assignment("user_001", mock_experiment)
-        
+
         assert variant1 == variant2
 
     @pytest.mark.asyncio
     async def test_get_assignment_stats_empty(self, assignment_service):
         """Test getting assignment statistics when empty."""
         stats = await assignment_service.get_assignment_stats("exp_001")
-        
+
         assert stats["experiment_id"] == "exp_001"
         assert stats["total_assignments"] == 0
         assert stats["variant_counts"] == {}
@@ -286,51 +290,49 @@ class TestAssignmentService:
     async def test_invalidate_assignments_memory(self, assignment_service):
         """Test invalidating assignments from memory."""
         from prompt_sentinel.experiments.config import ExperimentAssignment
-        
+
         # Add test assignments
         for i in range(3):
             assignment = ExperimentAssignment(
                 user_id=f"user_{i}",
                 experiment_id="exp_001",
                 variant_id="control",
-                assigned_at=datetime.utcnow()
+                assigned_at=datetime.utcnow(),
             )
             cache_key = f"assignment:exp_001:user_{i}"
             assignment_service.assignments_cache[cache_key] = assignment
-        
+
         # Add assignment for different experiment
         other_assignment = ExperimentAssignment(
             user_id="user_other",
             experiment_id="exp_002",
             variant_id="control",
-            assigned_at=datetime.utcnow()
+            assigned_at=datetime.utcnow(),
         )
         assignment_service.assignments_cache["assignment:exp_002:user_other"] = other_assignment
-        
+
         await assignment_service.invalidate_assignments("exp_001")
-        
+
         # Should remove exp_001 assignments but keep exp_002
         exp_001_keys = [k for k in assignment_service.assignments_cache.keys() if ":exp_001:" in k]
         exp_002_keys = [k for k in assignment_service.assignments_cache.keys() if ":exp_002:" in k]
-        
+
         assert len(exp_001_keys) == 0
         assert len(exp_002_keys) == 1
 
-    @pytest.mark.asyncio 
+    @pytest.mark.asyncio
     async def test_assign_to_variant_unknown_strategy(self, assignment_service, assignment_context):
         """Test assign_to_variant with unknown strategy raises error."""
         mock_experiment = MagicMock()
         mock_experiment.id = "exp_001"
-        
-        # Create unknown strategy 
+
+        # Create unknown strategy
         unknown_strategy = MagicMock()
         unknown_strategy.value = "unknown"
-        
+
         with pytest.raises(AssignmentError, match="Unknown bucketing strategy"):
             await assignment_service._assign_to_variant(
-                assignment_context,
-                mock_experiment,
-                unknown_strategy
+                assignment_context, mock_experiment, unknown_strategy
             )
 
     @pytest.mark.asyncio
@@ -338,13 +340,10 @@ class TestAssignmentService:
         """Test bulk assignment handles exceptions gracefully."""
         contexts = [AssignmentContext(user_id="user_001")]
         mock_experiment = MagicMock()
-        
+
         # Mock assign_user to raise exception
-        with patch.object(assignment_service, 'assign_user', side_effect=Exception("Test error")):
-            assignments = await assignment_service.bulk_assign_users(
-                contexts,
-                mock_experiment
-            )
-        
+        with patch.object(assignment_service, "assign_user", side_effect=Exception("Test error")):
+            assignments = await assignment_service.bulk_assign_users(contexts, mock_experiment)
+
         assert len(assignments) == 1
         assert assignments[0] is None

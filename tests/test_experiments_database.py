@@ -11,7 +11,6 @@ import pytest
 pytestmark = pytest.mark.skip(reason="Experiments database is partially implemented")
 
 import asyncio
-import json
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -41,11 +40,11 @@ class TestExperimentDatabase:
         """Create a temporary database for testing."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
             db_path = tmp.name
-        
+
         db = ExperimentDatabase(db_path)
         await db.initialize()
         yield db
-        
+
         # Cleanup
         Path(db_path).unlink(missing_ok=True)
 
@@ -92,46 +91,45 @@ class TestExperimentDatabase:
         """Test database initialization."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
             db_path = tmp.name
-        
+
         db = ExperimentDatabase(db_path)
         assert not db.initialized
-        
+
         await db.initialize()
         assert db.initialized
-        
+
         # Should not reinitialize
         await db.initialize()
         assert db.initialized
-        
+
         # Check tables exist
         async with aiosqlite.connect(db_path) as conn:
-            cursor = await conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            )
+            cursor = await conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
             tables = await cursor.fetchall()
             table_names = [t[0] for t in tables]
-            
+
             assert "experiments" in table_names
             assert "experiment_metrics" in table_names
             assert "experiment_assignments" in table_names
             assert "experiment_results" in table_names
-            assert "safety_violations" in table_names  # Table is named safety_violations not guardrail_violations
-        
+            assert (
+                "safety_violations" in table_names
+            )  # Table is named safety_violations not guardrail_violations
+
         Path(db_path).unlink(missing_ok=True)
 
     @pytest.mark.asyncio
     async def test_save_experiment(self, temp_db, sample_experiment_config):
         """Test saving an experiment configuration."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Verify saved data
         async with aiosqlite.connect(temp_db.db_path) as conn:
             cursor = await conn.execute(
-                "SELECT * FROM experiments WHERE id = ?",
-                (sample_experiment_config.id,)
+                "SELECT * FROM experiments WHERE id = ?", (sample_experiment_config.id,)
             )
             row = await cursor.fetchone()
-            
+
             assert row is not None
             assert row[0] == sample_experiment_config.id
             assert row[1] == sample_experiment_config.name
@@ -143,11 +141,11 @@ class TestExperimentDatabase:
     async def test_save_experiment_duplicate(self, temp_db, sample_experiment_config):
         """Test saving duplicate experiment raises error."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Saving again should update
         sample_experiment_config.status = ExperimentStatus.RUNNING
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Verify updated
         experiment = await temp_db.get_experiment(sample_experiment_config.id)
         assert experiment.status == ExperimentStatus.RUNNING
@@ -156,9 +154,9 @@ class TestExperimentDatabase:
     async def test_get_experiment(self, temp_db, sample_experiment_config):
         """Test retrieving an experiment."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         experiment = await temp_db.get_experiment(sample_experiment_config.id)
-        
+
         assert experiment is not None
         assert experiment.id == sample_experiment_config.id
         assert experiment.name == sample_experiment_config.name
@@ -176,13 +174,12 @@ class TestExperimentDatabase:
     async def test_update_experiment_status(self, temp_db, sample_experiment_config):
         """Test updating experiment status."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Update status
         await temp_db.update_experiment_status(
-            sample_experiment_config.id,
-            ExperimentStatus.RUNNING
+            sample_experiment_config.id, ExperimentStatus.RUNNING
         )
-        
+
         # Verify update
         experiment = await temp_db.get_experiment(sample_experiment_config.id)
         assert experiment.status == ExperimentStatus.RUNNING
@@ -192,22 +189,22 @@ class TestExperimentDatabase:
         """Test listing experiments."""
         # Save multiple experiments
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         config2 = sample_experiment_config.model_copy()
         config2.id = "exp_002"
         config2.name = "Second Experiment"
         config2.status = ExperimentStatus.COMPLETED
         await temp_db.save_experiment(config2)
-        
+
         # List all
         experiments = await temp_db.list_experiments()
         assert len(experiments) == 2
-        
+
         # List by status
         running = await temp_db.list_experiments(status=ExperimentStatus.DRAFT)
         assert len(running) == 1
         assert running[0].id == sample_experiment_config.id
-        
+
         completed = await temp_db.list_experiments(status=ExperimentStatus.COMPLETED)
         assert len(completed) == 1
         assert completed[0].id == "exp_002"
@@ -216,7 +213,7 @@ class TestExperimentDatabase:
     async def test_record_metric(self, temp_db, sample_experiment_config):
         """Test recording experiment metrics."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Record metrics
         await temp_db.record_metric(
             experiment_id=sample_experiment_config.id,
@@ -224,9 +221,9 @@ class TestExperimentDatabase:
             user_id="user_001",
             metric_name="false_positive_rate",
             value=0.05,
-            metadata={"session_id": "sess_001"}
+            metadata={"session_id": "sess_001"},
         )
-        
+
         await temp_db.record_metric(
             experiment_id=sample_experiment_config.id,
             variant_id="treatment",
@@ -234,12 +231,12 @@ class TestExperimentDatabase:
             metric_name="false_positive_rate",
             value=0.08,
         )
-        
+
         # Verify metrics recorded
         async with aiosqlite.connect(temp_db.db_path) as conn:
             cursor = await conn.execute(
                 "SELECT COUNT(*) FROM experiment_metrics WHERE experiment_id = ?",
-                (sample_experiment_config.id,)
+                (sample_experiment_config.id,),
             )
             count = await cursor.fetchone()
             assert count[0] == 2
@@ -248,7 +245,7 @@ class TestExperimentDatabase:
     async def test_get_metrics(self, temp_db, sample_experiment_config):
         """Test retrieving experiment metrics."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Record multiple metrics
         for i in range(10):
             await temp_db.record_metric(
@@ -258,22 +255,20 @@ class TestExperimentDatabase:
                 metric_name="detection_accuracy",
                 value=0.9 + (i * 0.01),
             )
-        
+
         # Get all metrics
         metrics = await temp_db.get_metrics(sample_experiment_config.id)
         assert len(metrics) == 10
-        
+
         # Get metrics for specific variant
         control_metrics = await temp_db.get_metrics(
-            sample_experiment_config.id,
-            variant_id="control"
+            sample_experiment_config.id, variant_id="control"
         )
         assert len(control_metrics) == 5
-        
+
         # Get specific metric
         accuracy_metrics = await temp_db.get_metrics(
-            sample_experiment_config.id,
-            metric_name="detection_accuracy"
+            sample_experiment_config.id, metric_name="detection_accuracy"
         )
         assert len(accuracy_metrics) == 10
         assert all(m["metric_name"] == "detection_accuracy" for m in accuracy_metrics)
@@ -282,20 +277,19 @@ class TestExperimentDatabase:
     async def test_record_assignment(self, temp_db, sample_experiment_config):
         """Test recording user assignments."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Record assignment
         await temp_db.record_assignment(
             experiment_id=sample_experiment_config.id,
             user_id="user_001",
             variant_id="control",
-            context={"ip": "192.168.1.1", "device": "mobile"}
+            context={"ip": "192.168.1.1", "device": "mobile"},
         )
-        
+
         # Verify assignment recorded
         async with aiosqlite.connect(temp_db.db_path) as conn:
             cursor = await conn.execute(
-                "SELECT * FROM experiment_assignments WHERE user_id = ?",
-                ("user_001",)
+                "SELECT * FROM experiment_assignments WHERE user_id = ?", ("user_001",)
             )
             row = await cursor.fetchone()
             assert row is not None
@@ -306,26 +300,20 @@ class TestExperimentDatabase:
     async def test_get_assignment(self, temp_db, sample_experiment_config):
         """Test retrieving user assignment."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # No assignment initially
-        assignment = await temp_db.get_assignment(
-            sample_experiment_config.id,
-            "user_001"
-        )
+        assignment = await temp_db.get_assignment(sample_experiment_config.id, "user_001")
         assert assignment is None
-        
+
         # Record assignment
         await temp_db.record_assignment(
             experiment_id=sample_experiment_config.id,
             user_id="user_001",
             variant_id="treatment",
         )
-        
+
         # Get assignment
-        assignment = await temp_db.get_assignment(
-            sample_experiment_config.id,
-            "user_001"
-        )
+        assignment = await temp_db.get_assignment(sample_experiment_config.id, "user_001")
         assert assignment is not None
         assert assignment["variant_id"] == "treatment"
         assert assignment["user_id"] == "user_001"
@@ -334,7 +322,7 @@ class TestExperimentDatabase:
     async def test_save_experiment_result(self, temp_db, sample_experiment_config):
         """Test saving experiment analysis results."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Create result
         result = ExperimentResult(
             experiment_id=sample_experiment_config.id,
@@ -354,14 +342,14 @@ class TestExperimentDatabase:
             recommendation="Continue experiment",
             analysis_timestamp=datetime.utcnow(),
         )
-        
+
         await temp_db.save_experiment_result(result)
-        
+
         # Verify saved
         async with aiosqlite.connect(temp_db.db_path) as conn:
             cursor = await conn.execute(
                 "SELECT * FROM experiment_results WHERE experiment_id = ?",
-                (sample_experiment_config.id,)
+                (sample_experiment_config.id,),
             )
             row = await cursor.fetchone()
             assert row is not None
@@ -371,11 +359,11 @@ class TestExperimentDatabase:
     async def test_get_experiment_results(self, temp_db, sample_experiment_config):
         """Test retrieving experiment results."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # No results initially
         results = await temp_db.get_experiment_results(sample_experiment_config.id)
         assert len(results) == 0
-        
+
         # Save multiple results
         for i in range(3):
             result = ExperimentResult(
@@ -389,20 +377,20 @@ class TestExperimentDatabase:
                 analysis_timestamp=datetime.utcnow() + timedelta(hours=i),
             )
             await temp_db.save_experiment_result(result)
-        
+
         # Get all results
         results = await temp_db.get_experiment_results(sample_experiment_config.id)
         assert len(results) == 3
-        
+
         # Results should be ordered by timestamp
         for i in range(1, len(results)):
-            assert results[i]["analysis_timestamp"] > results[i-1]["analysis_timestamp"]
+            assert results[i]["analysis_timestamp"] > results[i - 1]["analysis_timestamp"]
 
     @pytest.mark.asyncio
     async def test_record_guardrail_violation(self, temp_db, sample_experiment_config):
         """Test recording guardrail violations."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Create violation
         violation = GuardrailViolation(
             experiment_id=sample_experiment_config.id,
@@ -414,9 +402,9 @@ class TestExperimentDatabase:
             timestamp=datetime.utcnow(),
             auto_stopped=True,
         )
-        
+
         await temp_db.record_guardrail_violation(violation)
-        
+
         # Verify recorded
         violations = await temp_db.get_guardrail_violations(sample_experiment_config.id)
         assert len(violations) == 1
@@ -428,7 +416,7 @@ class TestExperimentDatabase:
     async def test_get_guardrail_violations(self, temp_db, sample_experiment_config):
         """Test retrieving guardrail violations."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Record multiple violations
         for i in range(3):
             violation = GuardrailViolation(
@@ -442,11 +430,11 @@ class TestExperimentDatabase:
                 auto_stopped=i == 2,
             )
             await temp_db.record_guardrail_violation(violation)
-        
+
         # Get all violations
         violations = await temp_db.get_guardrail_violations(sample_experiment_config.id)
         assert len(violations) == 3
-        
+
         # Check high severity violation
         high_severity = [v for v in violations if v["severity"] == "high"]
         assert len(high_severity) == 1
@@ -456,7 +444,7 @@ class TestExperimentDatabase:
     async def test_delete_experiment(self, temp_db, sample_experiment_config):
         """Test deleting an experiment and its data."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Add some data
         await temp_db.record_metric(
             experiment_id=sample_experiment_config.id,
@@ -470,14 +458,14 @@ class TestExperimentDatabase:
             user_id="user_001",
             variant_id="control",
         )
-        
+
         # Delete experiment
         await temp_db.delete_experiment(sample_experiment_config.id)
-        
+
         # Verify deleted
         experiment = await temp_db.get_experiment(sample_experiment_config.id)
         assert experiment is None
-        
+
         # Verify cascaded deletes
         metrics = await temp_db.get_metrics(sample_experiment_config.id)
         assert len(metrics) == 0
@@ -488,7 +476,7 @@ class TestExperimentDatabase:
         # Test with invalid experiment ID
         with pytest.raises(DatabaseError):
             await temp_db.update_experiment_status("non_existent", ExperimentStatus.RUNNING)
-        
+
         # Test with corrupted database connection
         temp_db.db_path = "/invalid/path/to/db.db"
         with pytest.raises(DatabaseError):
@@ -498,7 +486,7 @@ class TestExperimentDatabase:
     async def test_concurrent_operations(self, temp_db, sample_experiment_config):
         """Test concurrent database operations."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Simulate concurrent metric recording
         async def record_metrics(variant_id, start_idx):
             for i in range(10):
@@ -509,14 +497,14 @@ class TestExperimentDatabase:
                     metric_name="concurrent_test",
                     value=float(i),
                 )
-        
+
         # Run concurrent operations
         await asyncio.gather(
             record_metrics("control", 0),
             record_metrics("treatment", 100),
             record_metrics("control", 200),
         )
-        
+
         # Verify all metrics recorded
         metrics = await temp_db.get_metrics(sample_experiment_config.id)
         assert len(metrics) == 30
@@ -525,13 +513,13 @@ class TestExperimentDatabase:
     async def test_transaction_rollback(self, temp_db, sample_experiment_config):
         """Test transaction rollback on error."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Mock a failure during transaction
         with patch("aiosqlite.connect") as mock_connect:
             mock_db = AsyncMock()
             mock_db.__aenter__.side_effect = Exception("Database error")
             mock_connect.return_value = mock_db
-            
+
             with pytest.raises(DatabaseError):
                 await temp_db.record_metric(
                     experiment_id=sample_experiment_config.id,
@@ -545,28 +533,38 @@ class TestExperimentDatabase:
     async def test_get_active_experiments(self, temp_db):
         """Test retrieving active experiments."""
         # Create experiments with different statuses
-        for i, status in enumerate([
-            ExperimentStatus.DRAFT,
-            ExperimentStatus.RUNNING,
-            ExperimentStatus.PAUSED,
-            ExperimentStatus.COMPLETED,
-            ExperimentStatus.TERMINATED,
-        ]):
+        for i, status in enumerate(
+            [
+                ExperimentStatus.DRAFT,
+                ExperimentStatus.RUNNING,
+                ExperimentStatus.PAUSED,
+                ExperimentStatus.COMPLETED,
+                ExperimentStatus.TERMINATED,
+            ]
+        ):
             config = ExperimentConfig(
                 id=f"exp_{i}",
                 name=f"Experiment {i}",
                 description=f"Test {status.value}",
                 type=ExperimentType.STRATEGY,
                 status=status,
-                start_time=datetime.utcnow() - timedelta(days=1) if status == ExperimentStatus.RUNNING else None,
-                end_time=datetime.utcnow() + timedelta(days=1) if status == ExperimentStatus.RUNNING else None,
+                start_time=(
+                    datetime.utcnow() - timedelta(days=1)
+                    if status == ExperimentStatus.RUNNING
+                    else None
+                ),
+                end_time=(
+                    datetime.utcnow() + timedelta(days=1)
+                    if status == ExperimentStatus.RUNNING
+                    else None
+                ),
                 variants=[],
                 traffic_allocation=TrafficAllocation(control=1.0, treatment=0.0),
                 guardrails=GuardrailConfig(),
                 metadata={},
             )
             await temp_db.save_experiment(config)
-        
+
         # Get active experiments
         active = await temp_db.get_active_experiments()
         assert len(active) == 1
@@ -576,7 +574,7 @@ class TestExperimentDatabase:
     async def test_cleanup_old_data(self, temp_db, sample_experiment_config):
         """Test cleanup of old experiment data."""
         await temp_db.save_experiment(sample_experiment_config)
-        
+
         # Add old metrics
         for i in range(10):
             await temp_db.record_metric(
@@ -587,7 +585,7 @@ class TestExperimentDatabase:
                 value=float(i),
                 timestamp=datetime.utcnow() - timedelta(days=90),
             )
-        
+
         # Add recent metrics
         for i in range(5):
             await temp_db.record_metric(
@@ -597,10 +595,10 @@ class TestExperimentDatabase:
                 metric_name="new_metric",
                 value=float(i),
             )
-        
+
         # Cleanup old data (older than 60 days)
         await temp_db.cleanup_old_data(days=60)
-        
+
         # Verify only recent metrics remain
         metrics = await temp_db.get_metrics(sample_experiment_config.id)
         assert len(metrics) == 5

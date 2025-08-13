@@ -119,6 +119,7 @@ class APIKeyManager:
             client_name=request.client_name,
             created_at=datetime.utcnow(),
             expires_at=expires_at,
+            last_used_at=None,
             status=APIKeyStatus.ACTIVE,
             usage_tier=request.usage_tier,
             permissions=request.permissions,
@@ -387,6 +388,9 @@ class APIKeyManager:
             logger.warning("Redis not enabled, cannot store API key")
             return
 
+        if cache_manager.client is None:
+            return
+
         # Store by key hash for validation
         await cache_manager.client.hset(
             "api_keys:by_hash", api_key.key_hash, api_key.model_dump_json()
@@ -403,6 +407,9 @@ class APIKeyManager:
         if not cache_manager.enabled:
             return None
 
+        if cache_manager.client is None:
+            return None
+
         data = await cache_manager.client.hget("api_keys:by_hash", key_hash)
         if data:
             return APIKey(**json.loads(data))
@@ -411,6 +418,9 @@ class APIKeyManager:
     async def _get_api_key_by_id(self, key_id: str) -> APIKey | None:
         """Get API key by ID from Redis."""
         if not cache_manager.enabled:
+            return None
+
+        if cache_manager.client is None:
             return None
 
         data = await cache_manager.client.hget("api_keys:by_id", key_id)
@@ -428,6 +438,9 @@ class APIKeyManager:
     async def _list_all_keys(self) -> list[dict[str, Any]]:
         """List all API keys from Redis."""
         if not cache_manager.enabled:
+            return []
+
+        if cache_manager.client is None:
             return []
 
         all_data = await cache_manager.client.hgetall("api_keys:by_id")

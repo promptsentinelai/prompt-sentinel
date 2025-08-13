@@ -75,6 +75,7 @@ class PromptDetector:
             settings.detection_mode, pattern_manager=pattern_manager
         )
         self.llm_classifier = LLMClassifierManager()
+        self.threat_detector = None  # Will be set by main.py if threat intelligence is available
 
         # Initialize PII detector if enabled
         if settings.pii_detection_enabled:
@@ -92,14 +93,15 @@ class PromptDetector:
 
             self.pii_detector = PIIDetector(pii_config, custom_rules_loader)
         else:
-            self.pii_detector = None
+            self.pii_detector = None  # type: ignore[assignment]
 
     async def detect(
         self,
         messages: list[Message],
         check_format: bool = True,
-        use_heuristics: bool = None,
-        use_llm: bool = None,
+        use_heuristics: bool | None = None,
+        use_llm: bool | None = None,
+        check_pii: bool | None = None,
     ) -> DetectionResponse:
         """Perform comprehensive detection on messages.
 
@@ -112,6 +114,7 @@ class PromptDetector:
             check_format: Whether to validate role separation and format
             use_heuristics: Override setting for heuristic detection
             use_llm: Override setting for LLM-based classification
+            check_pii: Override setting for PII detection
 
         Returns:
             DetectionResponse containing:
@@ -135,9 +138,10 @@ class PromptDetector:
             use_heuristics if use_heuristics is not None else settings.heuristic_enabled
         )
         use_llm = use_llm if use_llm is not None else settings.llm_classification_enabled
+        check_pii = check_pii if check_pii is not None else settings.pii_detection_enabled
 
         # Check if any detection is enabled
-        if not use_heuristics and not use_llm and not settings.pii_detection_enabled:
+        if not use_heuristics and not use_llm and not check_pii:
             logger = logging.getLogger(__name__)
             logger.warning(
                 "No detection methods enabled! Request will be allowed without security checks."
@@ -151,7 +155,7 @@ class PromptDetector:
                         category=DetectionCategory.BENIGN,
                         description="⚠️ NO DETECTION METHODS ENABLED - Request allowed without security checks",
                         confidence=0.0,
-                        source="system",
+                        source="heuristic",  # type: ignore[arg-type]
                     )
                 ],
                 metadata={
@@ -191,10 +195,25 @@ class PromptDetector:
             if llm_confidence > 0:
                 confidences.append(llm_confidence)
 
+        # Threat intelligence detection
+        threat_verdict = Verdict.ALLOW
+        if self.threat_detector and settings.threat_intelligence_enabled:
+            try:
+                (
+                    threat_verdict,
+                    threat_reasons,
+                    threat_confidence,
+                ) = await self.threat_detector.detect(messages)
+                all_reasons.extend(threat_reasons)
+                if threat_confidence > 0:
+                    confidences.append(threat_confidence)
+            except Exception as e:
+                logging.error(f"Threat detection error: {e}")
+
         # PII detection
         pii_detections = []
         pii_verdict = Verdict.ALLOW
-        if self.pii_detector and settings.pii_detection_enabled:
+        if self.pii_detector and check_pii:
             combined_text = "\n".join([msg.content for msg in messages])
             pii_matches = self.pii_detector.detect(combined_text)
 
@@ -291,7 +310,7 @@ class PromptDetector:
                             categories=categories,
                             patterns_matched=patterns,
                             provider_used=(
-                                metadata.get("providers_used", ["heuristic"])[0]
+                                metadata.get("providers_used", ["heuristic"])[0]  # type: ignore[index]
                                 if metadata.get("providers_used")
                                 else "heuristic"
                             ),
@@ -305,7 +324,7 @@ class PromptDetector:
 
         # Add PII pass-alert warning to metadata
         if settings.pii_redaction_mode == "pass-alert" and pii_detections:
-            metadata["pii_warning"] = "PII detected but passed through (pass-alert mode)"
+            metadata["pii_warning"] = "PII detected but passed through (pass-alert mode)"  # type: ignore[assignment]
             # Note: pass-silent doesn't add warnings by design
 
         return DetectionResponse(

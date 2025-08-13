@@ -160,6 +160,10 @@ class ClusteringEngine:
 
     async def _cluster_dbscan(self, features: np.ndarray, events: list[Any]) -> list[Cluster]:
         """Cluster using DBSCAN algorithm."""
+        if self.dbscan is None:
+            logger.warning("DBSCAN not initialized")
+            return []
+
         # Run DBSCAN
         labels = self.dbscan.fit_predict(features)
         self.cluster_labels = labels
@@ -191,8 +195,8 @@ class ClusteringEngine:
             density = 1.0 / (np.mean(distances) + 1e-8) if distances else 1.0
 
             # Extract common properties
-            categories = defaultdict(int)
-            patterns = defaultdict(int)
+            categories: defaultdict[str, int] = defaultdict(int)
+            patterns: defaultdict[str, int] = defaultdict(int)
             confidences = []
 
             for event in member_events:
@@ -212,8 +216,10 @@ class ClusteringEngine:
                 members=member_indices.tolist(),
                 density=float(density),
                 avg_confidence=float(np.mean(confidences)) if confidences else 0.0,
-                dominant_category=max(categories, key=categories.get) if categories else "unknown",
-                patterns=sorted(patterns, key=patterns.get, reverse=True)[:10],
+                dominant_category=(
+                    max(categories, key=lambda k: categories[k]) if categories else "unknown"
+                ),
+                patterns=sorted(patterns, key=lambda k: patterns[k], reverse=True)[:10],
                 created_at=datetime.utcnow(),
                 metadata={"algorithm": "dbscan", "eps": self.eps, "min_samples": self.min_samples},
             )
@@ -257,8 +263,8 @@ class ClusteringEngine:
             density = cluster_persistence.get(label, 1.0)
 
             # Extract common properties
-            categories = defaultdict(int)
-            patterns = defaultdict(int)
+            categories: defaultdict[str, int] = defaultdict(int)
+            patterns: defaultdict[str, int] = defaultdict(int)
             confidences = []
 
             for event in member_events:
@@ -278,8 +284,10 @@ class ClusteringEngine:
                 members=member_indices.tolist(),
                 density=float(density),
                 avg_confidence=float(np.mean(confidences)) if confidences else 0.0,
-                dominant_category=max(categories, key=categories.get) if categories else "unknown",
-                patterns=sorted(patterns, key=patterns.get, reverse=True)[:10],
+                dominant_category=(
+                    max(categories, key=lambda k: categories[k]) if categories else "unknown"
+                ),
+                patterns=sorted(patterns, key=lambda k: patterns[k], reverse=True)[:10],
                 created_at=datetime.utcnow(),
                 metadata={
                     "algorithm": "hdbscan",
@@ -294,6 +302,10 @@ class ClusteringEngine:
 
     async def _cluster_kmeans(self, features: np.ndarray, events: list[Any]) -> list[Cluster]:
         """Cluster using Mini-batch K-means."""
+        if self.kmeans is None:
+            logger.warning("K-Means not initialized")
+            return []
+
         # Determine optimal K using elbow method (simplified)
         n_clusters = min(10, max(2, len(features) // 50))
         self.kmeans.n_clusters = n_clusters
@@ -303,7 +315,7 @@ class ClusteringEngine:
         self.cluster_labels = labels
 
         # Get cluster centers
-        centers = self.kmeans.cluster_centers_
+        centers = self.kmeans.cluster_centers_ if self.kmeans else np.array([])
 
         # Process results
         clusters = []
@@ -325,8 +337,8 @@ class ClusteringEngine:
             density = 1.0 / (np.mean(distances) + 1e-8)
 
             # Extract common properties
-            categories = defaultdict(int)
-            patterns = defaultdict(int)
+            categories: defaultdict[str, int] = defaultdict(int)
+            patterns: defaultdict[str, int] = defaultdict(int)
             confidences = []
 
             for event in member_events:
@@ -346,13 +358,15 @@ class ClusteringEngine:
                 members=member_indices.tolist(),
                 density=float(density),
                 avg_confidence=float(np.mean(confidences)) if confidences else 0.0,
-                dominant_category=max(categories, key=categories.get) if categories else "unknown",
-                patterns=sorted(patterns, key=patterns.get, reverse=True)[:10],
+                dominant_category=(
+                    max(categories, key=lambda k: categories[k]) if categories else "unknown"
+                ),
+                patterns=sorted(patterns, key=lambda k: patterns[k], reverse=True)[:10],
                 created_at=datetime.utcnow(),
                 metadata={
                     "algorithm": "kmeans",
                     "n_clusters": n_clusters,
-                    "inertia": float(self.kmeans.inertia_),
+                    "inertia": float(self.kmeans.inertia_) if self.kmeans else 0.0,
                 },
             )
 

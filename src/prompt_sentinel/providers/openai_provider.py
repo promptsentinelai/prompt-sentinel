@@ -51,7 +51,8 @@ class OpenAIProvider(LLMProvider):
             "gpt-3.5": "gpt-3.5-turbo",
         }
 
-        self.model = self.model_mapping.get(self.model, self.model)
+        model_name = self.model or "gpt-3.5-turbo"  # Default model
+        self.model = self.model_mapping.get(model_name, model_name)
 
     async def classify(
         self, messages: list[Message], system_prompt: str | None = None
@@ -73,7 +74,7 @@ class OpenAIProvider(LLMProvider):
 
             # Call OpenAI API
             response = await asyncio.wait_for(
-                self.client.chat.completions.create(
+                self.client.chat.completions.create(  # type: ignore[call-overload, arg-type]
                     model=self.model,
                     messages=[
                         {"role": "system", "content": system},
@@ -105,8 +106,10 @@ class OpenAIProvider(LLMProvider):
         """
         try:
             await asyncio.wait_for(
-                self.client.chat.completions.create(
-                    model=self.model, messages=[{"role": "user", "content": "test"}], max_tokens=10
+                self.client.chat.completions.create(  # type: ignore[call-overload, arg-type]
+                    model=self.model,
+                    messages=[{"role": "user", "content": "test"}],
+                    max_tokens=10,  # type: ignore[arg-type]
                 ),
                 timeout=5.0,
             )

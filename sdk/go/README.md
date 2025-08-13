@@ -1,11 +1,11 @@
 # PromptSentinel Go SDK
 
-Official Go SDK for [PromptSentinel](https://github.com/rhoska/prompt-sentinel) - LLM Prompt Injection Detection Service.
+Official Go SDK for [PromptSentinel](https://github.com/promptsentinelai/prompt-sentinel) - LLM Prompt Injection Detection Service.
 
 ## Installation
 
 ```bash
-go get github.com/rhoska/prompt-sentinel/sdk/go
+go get github.com/promptsentinelai/prompt-sentinel/sdk/go
 ```
 
 ## Quick Start
@@ -17,7 +17,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/rhoska/prompt-sentinel/sdk/go/pkg/promptsentinel"
+    "github.com/promptsentinelai/prompt-sentinel/sdk/go/pkg/promptsentinel"
 )
 
 func main() {
@@ -70,7 +70,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/rhoska/prompt-sentinel/sdk/go/pkg/promptsentinel"
+    "github.com/promptsentinelai/prompt-sentinel/sdk/go/pkg/promptsentinel"
 )
 
 func main() {
@@ -102,7 +102,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/rhoska/prompt-sentinel/sdk/go/pkg/promptsentinel"
+    "github.com/promptsentinelai/prompt-sentinel/sdk/go/pkg/promptsentinel"
 )
 
 func main() {
@@ -237,7 +237,7 @@ import (
     "fmt"
     "log"
 
-    "github.com/rhoska/prompt-sentinel/sdk/go/pkg/promptsentinel"
+    "github.com/promptsentinelai/prompt-sentinel/sdk/go/pkg/promptsentinel"
 )
 
 func main() {
@@ -534,5 +534,5 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- GitHub Issues: https://github.com/rhoska/prompt-sentinel/issues
-- Documentation: https://github.com/rhoska/prompt-sentinel/tree/main/docs
+- GitHub Issues: https://github.com/promptsentinelai/prompt-sentinel/issues
+- Documentation: https://github.com/promptsentinelai/prompt-sentinel/tree/main/docs

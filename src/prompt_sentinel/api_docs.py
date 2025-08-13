@@ -234,7 +234,7 @@ def custom_openapi_schema(app: Any) -> dict[str, Any]:
     # Add external documentation
     openapi_schema["externalDocs"] = {
         "description": "PromptSentinel GitHub Repository",
-        "url": "https://github.com/rhoska/prompt-sentinel",
+        "url": "https://github.com/promptsentinelai/prompt-sentinel",
     }
 
     # Cache the schema
@@ -243,7 +243,9 @@ def custom_openapi_schema(app: Any) -> dict[str, Any]:
 
 
 # Response status descriptions
-RESPONSES = {
+from typing import Any
+
+RESPONSES: dict[int | str, dict[str, Any]] = {
     200: {
         "description": "Successful operation",
         "content": {

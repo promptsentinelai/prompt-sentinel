@@ -77,5 +77,15 @@ CLAUDE.md
 # CI/Test artifacts
 coverage.xml
 tests/experiments.db
-coverage.xml
 /tests/experiments.db
+experiments.db
+*.db
+
+# Temporary files
+*.tmp
+*.bak
+*~
+*.swp
+*.swo
+API_CONSOLIDATION_SUMMARY.md
+TEST_75_PERCENT_ACHIEVED.md

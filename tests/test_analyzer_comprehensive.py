@@ -5,9 +5,7 @@
 
 """Comprehensive tests for the experiments analyzer module."""
 
-import math
-import statistics
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -27,7 +25,7 @@ class TestMetricData:
     def test_from_values_empty(self):
         """Test creating MetricData from empty list."""
         metric_data = MetricData.from_values([])
-        
+
         assert metric_data.values == []
         assert metric_data.sample_size == 0
         assert metric_data.mean == 0.0
@@ -39,7 +37,7 @@ class TestMetricData:
     def test_from_values_single(self):
         """Test creating MetricData from single value."""
         metric_data = MetricData.from_values([5.0])
-        
+
         assert metric_data.values == [5.0]
         assert metric_data.sample_size == 1
         assert metric_data.mean == 5.0
@@ -52,14 +50,14 @@ class TestMetricData:
         """Test creating MetricData from multiple values."""
         values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
         metric_data = MetricData.from_values(values)
-        
+
         assert metric_data.values == values
         assert metric_data.sample_size == 10
         assert metric_data.mean == 5.5
         assert metric_data.std_dev == pytest.approx(3.0276, rel=0.01)
         assert metric_data.variance == pytest.approx(9.1666, rel=0.01)
         assert metric_data.median == 5.5
-        
+
         # Check percentiles
         assert metric_data.percentiles[25] == pytest.approx(3.25, rel=0.1)
         assert metric_data.percentiles[50] == pytest.approx(5.5, rel=0.1)
@@ -69,7 +67,7 @@ class TestMetricData:
         """Test creating MetricData with duplicate values."""
         values = [1.0, 1.0, 2.0, 2.0, 3.0, 3.0]
         metric_data = MetricData.from_values(values)
-        
+
         assert metric_data.sample_size == 6
         assert metric_data.mean == 2.0
         assert metric_data.median == 2.0
@@ -78,7 +76,7 @@ class TestMetricData:
         """Test creating MetricData with negative values."""
         values = [-5.0, -3.0, -1.0, 1.0, 3.0, 5.0]
         metric_data = MetricData.from_values(values)
-        
+
         assert metric_data.mean == 0.0
         assert metric_data.median == 0.0
 
@@ -87,7 +85,7 @@ class TestMetricData:
         # Create a large dataset for better percentile testing
         values = list(range(1, 101))  # 1 to 100
         metric_data = MetricData.from_values(values)
-        
+
         # Check key percentiles
         assert metric_data.percentiles[25] == pytest.approx(25.75, rel=0.1)
         assert metric_data.percentiles[50] == pytest.approx(50.5, rel=0.1)
@@ -101,7 +99,7 @@ class TestMetricData:
         # Test with very small dataset
         metric_data = MetricData.from_values([1.0, 2.0])
         assert metric_data.percentiles[50] == pytest.approx(1.5, rel=0.1)
-        
+
         # Test with identical values
         metric_data = MetricData.from_values([5.0] * 10)
         assert all(p == 5.0 for p in metric_data.percentiles.values())
@@ -115,7 +113,7 @@ class TestExperimentResult:
         """Create a sample experiment result."""
         control_metrics = MetricData.from_values([0.8, 0.82, 0.79, 0.81, 0.80])
         treatment_metrics = MetricData.from_values([0.85, 0.87, 0.86, 0.88, 0.84])
-        
+
         return ExperimentResult(
             experiment_id="exp_123",
             metric_name="detection_accuracy",
@@ -142,7 +140,7 @@ class TestExperimentResult:
     def test_get_summary_positive_improvement(self, sample_result):
         """Test summary generation with positive improvement."""
         summary = sample_result.get_summary()
-        
+
         assert summary["experiment_id"] == "exp_123"
         assert summary["metric"] == "detection_accuracy"
         assert summary["is_significant"] is True
@@ -151,7 +149,7 @@ class TestExperimentResult:
         assert summary["effect_size"] == 0.5
         assert summary["statistical_power"] == 0.8
         assert summary["practical_significance"] is True
-        
+
         # Check improvement calculation
         assert "improvement_percent" in summary
         assert summary["improvement_percent"] > 0  # Treatment is better
@@ -160,7 +158,7 @@ class TestExperimentResult:
         """Test summary when control mean is zero."""
         control_metrics = MetricData.from_values([0.0, 0.0, 0.0])
         treatment_metrics = MetricData.from_values([1.0, 1.0, 1.0])
-        
+
         result = ExperimentResult(
             experiment_id="exp_123",
             metric_name="test_metric",
@@ -183,7 +181,7 @@ class TestExperimentResult:
             total_observations=6,
             experiment_duration_days=3.0,
         )
-        
+
         summary = result.get_summary()
         assert summary["improvement_percent"] == 0  # Avoid division by zero
 
@@ -191,7 +189,7 @@ class TestExperimentResult:
         """Test summary with negative improvement (treatment worse)."""
         control_metrics = MetricData.from_values([0.9, 0.91, 0.92])
         treatment_metrics = MetricData.from_values([0.8, 0.81, 0.82])
-        
+
         result = ExperimentResult(
             experiment_id="exp_123",
             metric_name="test_metric",
@@ -214,14 +212,14 @@ class TestExperimentResult:
             total_observations=6,
             experiment_duration_days=2.0,
         )
-        
+
         summary = result.get_summary()
         assert summary["improvement_percent"] < 0  # Treatment is worse
 
     def test_get_summary_all_fields_present(self, sample_result):
         """Test that all expected fields are present in summary."""
         summary = sample_result.get_summary()
-        
+
         expected_fields = [
             "experiment_id",
             "metric",
@@ -237,21 +235,21 @@ class TestExperimentResult:
             "sample_size_treatment",
             "practical_significance",
         ]
-        
+
         for field in expected_fields:
             assert field in summary
 
     def test_get_summary_rounding(self, sample_result):
         """Test that values are properly rounded in summary."""
         summary = sample_result.get_summary()
-        
+
         # Check that numeric values are rounded
         assert isinstance(summary["p_value"], float)
         assert len(str(summary["p_value"]).split(".")[-1]) <= 4  # Max 4 decimal places
-        
+
         assert isinstance(summary["effect_size"], float)
         assert len(str(summary["effect_size"]).split(".")[-1]) <= 4
-        
+
         assert isinstance(summary["statistical_power"], float)
         assert len(str(summary["statistical_power"]).split(".")[-1]) <= 3
 
@@ -299,25 +297,25 @@ class TestStatisticalAnalyzer:
         """Test StatisticalAnalyzer initialization."""
         analyzer = StatisticalAnalyzer()
         assert analyzer.default_confidence_level == 0.95
-        
+
         analyzer = StatisticalAnalyzer(default_confidence_level=0.99)
         assert analyzer.default_confidence_level == 0.99
 
     @pytest.mark.asyncio
     async def test_analyze_experiment_success(self, analyzer, sample_metric_data, metric_configs):
         """Test successful experiment analysis."""
-        with patch.object(analyzer, '_analyze_metric', new_callable=AsyncMock) as mock_analyze:
+        with patch.object(analyzer, "_analyze_metric", new_callable=AsyncMock) as mock_analyze:
             # Create mock result
             mock_result = MagicMock(spec=ExperimentResult)
             mock_analyze.return_value = mock_result
-            
+
             results = await analyzer.analyze_experiment(
                 experiment_id="exp_123",
                 metric_data=sample_metric_data,
                 metric_configs=metric_configs,
                 min_sample_size=100,
             )
-            
+
             # Should analyze accuracy (2 treatments) and response_time (1 treatment) = 3 total
             assert mock_analyze.call_count == 3
             assert len(results) == 3
@@ -330,14 +328,14 @@ class TestStatisticalAnalyzer:
                 "control": [0.8, 0.82, 0.79] * 50,  # Only one variant
             }
         }
-        
-        with patch('prompt_sentinel.experiments.analyzer.logger') as mock_logger:
+
+        with patch("prompt_sentinel.experiments.analyzer.logger") as mock_logger:
             results = await analyzer.analyze_experiment(
                 experiment_id="exp_123",
                 metric_data=metric_data,
                 metric_configs={},
             )
-            
+
             assert len(results) == 0
             mock_logger.warning.assert_called_once()
 
@@ -350,31 +348,31 @@ class TestStatisticalAnalyzer:
                 "treatment": [0.85, 0.87],  # Only 2 samples
             }
         }
-        
-        with patch('prompt_sentinel.experiments.analyzer.logger') as mock_logger:
+
+        with patch("prompt_sentinel.experiments.analyzer.logger") as mock_logger:
             results = await analyzer.analyze_experiment(
                 experiment_id="exp_123",
                 metric_data=metric_data,
                 metric_configs={},
                 min_sample_size=100,
             )
-            
+
             assert len(results) == 0
             mock_logger.debug.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_analyze_experiment_custom_confidence(self, analyzer, sample_metric_data):
         """Test analysis with custom confidence level."""
-        with patch.object(analyzer, '_analyze_metric', new_callable=AsyncMock) as mock_analyze:
+        with patch.object(analyzer, "_analyze_metric", new_callable=AsyncMock) as mock_analyze:
             mock_analyze.return_value = MagicMock(spec=ExperimentResult)
-            
+
             await analyzer.analyze_experiment(
                 experiment_id="exp_123",
                 metric_data=sample_metric_data,
                 metric_configs={},
                 confidence_level=0.99,
             )
-            
+
             # Check that custom confidence level was passed
             for call in mock_analyze.call_args_list:
                 assert call[1]["confidence_level"] == 0.99
@@ -387,9 +385,9 @@ class TestStatisticalAnalyzer:
             "treatment_a": [4, 5, 6],
             "treatment_b": [7, 8, 9],
         }
-        
+
         control_id, treatment_ids = analyzer._identify_variants(variant_data)
-        
+
         assert control_id == "control"
         assert set(treatment_ids) == {"treatment_a", "treatment_b"}
 
@@ -400,10 +398,10 @@ class TestStatisticalAnalyzer:
             "variant_a": [1, 2, 3],
             "variant_b": [4, 5, 6],
         }
-        
+
         # Should pick first variant as control
         control_id, treatment_ids = analyzer._identify_variants(variant_data)
-        
+
         assert control_id == "variant_a"
         assert treatment_ids == ["variant_b"]
 
@@ -412,14 +410,14 @@ class TestStatisticalAnalyzer:
         """Test Cohen's d effect size calculation."""
         control_values = [1.0, 2.0, 3.0, 4.0, 5.0]
         treatment_values = [3.0, 4.0, 5.0, 6.0, 7.0]
-        
+
         control_data = MetricData.from_values(control_values)
         treatment_data = MetricData.from_values(treatment_values)
-        
+
         effect_size = analyzer._calculate_effect_size(
             control_data, treatment_data, MetricType.CONTINUOUS
         )
-        
+
         # Treatment mean is 2 units higher, pooled std should be ~1.58
         # Effect size should be ~1.26
         assert effect_size == pytest.approx(1.26, rel=0.1)
@@ -430,14 +428,14 @@ class TestStatisticalAnalyzer:
         # Use proportions for binary metrics
         control_values = [0.6] * 100  # 60% success rate
         treatment_values = [0.7] * 100  # 70% success rate
-        
+
         control_data = MetricData.from_values(control_values)
         treatment_data = MetricData.from_values(treatment_values)
-        
+
         effect_size = analyzer._calculate_effect_size(
             control_data, treatment_data, MetricType.BINARY
         )
-        
+
         # Cohen's h should be positive for improvement
         assert effect_size > 0
 
@@ -447,11 +445,11 @@ class TestStatisticalAnalyzer:
         # Create datasets with clear difference
         control_values = [1.0, 2.0, 3.0] * 10
         treatment_values = [4.0, 5.0, 6.0] * 10
-        
+
         p_value, test_stat = analyzer._perform_significance_test(
             control_values, treatment_values, SignificanceTest.T_TEST
         )
-        
+
         assert p_value < 0.05  # Should be significant
         assert test_stat != 0
 
@@ -461,11 +459,11 @@ class TestStatisticalAnalyzer:
         # Binary outcomes (success/failure)
         control_values = [1, 1, 0, 1, 0] * 20  # 60% success rate
         treatment_values = [1, 1, 1, 1, 0] * 20  # 80% success rate
-        
+
         p_value, test_stat = analyzer._perform_significance_test(
             control_values, treatment_values, SignificanceTest.Z_TEST
         )
-        
+
         assert p_value < 0.05  # Should be significant
         assert test_stat != 0
 
@@ -474,14 +472,12 @@ class TestStatisticalAnalyzer:
         """Test confidence interval calculation for effect size."""
         control_values = [1.0, 2.0, 3.0, 4.0, 5.0] * 10
         treatment_values = [2.0, 3.0, 4.0, 5.0, 6.0] * 10
-        
+
         control_data = MetricData.from_values(control_values)
         treatment_data = MetricData.from_values(treatment_values)
-        
-        ci_lower, ci_upper = analyzer._calculate_effect_size_ci(
-            control_data, treatment_data, 0.95
-        )
-        
+
+        ci_lower, ci_upper = analyzer._calculate_effect_size_ci(control_data, treatment_data, 0.95)
+
         # Effect size CI should be meaningful
         assert ci_lower < ci_upper
         assert ci_upper > 0  # Treatment should be better
@@ -491,17 +487,17 @@ class TestStatisticalAnalyzer:
         """Test statistical power calculation."""
         control_values = [1.0, 2.0, 3.0] * 30
         treatment_values = [2.0, 3.0, 4.0] * 30
-        
+
         control_data = MetricData.from_values(control_values)
         treatment_data = MetricData.from_values(treatment_values)
-        
+
         power = analyzer._calculate_power(
             control_data=control_data,
             treatment_data=treatment_data,
             alpha=0.05,
             effect_size=0.5,
         )
-        
+
         # Medium effect size with reasonable sample should have good power
         assert 0.0 <= power <= 1.0
 
@@ -513,7 +509,7 @@ class TestStatisticalAnalyzer:
             power=0.8,
             alpha=0.05,
         )
-        
+
         # Medium effect size at 80% power typically needs ~64 per group
         assert 50 < sample_size < 100
 
@@ -522,12 +518,12 @@ class TestStatisticalAnalyzer:
         """Test practical significance checking."""
         # Practical significance is checked inline during analysis
         # Let's test it by analyzing metrics with different effect sizes
-        
+
         # Large effect size
         large_effect = 0.8
         assert abs(large_effect) >= 0.3  # Should be practically significant
-        
-        # Small effect size  
+
+        # Small effect size
         small_effect = 0.1
         assert abs(small_effect) < 0.3  # Should not be practically significant
 
@@ -536,7 +532,7 @@ class TestStatisticalAnalyzer:
         """Test analyzing a binary metric."""
         control_values = [0, 1, 0, 1, 1] * 25  # 60% success
         treatment_values = [1, 1, 0, 1, 1] * 25  # 80% success
-        
+
         result = await analyzer._analyze_metric(
             experiment_id="exp_123",
             metric_name="conversion_rate",
@@ -550,7 +546,7 @@ class TestStatisticalAnalyzer:
             },
             confidence_level=0.95,
         )
-        
+
         assert isinstance(result, ExperimentResult)
         assert result.experiment_id == "exp_123"
         assert result.metric_name == "conversion_rate"
@@ -561,7 +557,7 @@ class TestStatisticalAnalyzer:
         """Test analyzing a continuous metric."""
         control_values = [100, 110, 105, 108, 102] * 25
         treatment_values = [95, 92, 94, 90, 93] * 25
-        
+
         result = await analyzer._analyze_metric(
             experiment_id="exp_123",
             metric_name="response_time",
@@ -575,7 +571,7 @@ class TestStatisticalAnalyzer:
             },
             confidence_level=0.95,
         )
-        
+
         assert isinstance(result, ExperimentResult)
         assert result.test_type == SignificanceTest.T_TEST  # Continuous uses t-test
         assert result.treatment_metrics.mean < result.control_metrics.mean  # Lower is better
@@ -585,7 +581,7 @@ class TestStatisticalAnalyzer:
         """Test that metric analysis works with date configuration."""
         control_values = [1.0, 2.0, 3.0, 4.0, 5.0] * 25
         treatment_values = [2.0, 3.0, 4.0, 5.0, 6.0] * 25
-        
+
         result = await analyzer._analyze_metric(
             experiment_id="exp_123",
             metric_name="test_metric",
@@ -599,7 +595,7 @@ class TestStatisticalAnalyzer:
             },
             confidence_level=0.95,
         )
-        
+
         # Should successfully analyze the metric
         assert result is not None
         assert result.experiment_id == "exp_123"
@@ -615,7 +611,7 @@ class TestStatisticalAnalyzer:
                 "treatment": [1, 2, 3],
             }
         }
-        
+
         # The method should raise an exception for invalid data
         with pytest.raises(TypeError):
             await analyzer.analyze_experiment(
@@ -641,16 +637,16 @@ class TestStatisticalAnalyzer:
                 "treatment": [0.03] * 100,
             },
         }
-        
-        with patch.object(analyzer, '_analyze_metric', new_callable=AsyncMock) as mock_analyze:
+
+        with patch.object(analyzer, "_analyze_metric", new_callable=AsyncMock) as mock_analyze:
             mock_analyze.return_value = MagicMock(spec=ExperimentResult)
-            
+
             results = await analyzer.analyze_experiment(
                 experiment_id="exp_123",
                 metric_data=metric_data,
                 metric_configs={},
             )
-            
+
             # Should analyze all 3 metrics
             assert mock_analyze.call_count == 3
             assert len(results) == 3

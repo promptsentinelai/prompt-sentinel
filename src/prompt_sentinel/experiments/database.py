@@ -297,7 +297,7 @@ class ExperimentDatabase:
                 params.append(type_filter.value)
 
             query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
-            params.extend([limit, offset])
+            params.extend([str(limit), str(offset)])
 
             experiments = []
             async with aiosqlite.connect(self.db_path) as db:
@@ -431,15 +431,19 @@ class ExperimentDatabase:
 
             if start_time:
                 query += " AND timestamp >= ?"
-                params.append(start_time)
+                params.append(
+                    start_time.isoformat() if isinstance(start_time, datetime) else str(start_time)
+                )
 
             if end_time:
                 query += " AND timestamp <= ?"
-                params.append(end_time)
+                params.append(
+                    end_time.isoformat() if isinstance(end_time, datetime) else str(end_time)
+                )
 
             from collections import defaultdict
 
-            data = defaultdict(lambda: defaultdict(list))
+            data: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
 
             async with aiosqlite.connect(self.db_path) as db:
                 async with db.execute(query, params) as cursor:
@@ -655,7 +659,8 @@ class ExperimentDatabase:
                 """
                 ) as cursor:
                     async for row in cursor:
-                        stats["experiments_by_status"][row[0]] = row[1]
+                        if hasattr(stats["experiments_by_status"], "__setitem__"):
+                            stats["experiments_by_status"][row[0]] = row[1]
                         stats["total_experiments"] += row[1]
 
                 # Count experiments by type
@@ -665,7 +670,8 @@ class ExperimentDatabase:
                 """
                 ) as cursor:
                     async for row in cursor:
-                        stats["experiments_by_type"][row[0]] = row[1]
+                        if hasattr(stats["experiments_by_type"], "__setitem__"):
+                            stats["experiments_by_type"][row[0]] = row[1]
 
                 # Count metrics
                 async with db.execute(
@@ -673,7 +679,9 @@ class ExperimentDatabase:
                     SELECT COUNT(*) FROM experiment_metrics
                 """
                 ) as cursor:
-                    stats["total_metrics"] = (await cursor.fetchone())[0]
+                    row = await cursor.fetchone()
+                    if row:
+                        stats["total_metrics"] = row[0]
 
                 # Count assignments
                 async with db.execute(
@@ -681,7 +689,9 @@ class ExperimentDatabase:
                     SELECT COUNT(*) FROM experiment_assignments
                 """
                 ) as cursor:
-                    stats["total_assignments"] = (await cursor.fetchone())[0]
+                    row = await cursor.fetchone()
+                    if row:
+                        stats["total_assignments"] = row[0]
 
                 # Count violations
                 async with db.execute(
@@ -689,7 +699,9 @@ class ExperimentDatabase:
                     SELECT COUNT(*) FROM safety_violations
                 """
                 ) as cursor:
-                    stats["total_violations"] = (await cursor.fetchone())[0]
+                    row = await cursor.fetchone()
+                    if row:
+                        stats["total_violations"] = row[0]
 
             return stats
 

@@ -10,9 +10,9 @@ keywords:
   - prompt-injection
   - detection
   - ai-security
-home: https://github.com/rhoska/prompt-sentinel
+home: https://github.com/promptsentinelai/prompt-sentinel
 sources:
-  - https://github.com/rhoska/prompt-sentinel
+  - https://github.com/promptsentinelai/prompt-sentinel
 maintainers:
   - name: PromptSentinel Team
     email: support@promptsentinel.ai

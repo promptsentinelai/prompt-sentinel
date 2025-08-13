@@ -10,19 +10,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException, Request
-from fastapi.security import APIKeyHeader
 
 from prompt_sentinel.auth.dependencies import (
-    get_auth_config,
+    _has_public_endpoint,
+    _is_docker_container,
+    _is_kubernetes_pod,
     get_api_key_manager,
+    get_auth_config,
     get_current_client,
     get_optional_client,
-    require_permission,
-    require_authenticated,
     require_admin,
-    _is_kubernetes_pod,
-    _is_docker_container,
-    _has_public_endpoint,
+    require_authenticated,
+    require_permission,
 )
 from prompt_sentinel.auth.models import (
     AuthConfig,
@@ -101,12 +100,12 @@ class TestAuthDependencies:
             mock_settings.auth_unauthenticated_tpm = 1000
             mock_settings.api_key_prefix = "psk_"
             mock_settings.api_key_length = 32
-            
+
             config = get_auth_config()
-            
+
             assert config.mode == AuthMode.OPTIONAL
-            assert config.enforce_https == False
-            assert config.allow_localhost == True
+            assert not config.enforce_https
+            assert config.allow_localhost
 
     def test_get_auth_config_from_settings(self):
         """Test getting auth config from settings."""
@@ -120,23 +119,23 @@ class TestAuthDependencies:
             mock_settings.auth_unauthenticated_tpm = 2000
             mock_settings.api_key_prefix = "api_"
             mock_settings.api_key_length = 48
-            
+
             config = get_auth_config()
-            
+
             assert config.mode == AuthMode.REQUIRED
-            assert config.enforce_https == True
+            assert config.enforce_https
             assert config.bypass_networks == ["10.0.0.0/8"]
             assert config.bypass_headers == {"X-Secret": "value"}
-            assert config.allow_localhost == False
+            assert not config.allow_localhost
 
     def test_get_api_key_manager(self, mock_auth_config):
         """Test getting API key manager."""
         with patch("prompt_sentinel.auth.dependencies.APIKeyManager") as MockManager:
             mock_instance = MagicMock()
             MockManager.return_value = mock_instance
-            
+
             manager = get_api_key_manager(mock_auth_config)
-            
+
             assert manager == mock_instance
             MockManager.assert_called_once_with(mock_auth_config)
 
@@ -144,14 +143,14 @@ class TestAuthDependencies:
     async def test_get_current_client_from_state(self, mock_request, authenticated_client):
         """Test getting current client from request state."""
         mock_request.state.client = authenticated_client
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key=None,
             config=AuthConfig(mode=AuthMode.OPTIONAL),
             manager=MagicMock(),
         )
-        
+
         assert client == authenticated_client
 
     @pytest.mark.asyncio
@@ -163,14 +162,14 @@ class TestAuthDependencies:
         mock_request.state = MagicMock(spec=object)  # No client attribute
         mock_request.client.host = "192.168.1.100"  # Not localhost
         mock_api_key_manager.validate_api_key.return_value = authenticated_client
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key="psk_test123",
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
+
         assert client == authenticated_client
         mock_api_key_manager.validate_api_key.assert_called_once_with("psk_test123")
 
@@ -183,14 +182,14 @@ class TestAuthDependencies:
         mock_request.state = MagicMock(spec=object)
         mock_request.client.host = "192.168.1.101"  # Not localhost
         mock_api_key_manager.validate_api_key.return_value = authenticated_client
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
+
         assert client == authenticated_client
         mock_api_key_manager.validate_api_key.assert_called_once_with("psk_test456")
 
@@ -203,14 +202,14 @@ class TestAuthDependencies:
         mock_request.state = MagicMock(spec=object)
         mock_request.client.host = "192.168.1.102"  # Not localhost
         mock_api_key_manager.validate_api_key.return_value = authenticated_client
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
+
         assert client == authenticated_client
         mock_api_key_manager.validate_api_key.assert_called_once_with("psk_test789")
 
@@ -222,15 +221,15 @@ class TestAuthDependencies:
         mock_request.client.host = "127.0.0.1"
         mock_request.state = MagicMock(spec=object)
         mock_auth_config.allow_localhost = True
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
-        assert client.is_authenticated == True
+
+        assert client.is_authenticated
         assert client.auth_method == AuthMethod.BYPASS
 
     @pytest.mark.asyncio
@@ -241,15 +240,15 @@ class TestAuthDependencies:
         mock_request.client.host = "10.0.0.5"
         mock_request.state = MagicMock(spec=object)
         mock_api_key_manager.check_network_bypass.return_value = True
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
-        assert client.is_authenticated == True
+
+        assert client.is_authenticated
         assert client.auth_method == AuthMethod.BYPASS
         mock_api_key_manager.check_network_bypass.assert_called_once_with("10.0.0.5")
 
@@ -261,15 +260,15 @@ class TestAuthDependencies:
         mock_request.headers = {"X-Internal": "true"}
         mock_request.state = MagicMock(spec=object)
         mock_api_key_manager.check_header_bypass.return_value = True
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
-        assert client.is_authenticated == True
+
+        assert client.is_authenticated
         assert client.auth_method == AuthMethod.BYPASS
 
     @pytest.mark.asyncio
@@ -280,7 +279,7 @@ class TestAuthDependencies:
         mock_auth_config.mode = AuthMode.REQUIRED
         mock_request.state = MagicMock(spec=object)
         mock_request.client.host = "192.168.1.1"  # Not localhost
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await get_current_client(
                 request=mock_request,
@@ -288,7 +287,7 @@ class TestAuthDependencies:
                 config=mock_auth_config,
                 manager=mock_api_key_manager,
             )
-        
+
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail == "API key required"
 
@@ -299,15 +298,15 @@ class TestAuthDependencies:
         """Test optional mode without authentication."""
         mock_auth_config.mode = AuthMode.OPTIONAL
         mock_request.state = MagicMock(spec=object)
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
-        assert client.is_authenticated == False
+
+        assert not client.is_authenticated
         assert client.auth_method == AuthMethod.NONE
         assert client.client_id == "anonymous"
 
@@ -318,15 +317,15 @@ class TestAuthDependencies:
         """Test disabled mode."""
         mock_auth_config.mode = AuthMode.DISABLED
         mock_request.state = MagicMock(spec=object)
-        
+
         client = await get_current_client(
             request=mock_request,
             api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
-        assert client.is_authenticated == False
+
+        assert not client.is_authenticated
         assert client.client_id == "anonymous"
 
     @pytest.mark.asyncio
@@ -337,14 +336,14 @@ class TestAuthDependencies:
         mock_request.headers = {"Authorization": "Bearer psk_test"}
         mock_request.state = MagicMock(spec=object)
         mock_api_key_manager.validate_api_key.return_value = authenticated_client
-        
+
         client = await get_optional_client(
             request=mock_request,
             api_key="psk_test",
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
+
         assert client == authenticated_client
 
     @pytest.mark.asyncio
@@ -353,34 +352,34 @@ class TestAuthDependencies:
     ):
         """Test get_optional_client without authentication."""
         mock_request.state = MagicMock(spec=object)
-        
+
         client = await get_optional_client(
             request=mock_request,
             api_key=None,
             config=mock_auth_config,
             manager=mock_api_key_manager,
         )
-        
-        assert client.is_authenticated == False
+
+        assert not client.is_authenticated
         assert client.client_id == "anonymous"
 
     @pytest.mark.asyncio
     async def test_require_permission_granted(self, authenticated_client):
         """Test require_permission when permission is granted."""
         check_permission = require_permission(ClientPermission.DETECT_READ)
-        
+
         result = await check_permission(authenticated_client)
-        
+
         assert result == authenticated_client
 
     @pytest.mark.asyncio
     async def test_require_permission_denied(self, authenticated_client):
         """Test require_permission when permission is denied."""
         check_permission = require_permission(ClientPermission.ADMIN_WRITE)
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await check_permission(authenticated_client)
-        
+
         assert exc_info.value.status_code == 403
         assert "requires permission" in exc_info.value.detail
 
@@ -388,19 +387,19 @@ class TestAuthDependencies:
     async def test_require_authenticated_success(self, authenticated_client):
         """Test require_authenticated with authenticated client."""
         check_authenticated = require_authenticated()
-        
+
         result = await check_authenticated(authenticated_client)
-        
+
         assert result == authenticated_client
 
     @pytest.mark.asyncio
     async def test_require_authenticated_failure(self, anonymous_client):
         """Test require_authenticated with anonymous client."""
         check_authenticated = require_authenticated()
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await check_authenticated(anonymous_client)
-        
+
         assert exc_info.value.status_code == 401
         assert exc_info.value.detail == "Authentication required"
 
@@ -410,9 +409,9 @@ class TestAuthDependencies:
         # Set up admin permissions via api_key
         authenticated_client.api_key = MagicMock()
         authenticated_client.api_key.has_permission = MagicMock(return_value=True)
-        
+
         result = await require_admin()(authenticated_client)
-        
+
         assert result == authenticated_client
 
     @pytest.mark.asyncio
@@ -421,10 +420,10 @@ class TestAuthDependencies:
         # Client without admin permissions
         authenticated_client.api_key = MagicMock()
         authenticated_client.api_key.has_permission = MagicMock(return_value=False)
-        
+
         with pytest.raises(HTTPException) as exc_info:
             await require_admin()(authenticated_client)
-        
+
         assert exc_info.value.status_code == 403
         assert "requires admin privileges" in exc_info.value.detail
 
@@ -433,7 +432,7 @@ class TestAuthDependencies:
         # Test when not in Kubernetes
         with patch("os.path.exists", return_value=False):
             assert _is_kubernetes_pod() is False
-        
+
         # Test when in Kubernetes (service account exists)
         with patch("os.path.exists", return_value=True):
             assert _is_kubernetes_pod() is True
@@ -442,11 +441,11 @@ class TestAuthDependencies:
         """Test Docker container detection."""
         # Test when not in Docker
         with patch("os.path.exists", return_value=False):
-            assert _is_docker_container() == False
-        
+            assert not _is_docker_container()
+
         # Test when in Docker
         with patch("os.path.exists", return_value=True):
-            assert _is_docker_container() == True
+            assert _is_docker_container()
 
     def test_has_public_endpoint(self):
         """Test public endpoint detection."""
@@ -454,15 +453,15 @@ class TestAuthDependencies:
         with patch.dict(os.environ, {}, clear=True):
             with patch("socket.gethostname", return_value="localhost"):
                 assert _has_public_endpoint() is False
-        
+
         # Test with public URL
         with patch.dict(os.environ, {"PUBLIC_URL": "https://api.example.com"}):
             assert _has_public_endpoint() is True
-        
+
         # Test with EXTERNAL_HOSTNAME
         with patch.dict(os.environ, {"EXTERNAL_HOSTNAME": "api.example.com"}):
             assert _has_public_endpoint() is True
-        
+
         # Test with INGRESS_HOST
         with patch.dict(os.environ, {"INGRESS_HOST": "api.example.com"}):
             assert _has_public_endpoint() is True
@@ -475,50 +474,47 @@ class TestAuthDependenciesIntegration:
     async def test_full_auth_flow(self):
         """Test complete authentication flow."""
         from prompt_sentinel.auth.api_key_manager import APIKeyManager
-        from prompt_sentinel.auth.models import CreateAPIKeyRequest, APIKey
-        
+        from prompt_sentinel.auth.models import CreateAPIKeyRequest
+
         # Setup
         config = AuthConfig(mode=AuthMode.REQUIRED)
         manager = APIKeyManager(config)
-        
+
         # Mock the cache for storing/retrieving API keys
         with patch("prompt_sentinel.auth.api_key_manager.cache_manager") as mock_cache:
             mock_cache.connected = True
             stored_key = None
-            
+
             async def mock_set(key, value, *args, **kwargs):
                 nonlocal stored_key
                 stored_key = value
                 return True
-            
+
             async def mock_get(key):
                 return stored_key
-            
+
             mock_cache.set = mock_set
             mock_cache.get = mock_get
-            
+
             # Create API key
             create_req = CreateAPIKeyRequest(
                 client_name="Test Key",
                 permissions=[ClientPermission.DETECT_READ, ClientPermission.DETECT_WRITE],
             )
             response = await manager.create_api_key(create_req)
-            
+
             # Create request with API key
             request = MagicMock(spec=Request)
             request.headers = {}
             request.state = MagicMock(spec=object)
             request.client = MagicMock()
             request.client.host = "192.168.1.1"
-            
+
             # Get client
             client = await get_current_client(
-                request=request,
-                api_key=response.api_key,
-                config=config,
-                manager=manager
+                request=request, api_key=response.api_key, config=config, manager=manager
             )
-            
+
             assert client.is_authenticated is True
             # Permissions are checked via api_key.has_permission() method
             assert client.api_key is not None
@@ -534,19 +530,21 @@ class TestAuthDependenciesIntegration:
             usage_tier=UsageTier.FREE,
         )
         client.api_key = MagicMock()
-        client.api_key.has_permission = MagicMock(side_effect=lambda p: p == ClientPermission.DETECT_READ)
-        
+        client.api_key.has_permission = MagicMock(
+            side_effect=lambda p: p == ClientPermission.DETECT_READ
+        )
+
         # Should pass read check
         read_check = require_permission(ClientPermission.DETECT_READ)
         result = await read_check(client)
         assert result == client
-        
+
         # Should fail write check
         write_check = require_permission(ClientPermission.DETECT_WRITE)
         with pytest.raises(HTTPException) as exc:
             await write_check(client)
         assert exc.value.status_code == 403
-        
+
         # Should fail admin check
         with pytest.raises(HTTPException) as exc:
             await require_admin()(client)

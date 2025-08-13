@@ -1,6 +1,6 @@
 # PromptSentinel Python SDK
 
-Official Python SDK for [PromptSentinel](https://github.com/rhoska/prompt-sentinel) - LLM Prompt Injection Detection Service.
+Official Python SDK for [PromptSentinel](https://github.com/promptsentinelai/prompt-sentinel) - LLM Prompt Injection Detection Service.
 
 ## Installation
 
@@ -136,6 +136,35 @@ async def main():
 asyncio.run(main())
 ```
 
+### Async Threat Intelligence
+
+```python
+import asyncio
+from promptsentinel import AsyncPromptSentinel
+
+async def manage_threat_feeds():
+    async with AsyncPromptSentinel() as client:
+        # Add a feed asynchronously
+        feed = await client.add_threat_feed({
+            "name": "Custom Threat Feed",
+            "type": "json",
+            "url": "https://example.com/feed.json"
+        })
+        
+        # Get indicators asynchronously
+        indicators = await client.get_threat_indicators(
+            technique="jailbreak",
+            min_confidence=0.7
+        )
+        
+        # Search indicators
+        results = await client.search_threat_indicators("injection")
+        
+        return feed, indicators, results
+
+asyncio.run(manage_threat_feeds())
+```
+
 ### Complexity Analysis
 
 ```python
@@ -161,6 +190,60 @@ print(f"Total cost: ${sum(usage.cost_breakdown.values()):.2f}")
 budget = client.get_budget_status()
 for alert in budget.alerts:
     print(f"⚠️ {alert['level']}: {alert['message']}")
+```
+
+### Threat Intelligence
+
+```python
+# Add a new threat intelligence feed
+feed = client.add_threat_feed({
+    "name": "MITRE ATT&CK Patterns",
+    "description": "Common LLM attack patterns",
+    "type": "json",
+    "url": "https://example.com/threat-feed.json",
+    "refresh_interval": 3600,  # Update hourly
+    "priority": 5
+})
+print(f"Feed added: {feed['id']}")
+
+# List all active threat feeds
+feeds = client.list_threat_feeds()
+for feed in feeds:
+    status = "Active" if feed["enabled"] else "Inactive"
+    print(f"{feed['name']}: {status}")
+
+# Get threat indicators
+indicators = client.get_threat_indicators(
+    technique="jailbreak",
+    min_confidence=0.8
+)
+print(f"Found {len(indicators)} high-confidence jailbreak patterns")
+
+# Search for specific threat patterns
+results = client.search_threat_indicators("DAN mode")
+for indicator in results:
+    print(f"Pattern: {indicator['pattern']} ({indicator['confidence'] * 100:.0f}% confidence)")
+
+# Report false positive
+if response.verdict == Verdict.BLOCK and is_actually_fine:
+    client.report_false_positive(
+        response.threat_indicator_id,
+        reason="Legitimate academic discussion"
+    )
+
+# Confirm true positive
+if response.verdict == Verdict.BLOCK and confirmed_malicious:
+    client.confirm_true_positive(
+        response.threat_indicator_id,
+        details="Confirmed jailbreak attempt"
+    )
+
+# Get threat statistics
+stats = client.get_threat_statistics()
+print(f"Active indicators: {stats['active_indicators']}")
+print(f"Average confidence: {stats['average_confidence'] * 100:.0f}%")
+fp_rate = stats['false_positives_last_7d'] / (stats['false_positives_last_7d'] + stats['true_positives_last_7d']) * 100
+print(f"False positive rate: {fp_rate:.1f}%")
 ```
 
 ### Error Handling
@@ -237,6 +320,16 @@ response = client.detect_simple(
 - `get_usage(time_window_hours)` - Usage metrics
 - `get_budget_status()` - Budget information
 - `health_check()` - Service health
+- `add_threat_feed(feed_data)` - Add a new threat intelligence feed
+- `list_threat_feeds()` - List all threat intelligence feeds
+- `get_threat_feed(feed_id)` - Get a specific threat feed
+- `update_threat_feed(feed_id)` - Manually trigger feed update
+- `remove_threat_feed(feed_id)` - Remove a threat feed
+- `get_threat_indicators(**params)` - Get active threat indicators
+- `search_threat_indicators(query, limit)` - Search threat indicators
+- `report_false_positive(indicator_id, reason)` - Report false positive
+- `confirm_true_positive(indicator_id, details)` - Confirm true positive
+- `get_threat_statistics()` - Get threat intelligence statistics
 
 #### Parameters
 
@@ -280,5 +373,5 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- GitHub Issues: https://github.com/rhoska/prompt-sentinel/issues
-- Documentation: https://github.com/rhoska/prompt-sentinel/tree/main/docs
+- GitHub Issues: https://github.com/promptsentinelai/prompt-sentinel/issues
+- Documentation: https://github.com/promptsentinelai/prompt-sentinel/tree/main/docs

@@ -361,8 +361,8 @@ async def get_pattern(
     "/patterns/{pattern_id}/test", response_model=dict, summary="Test pattern against text"
 )
 async def test_pattern(
+    request: PatternTestRequest,
     pattern_id: str = Path(..., description="Pattern identifier"),
-    request: PatternTestRequest = ...,
     manager=Depends(get_pattern_manager),
 ):
     """Test a pattern against provided text.
@@ -424,8 +424,8 @@ async def promote_pattern(
     "/patterns/{pattern_id}/retire", response_model=dict, summary="Retire pattern from active use"
 )
 async def retire_pattern(
+    request: PatternRetirementRequest,
     pattern_id: str = Path(..., description="Pattern identifier"),
-    request: PatternRetirementRequest = ...,
     manager=Depends(get_pattern_manager),
 ):
     """Retire a pattern from active use.

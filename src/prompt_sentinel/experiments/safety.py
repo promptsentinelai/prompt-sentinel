@@ -570,7 +570,7 @@ class SafetyControls:
             metrics.experiment_health_score = min(1.0, metrics.experiment_health_score + 0.1)
         else:
             # Reduce health score based on violations
-            penalty = 0
+            penalty = 0.0
             for violation in recent_violations:
                 if violation.severity == GuardrailSeverity.CRITICAL:
                     penalty += 0.5

@@ -118,9 +118,7 @@ async def list_api_keys(
         return keys
     except Exception as e:
         logger.error("Failed to list API keys", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to list API keys"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to list API keys") from e
 
 
 @router.get(

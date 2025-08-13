@@ -31,7 +31,7 @@ import uuid
 from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 if TYPE_CHECKING:
     from prompt_sentinel.experiments import ExperimentManager
@@ -119,6 +119,7 @@ rate_limiter: RateLimiter | None = None
 experiment_manager: Optional["ExperimentManager"] = (
     None  # Import at runtime to avoid circular imports
 )
+pattern_manager: Any | None = None  # Import at runtime to avoid circular imports
 app_start_time: datetime = datetime.utcnow()
 
 
@@ -173,6 +174,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize router with experiment manager
     router = IntelligentRouter(detector, experiment_manager)
+
+    # Initialize threat intelligence feed manager
+    threat_feed_manager = None
+    try:
+        from prompt_sentinel.threat_intelligence import ThreatFeedManager
+
+        threat_feed_manager = ThreatFeedManager()
+        await threat_feed_manager.initialize()
+        logger.info("Threat feed manager initialized")
+
+        # Update detector with threat-enhanced detection if available
+        from prompt_sentinel.detection.threat_enhanced import ThreatEnhancedDetector
+
+        detector.threat_detector = ThreatEnhancedDetector(threat_feed_manager)
+        logger.info("Threat-enhanced detection enabled")
+    except Exception as e:
+        logger.warning("Threat intelligence not available", error=str(e))
 
     # Initialize monitoring
     usage_tracker = UsageTracker(persist_to_cache=settings.redis_enabled)
@@ -245,6 +263,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await experiment_manager.shutdown()
         logger.info("Experiment manager shutdown complete")
 
+    # Shutdown threat feed manager
+    if "threat_feed_manager" in locals() and threat_feed_manager:
+        await threat_feed_manager.shutdown()
+        logger.info("Threat feed manager shutdown complete")
+
     # Shutdown pattern manager
     if pattern_manager:
         await pattern_manager.shutdown()
@@ -267,8 +290,13 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
+
 # Use custom OpenAPI schema
-app.openapi = lambda: custom_openapi_schema(app)
+def get_custom_openapi() -> dict[str, Any]:
+    return custom_openapi_schema(app)
+
+
+app.openapi = get_custom_openapi  # type: ignore[assignment]
 
 # Add CORS middleware
 app.add_middleware(
@@ -299,6 +327,14 @@ try:
     app.include_router(ml_router, prefix="/api/v1")
 except ImportError:
     logger.warning("ML routes not available")
+
+# Include threat intelligence API routes
+try:
+    from prompt_sentinel.api.threat.routes import router as threat_router
+
+    app.include_router(threat_router)
+except ImportError:
+    logger.warning("Threat intelligence routes not available")
 
 
 @app.middleware("http")
@@ -437,8 +473,9 @@ async def health_check() -> HealthResponse:
     }
 
     # Determine overall status
+    health_status: Literal["healthy", "degraded", "unhealthy"]
     if not any(detection_methods.values()):
-        status = "unhealthy"
+        health_status = "unhealthy"
         logger.warning("Health check: No detection methods enabled!")
     else:
         has_healthy_provider = (
@@ -448,11 +485,11 @@ async def health_check() -> HealthResponse:
         )
 
         if settings.llm_classification_enabled and not has_healthy_provider:
-            status = "degraded"
+            health_status = "degraded"
         elif not settings.llm_classification_enabled or has_healthy_provider:
-            status = "healthy"
+            health_status = "healthy"
         else:
-            status = "unhealthy"
+            health_status = "unhealthy"
 
     # Get cache statistics if Redis is connected
     cache_stats = None
@@ -490,7 +527,7 @@ async def health_check() -> HealthResponse:
     }
 
     return HealthResponse(
-        status=status,
+        status=health_status,
         version=__version__,
         uptime_seconds=uptime_seconds,
         providers_status=providers_status,
@@ -599,11 +636,11 @@ async def detailed_health_check() -> dict:
     }
 
     # Check monitoring
-    if usage_tracker:
-        components["monitoring"] = {
-            "status": "healthy",
-            "budget_enabled": budget_manager is not None,
-        }
+    components["monitoring"] = {
+        "status": "healthy",
+        "budget_enabled": budget_manager is not None,
+        "usage_tracking": usage_tracker is not None,
+    }
 
     # Overall status
     unhealthy_count = sum(
@@ -636,7 +673,7 @@ async def detailed_health_check() -> dict:
     summary="Liveness probe",
     description="Kubernetes liveness probe endpoint",
 )
-async def liveness_probe() -> dict:
+async def liveness_probe():
     """Simple liveness probe for Kubernetes.
 
     Returns 200 if the service is alive, regardless of dependency health.
@@ -650,7 +687,7 @@ async def liveness_probe() -> dict:
     summary="Readiness probe",
     description="Kubernetes readiness probe endpoint",
 )
-async def readiness_probe() -> dict:
+async def readiness_probe():
     """Readiness probe for Kubernetes.
 
     Returns 200 if the service is ready to accept traffic.
@@ -756,7 +793,7 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest) -> Dete
     # Use intelligent routing if enabled and router available
     if use_routing and router:
         try:
-            response = await router.route_request(messages)
+            response, _ = await router.route_detection(messages)
             return response
         except Exception as e:
             logger.error("Routing failed, falling back to standard detection", error=str(e))
@@ -868,7 +905,7 @@ async def analyze(request: AnalysisRequest) -> AnalysisResponse:
             }
 
         # Calculate overall risk score
-        risk_scores = [msg["confidence"] for msg in per_message_analysis]
+        risk_scores = [float(msg["confidence"]) for msg in per_message_analysis]
         overall_risk_score = max(risk_scores) if risk_scores else 0.0
 
         return AnalysisResponse(
@@ -1222,7 +1259,7 @@ async def clear_cache(pattern: str | None = "*") -> dict:
     if not cache_manager.connected:
         return {"message": "Cache not connected", "cleared": 0}
 
-    count = await cache_manager.clear_pattern(pattern)
+    count = await cache_manager.clear_pattern(pattern) if pattern else 0
     return {"cleared": count, "pattern": pattern, "message": f"Cleared {count} cache entries"}
 
 
@@ -1327,7 +1364,7 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request) -> De
             raise HTTPException(
                 status_code=429,
                 detail=f"Rate limit exceeded. Try again in {wait_time:.1f} seconds",
-                headers={"Retry-After": str(int(wait_time))},
+                headers={"Retry-After": str(int(wait_time) if wait_time else 0)},
             )
 
     # Check for performance mode in request
@@ -1603,7 +1640,7 @@ async def get_complexity_metrics(
         result["system_metrics"] = distribution
 
     # Add thresholds and guidelines
-    result["complexity_thresholds"] = {
+    result["complexity_thresholds"] = {  # type: ignore[assignment]
         "trivial": {"min": 0.0, "max": 0.1, "description": "Very simple, safe prompts"},
         "simple": {"min": 0.1, "max": 0.3, "description": "Basic prompts with low risk"},
         "moderate": {"min": 0.3, "max": 0.5, "description": "Standard complexity"},
@@ -1711,7 +1748,7 @@ async def get_budget_status(check_next_cost: float | None = 0.0) -> dict:
     if not budget_manager:
         raise HTTPException(status_code=503, detail="Budget management not initialized")
 
-    status = await budget_manager.check_budget(check_next_cost)
+    status = await budget_manager.check_budget(check_next_cost or 0.0)
 
     return {
         "within_budget": status.within_budget,
@@ -1933,6 +1970,7 @@ async def websocket_endpoint(websocket: WebSocket, api_key: str | None = None):
         # Check auth mode
         if auth_config.mode == AuthMode.NONE:
             client = Client(
+                api_key=None,
                 client_id="ws_local",
                 client_name="WebSocket Local",
                 auth_method=AuthMethod.NONE,
@@ -1940,6 +1978,7 @@ async def websocket_endpoint(websocket: WebSocket, api_key: str | None = None):
             )
         elif auth_config.mode == AuthMode.OPTIONAL:
             client = Client(
+                api_key=None,
                 client_id=f"ws_anon_{client_id}",
                 client_name="WebSocket Anonymous",
                 auth_method=AuthMethod.ANONYMOUS,
@@ -1954,9 +1993,10 @@ async def websocket_endpoint(websocket: WebSocket, api_key: str | None = None):
             return
 
     # Pass client info to handler
-    await handle_websocket_connection(
-        websocket, detector, router, client=client, client_id=client_id
-    )
+    if detector:
+        await handle_websocket_connection(
+            websocket, detector, router, client=client, client_id=client_id
+        )
 
 
 @app.get(

@@ -24,7 +24,8 @@ logger = structlog.get_logger()
 
 # Security scheme for API key
 api_key_header = APIKeyHeader(
-    name="X-API-Key", auto_error=False  # Don't auto-error, handle in dependency
+    name="X-API-Key",
+    auto_error=False,  # Don't auto-error, handle in dependency
 )
 
 
@@ -102,6 +103,7 @@ async def get_current_client(
             client_id="local",
             client_name="Local Client",
             auth_method=AuthMethod.NONE,
+            api_key=None,
             usage_tier=UsageTier.INTERNAL,
             rate_limits={},  # No limits for local
         )
@@ -115,6 +117,7 @@ async def get_current_client(
             client_id="localhost",
             client_name="Localhost",
             auth_method=AuthMethod.BYPASS,
+            api_key=None,
             usage_tier=UsageTier.INTERNAL,
             rate_limits={},
         )
@@ -125,6 +128,7 @@ async def get_current_client(
             client_id=f"network_{client_host}",
             client_name=f"Internal Network ({client_host})",
             auth_method=AuthMethod.BYPASS,
+            api_key=None,
             usage_tier=UsageTier.INTERNAL,
             rate_limits={},
         )
@@ -136,6 +140,7 @@ async def get_current_client(
             client_id="header_bypass",
             client_name="Header Bypass",
             auth_method=AuthMethod.BYPASS,
+            api_key=None,
             usage_tier=UsageTier.INTERNAL,
             rate_limits={},
         )
@@ -180,6 +185,7 @@ async def get_current_client(
         client_id=f"anon_{client_host}",
         client_name=f"Anonymous ({client_host})",
         auth_method=AuthMethod.ANONYMOUS,
+        api_key=None,
         usage_tier=UsageTier.FREE,
         rate_limits={"rpm": config.unauthenticated_rpm, "tpm": config.unauthenticated_tpm},
     )

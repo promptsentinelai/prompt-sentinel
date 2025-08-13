@@ -17,6 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any
 
 import structlog
 
@@ -144,6 +145,9 @@ class BudgetManager:
         # Throttling state
         self.is_throttled = False
         self.throttle_until: datetime | None = None
+
+        # Monitoring task
+        self.monitoring_task: asyncio.Task[Any] | None = None
 
         # Start monitoring task (only if event loop is running)
         try:
@@ -452,7 +456,7 @@ class BudgetManager:
         for provider, stats in provider_breakdown.items():
             if stats["cost"] > metrics.total_cost_usd * 0.5:
                 suggestions.append(
-                    f"{provider} accounts for {stats['cost']/metrics.total_cost_usd:.0%} "
+                    f"{provider} accounts for {stats['cost'] / metrics.total_cost_usd:.0%} "
                     "of costs - consider using cheaper alternatives"
                 )
 
@@ -468,7 +472,7 @@ class BudgetManager:
             avg_tokens = metrics.total_tokens / max(metrics.total_requests, 1)
             if avg_tokens > 1000:
                 suggestions.append(
-                    f"High average token usage ({avg_tokens:.0f}) - " "Consider optimizing prompts"
+                    f"High average token usage ({avg_tokens:.0f}) - Consider optimizing prompts"
                 )
 
         return suggestions

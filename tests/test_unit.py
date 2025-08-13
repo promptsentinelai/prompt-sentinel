@@ -30,8 +30,8 @@ class TestHeuristicDetector:
         verdict, reasons, confidence = detector.detect(messages)
 
         assert verdict == Verdict.ALLOW
-        # High confidence (0.95) means we're confident it's safe
-        assert confidence > 0.8
+        # Low confidence means low threat level (safe)
+        assert confidence < 0.2
         assert len(reasons) == 0
 
     def test_instruction_override_detection(self):

@@ -307,10 +307,10 @@ class PIIDetector:
                             matched_text, custom_type, self.custom_redaction.get(custom_type, {})
                         )
 
-                        # Create a custom PIIType-like string for the match
+                        # Use GENERIC_SECRET for custom patterns
                         matches.append(
                             PIIMatch(
-                                pii_type=f"custom_{custom_type}",  # Custom types prefixed
+                                pii_type=PIIType.GENERIC_SECRET,  # Use generic type for custom patterns
                                 start_pos=match.start(),
                                 end_pos=match.end(),
                                 masked_value=masked,

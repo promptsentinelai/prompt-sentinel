@@ -44,6 +44,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         env_nested_delimiter="__",
+        extra="ignore",  # Ignore extra fields not defined in the model
     )
 
     # API Configuration
@@ -130,6 +131,23 @@ class Settings(BaseSettings):
     pii_types_to_detect: str = Field(default="all")
     pii_log_detected: bool = Field(default=False)
     pii_confidence_threshold: float = Field(default=0.7)
+    custom_pii_rules_enabled: bool = Field(default=False)
+    custom_pii_rules_path: str = Field(default="config/pii_rules.yaml")
+
+    # Budget Configuration
+    budget_hourly_limit: float = Field(default=10.0)
+    budget_daily_limit: float = Field(default=100.0)
+    budget_monthly_limit: float = Field(default=1000.0)
+    budget_block_on_exceeded: bool = Field(default=True)
+    budget_prefer_cache: bool = Field(default=True)
+
+    # Rate Limiting Configuration
+    rate_limit_requests_per_minute: int = Field(default=60)
+    rate_limit_tokens_per_minute: int = Field(default=10000)
+    rate_limit_client_requests_per_minute: int = Field(default=20)
+
+    # Threat Intelligence Configuration
+    threat_intelligence_enabled: bool = Field(default=False)
 
     @property
     def llm_providers(self) -> list[str]:

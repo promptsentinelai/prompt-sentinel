@@ -166,7 +166,7 @@ class MetricsCollector:
             metrics = [m for m in metrics if m.metric_name in metric_names]
 
         # Organize data
-        data = defaultdict(lambda: defaultdict(list))
+        data: defaultdict[str, defaultdict[str, list]] = defaultdict(lambda: defaultdict(list))
         for metric in metrics:
             data[metric.metric_name][metric.variant_id].append(metric.value)
 
@@ -248,7 +248,7 @@ class MetricsCollector:
             experiment_id, time_window_hours, [variant_id]
         )
 
-        performance = {
+        performance: dict[str, Any] = {
             "variant_id": variant_id,
             "time_window_hours": time_window_hours,
             "metrics": {},
@@ -263,19 +263,17 @@ class MetricsCollector:
 
         # Get all metrics for the variant within the time window
         all_experiment_metrics = self.experiment_metrics.get(experiment_id, [])
-        
+
         # Apply time window filter if specified
         if time_window_hours:
             cutoff_time = datetime.utcnow() - timedelta(hours=time_window_hours)
             filtered_metrics = [
-                m for m in all_experiment_metrics 
+                m
+                for m in all_experiment_metrics
                 if m.timestamp > cutoff_time and m.variant_id == variant_id
             ]
         else:
-            filtered_metrics = [
-                m for m in all_experiment_metrics 
-                if m.variant_id == variant_id
-            ]
+            filtered_metrics = [m for m in all_experiment_metrics if m.variant_id == variant_id]
 
         for metric_name, variant_data in metrics_data.items():
             if variant_id in variant_data:
@@ -429,7 +427,7 @@ class MetricsCollector:
         if cache_manager and cache_manager.connected:
             try:
                 pattern = f"experiment_metric:{experiment_id}:*"
-                await cache_manager.delete_pattern(pattern)
+                await cache_manager.clear_pattern(pattern)
 
                 cache_key = f"experiment_metrics:{experiment_id}"
                 await cache_manager.delete(cache_key)
@@ -543,13 +541,16 @@ class MetricsCollector:
             }
 
             # Add to a list in Redis (for time-series data)
-            await cache_manager.lpush(cache_key, json.dumps(metric_data))
+            if cache_manager.client:
+                await cache_manager.client.lpush(cache_key, json.dumps(metric_data))
 
             # Keep only recent data (last 1000 entries)
-            await cache_manager.ltrim(cache_key, 0, 999)
+            if cache_manager.client:
+                await cache_manager.client.ltrim(cache_key, 0, 999)
 
             # Set expiration
-            await cache_manager.expire(cache_key, 86400)  # 24 hours
+            if cache_manager.client:
+                await cache_manager.client.expire(cache_key, 86400)  # 24 hours
 
         except Exception as e:
             logger.warning("Failed to cache metric", error=str(e))

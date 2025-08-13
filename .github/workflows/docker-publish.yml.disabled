@@ -12,7 +12,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: promptsentinel/prompt-sentinel
+  IMAGE_NAME: promptsentinelai/prompt-sentinel
 
 jobs:
   test:
@@ -113,5 +113,5 @@ jobs:
       - name: Deploy notification
         run: |
           echo "Docker image published to Docker Hub!"
-          echo "Pull with: docker pull promptsentinel/prompt-sentinel:latest"
-          echo "Run with: docker run -p 8080:8080 --env-file .env promptsentinel/prompt-sentinel:latest"
+          echo "Pull with: docker pull promptsentinelai/prompt-sentinel:latest"
+          echo "Run with: docker run -p 8080:8080 --env-file .env promptsentinelai/prompt-sentinel:latest"

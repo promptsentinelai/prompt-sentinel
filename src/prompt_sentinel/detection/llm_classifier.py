@@ -36,7 +36,8 @@ class LLMClassifierManager:
 
     def _initialize_providers(self):
         """Initialize configured providers."""
-        provider_classes = {
+
+        provider_classes: dict[str, type[LLMProvider]] = {
             "anthropic": AnthropicProvider,
             "openai": OpenAIProvider,
             "gemini": GeminiProvider,
@@ -188,6 +189,8 @@ class LLMClassifierManager:
                 print(f"Provider {provider_name} failed: {result}")
                 continue
 
+            if not isinstance(result, tuple) or len(result) != 3:
+                continue
             category, confidence, explanation = result
 
             reasons.append(

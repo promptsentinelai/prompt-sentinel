@@ -17,7 +17,6 @@ pytestmark = pytest.mark.skip(reason="Feature not yet implemented")
 pytestmark = pytest.mark.skip(reason="Feature not yet implemented")
 
 
-
 class TestAPIVersioning:
     """Test API versioning strategies."""
 

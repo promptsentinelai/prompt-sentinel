@@ -57,6 +57,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # Skip auth for health checks and docs
         if request.url.path in ["/health", "/api/v1/health", "/docs", "/redoc", "/openapi.json"]:
             request.state.client = Client(
+                api_key=None,
                 client_id="system",
                 client_name="System",
                 auth_method=AuthMethod.NONE,
@@ -68,6 +69,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # (This is a special case for initial setup)
         if request.url.path.startswith("/admin/") and self.auth_config.mode == AuthMode.NONE:
             request.state.client = Client(
+                api_key=None,
                 client_id="admin",
                 client_name="Admin",
                 auth_method=AuthMethod.NONE,
@@ -113,6 +115,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             # Don't fail the request on middleware errors in optional mode
             if self.auth_config.mode != AuthMode.REQUIRED:
                 request.state.client = Client(
+                    api_key=None,
                     client_id="error",
                     client_name="Error",
                     auth_method=AuthMethod.ANONYMOUS,
@@ -134,6 +137,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # Mode: No authentication needed
         if self.auth_config.mode == AuthMode.NONE:
             return Client(
+                api_key=None,
                 client_id="local",
                 client_name="Local Client",
                 auth_method=AuthMethod.NONE,
@@ -147,6 +151,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # Localhost bypass
         if self.auth_config.allow_localhost and client_host in ["127.0.0.1", "::1", "localhost"]:
             return Client(
+                api_key=None,
                 client_id="localhost",
                 client_name="Localhost",
                 auth_method=AuthMethod.BYPASS,
@@ -157,6 +162,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # Network bypass
         if self.api_key_manager.check_network_bypass(client_host):
             return Client(
+                api_key=None,
                 client_id=f"network_{client_host}",
                 client_name=f"Internal Network ({client_host})",
                 auth_method=AuthMethod.BYPASS,
@@ -168,6 +174,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         headers = dict(request.headers)
         if self.api_key_manager.check_header_bypass(headers):
             return Client(
+                api_key=None,
                 client_id="header_bypass",
                 client_name="Header Bypass",
                 auth_method=AuthMethod.BYPASS,
@@ -194,6 +201,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
         # Default to anonymous
         return Client(
+            api_key=None,
             client_id=f"anon_{client_host}",
             client_name=f"Anonymous ({client_host})",
             auth_method=AuthMethod.ANONYMOUS,

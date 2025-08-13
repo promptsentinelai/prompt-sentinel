@@ -70,6 +70,8 @@ async def create_experiment(
             name=request.name,
             description=request.description,
             type=request.type,
+            start_time=getattr(request, "start_time", None),
+            end_time=getattr(request, "end_time", None),
             variants=request.variants,
             target_percentage=request.target_percentage,
             target_filters=request.target_filters,
@@ -227,8 +229,8 @@ async def get_experiment(
 
 @router.patch("/{experiment_id}", response_model=dict, summary="Update experiment")
 async def update_experiment(
+    request: UpdateExperimentRequest,
     experiment_id: str = Path(..., description="Experiment identifier"),
-    request: UpdateExperimentRequest = ...,
     manager=Depends(get_experiment_manager),
 ):
     """Update experiment configuration.
@@ -253,8 +255,8 @@ async def update_experiment(
 
 @router.post("/{experiment_id}/status", response_model=dict, summary="Change experiment status")
 async def change_experiment_status(
+    request: ExperimentStatusRequest,
     experiment_id: str = Path(..., description="Experiment identifier"),
-    request: ExperimentStatusRequest = ...,
     manager=Depends(get_experiment_manager),
 ):
     """Change experiment status (start, pause, stop).
@@ -316,8 +318,8 @@ async def change_experiment_status(
     summary="Assign user to experiment",
 )
 async def assign_user_to_experiment(
+    request: ExperimentAssignmentRequest,
     experiment_id: str = Path(..., description="Experiment identifier"),
-    request: ExperimentAssignmentRequest = ...,
     manager=Depends(get_experiment_manager),
 ):
     """Assign a user to an experiment variant.
@@ -376,8 +378,8 @@ async def assign_user_to_experiment(
 
 @router.post("/{experiment_id}/metrics", response_model=dict, summary="Record experiment metric")
 async def record_experiment_metric(
+    request: RecordMetricRequest,
     experiment_id: str = Path(..., description="Experiment identifier"),
-    request: RecordMetricRequest = ...,
     manager=Depends(get_experiment_manager),
 ):
     """Record a metric value for experiment analysis.
@@ -417,8 +419,8 @@ async def record_experiment_metric(
     summary="Record multiple experiment metrics",
 )
 async def record_experiment_metrics_batch(
+    request: BatchMetricsRequest,
     experiment_id: str = Path(..., description="Experiment identifier"),
-    request: BatchMetricsRequest = ...,
     manager=Depends(get_experiment_manager),
 ):
     """Record multiple metrics for experiment analysis.

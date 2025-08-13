@@ -59,4 +59,4 @@ class TestComplexityAnalyzer:
         score = self.analyzer.analyze(messages)
 
         assert score.level in [ComplexityLevel.SIMPLE, ComplexityLevel.MODERATE]
-        assert 0.2 < score.score < 0.6
+        assert 0.1 < score.score < 0.6

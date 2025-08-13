@@ -49,8 +49,8 @@ class AssignmentContext:
     session_id: str | None = None
     ip_address: str | None = None
     user_agent: str | None = None
-    attributes: dict[str, Any] = None
-    timestamp: datetime = None
+    attributes: dict[str, Any] | None = None
+    timestamp: datetime | None = None
 
     def __post_init__(self):
         if self.attributes is None:
@@ -73,7 +73,7 @@ class AssignmentService:
             cache_ttl_seconds: TTL for cached assignments
         """
         self.cache_ttl = cache_ttl_seconds
-        self.assignments_cache = {}  # In-memory fallback
+        self.assignments_cache: dict[str, ExperimentAssignment] = {}  # In-memory fallback
 
     async def assign_user(
         self,
@@ -186,7 +186,7 @@ class AssignmentService:
         assignments = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Handle exceptions
-        results = []
+        results: list[ExperimentAssignment | None] = []
         for i, assignment in enumerate(assignments):
             if isinstance(assignment, Exception):
                 logger.error(
@@ -196,7 +196,7 @@ class AssignmentService:
                     error=str(assignment),
                 )
                 results.append(None)
-            else:
+            elif not isinstance(assignment, BaseException):
                 results.append(assignment)
 
         return results
@@ -275,19 +275,25 @@ class AssignmentService:
         for filter_name, filter_value in experiment.target_filters.items():
             if filter_name == "min_requests":
                 # Example filter: minimum number of API requests
-                user_requests = context.attributes.get("total_requests", 0)
+                user_requests = (
+                    context.attributes.get("total_requests", 0) if context.attributes else 0
+                )
                 if user_requests < filter_value:
                     return False
 
             elif filter_name == "user_type":
                 # Example filter: user type
-                user_type = context.attributes.get("user_type", "free")
+                user_type = (
+                    context.attributes.get("user_type", "free") if context.attributes else "free"
+                )
                 if user_type != filter_value:
                     return False
 
             elif filter_name == "region":
                 # Example filter: geographic region
-                user_region = context.attributes.get("region", "unknown")
+                user_region = (
+                    context.attributes.get("region", "unknown") if context.attributes else "unknown"
+                )
                 if isinstance(filter_value, list):
                     if user_region not in filter_value:
                         return False
@@ -296,7 +302,9 @@ class AssignmentService:
 
             elif filter_name == "feature_flags":
                 # Example filter: required feature flags
-                user_flags = context.attributes.get("feature_flags", [])
+                user_flags = (
+                    context.attributes.get("feature_flags", []) if context.attributes else []
+                )
                 required_flags = filter_value if isinstance(filter_value, list) else [filter_value]
                 if not all(flag in user_flags for flag in required_flags):
                     return False
@@ -428,7 +436,9 @@ class AssignmentService:
         """
         # For now, use hash-based as fallback
         # Could be extended to consider user attributes for stratification
-        user_segment = context.attributes.get("segment", "default")
+        user_segment = (
+            context.attributes.get("segment", "default") if context.attributes else "default"
+        )
         hash_input = f"{experiment.id}:{context.user_id}:{user_segment}:stratified"
 
         hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
@@ -457,7 +467,7 @@ class AssignmentService:
         # This would typically query a database
         # For now, return basic stats from cache
 
-        stats = {
+        stats: dict[str, Any] = {
             "experiment_id": experiment_id,
             "total_assignments": 0,
             "variant_counts": {},
@@ -486,7 +496,7 @@ class AssignmentService:
         if cache_manager and cache_manager.connected:
             try:
                 pattern = f"assignment:{experiment_id}:*"
-                await cache_manager.delete_pattern(pattern)
+                await cache_manager.clear_pattern(pattern)
                 logger.info("Invalidated Redis assignments", experiment_id=experiment_id)
             except Exception as e:
                 logger.warning(

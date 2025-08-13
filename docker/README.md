@@ -163,9 +163,9 @@ curl http://localhost:8080/health
 
 ## Support
 
-- GitHub: https://github.com/rhoska/prompt-sentinel
-- Issues: https://github.com/rhoska/prompt-sentinel/issues
-- Documentation: https://github.com/rhoska/prompt-sentinel/tree/main/docs
+- GitHub: https://github.com/promptsentinelai/prompt-sentinel
+- Issues: https://github.com/promptsentinelai/prompt-sentinel/issues
+- Documentation: https://github.com/promptsentinelai/prompt-sentinel/tree/main/docs
 
 ## License
 

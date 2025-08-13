@@ -212,7 +212,9 @@ class StreamingDetector:
             # Parse request based on type
             if "prompt" in request_data:
                 # Simple string detection
-                messages = [Message(role="user", content=request_data["prompt"])]
+                from prompt_sentinel.models.schemas import Role
+
+                messages = [Message(role=Role.USER, content=request_data["prompt"])]
                 check_format = False
             elif "messages" in request_data:
                 # Structured messages
@@ -340,7 +342,7 @@ class StreamingDetector:
         """Get confidence breakdown by detection method."""
         breakdown = {"overall": response.confidence}
 
-        source_confidences = {}
+        source_confidences: dict[str, list] = {}
         if response.reasons:
             for reason in response.reasons:
                 source = reason.source
@@ -350,7 +352,7 @@ class StreamingDetector:
 
         # Calculate average confidence per source
         for source, confidences in source_confidences.items():
-            breakdown[source] = sum(confidences) / len(confidences) if confidences else 0.0
+            breakdown[source] = sum(confidences) / len(confidences) if confidences else 0.0  # type: ignore[assignment]
 
         return breakdown
 

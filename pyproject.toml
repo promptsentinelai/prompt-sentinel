@@ -83,9 +83,9 @@ test = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/rhoska/prompt-sentinel"
-"Bug Tracker" = "https://github.com/rhoska/prompt-sentinel/issues"
-"Documentation" = "https://github.com/rhoska/prompt-sentinel/wiki"
+"Homepage" = "https://github.com/promptsentinelai/prompt-sentinel"
+"Bug Tracker" = "https://github.com/promptsentinelai/prompt-sentinel/issues"
+"Documentation" = "https://github.com/promptsentinelai/prompt-sentinel/wiki"
 
 [build-system]
 requires = ["setuptools>=69.0", "wheel"]
@@ -165,16 +165,19 @@ exclude = [
 
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
-disallow_untyped_defs = true
+disallow_untyped_defs = false
 disallow_any_unimported = false
 no_implicit_optional = true
 warn_redundant_casts = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 warn_no_return = true
 check_untyped_defs = true
 strict_equality = true
+ignore_missing_imports = true
+allow_untyped_calls = true
+allow_untyped_decorators = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"

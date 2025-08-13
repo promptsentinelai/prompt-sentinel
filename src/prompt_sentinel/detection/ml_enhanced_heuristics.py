@@ -5,6 +5,8 @@
 
 """ML-enhanced heuristic detector that incorporates discovered patterns."""
 
+from typing import Any
+
 import structlog
 
 from prompt_sentinel.detection.heuristics import HeuristicDetector
@@ -191,7 +193,7 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
         self._ml_patterns.append(pattern)
         logger.info("Custom pattern added", pattern_id=pattern_id)
 
-    def get_pattern_statistics(self) -> dict[str, any]:
+    def get_pattern_statistics(self) -> dict[str, Any]:
         """Get statistics about loaded patterns.
 
         Returns:
@@ -200,7 +202,7 @@ class MLEnhancedHeuristicDetector(HeuristicDetector):
         if not self._ml_patterns:
             return {"ml_patterns_loaded": 0, "status": "no_patterns"}
 
-        categories = {}
+        categories: dict[str, int] = {}
         for pattern in self._ml_patterns:
             categories[pattern.category] = categories.get(pattern.category, 0) + 1
 

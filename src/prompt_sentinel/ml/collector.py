@@ -104,7 +104,7 @@ class PatternCollector:
         self.min_events_for_clustering = min_events_for_clustering
 
         # Circular buffer for recent events
-        self.event_buffer = deque(maxlen=buffer_size)
+        self.event_buffer: deque[DetectionEvent] = deque(maxlen=buffer_size)
 
         # Indexes for fast lookup
         self.events_by_verdict: dict[str, list[DetectionEvent]] = {
@@ -367,7 +367,9 @@ class PatternCollector:
 
             # Save to cache with TTL
             await cache_manager.set(
-                "ml:pattern_events", json.dumps(events_data), ttl=86400 * 7  # Keep for 7 days
+                "ml:pattern_events",
+                json.dumps(events_data),
+                ttl=86400 * 7,  # Keep for 7 days
             )
 
             # Save statistics

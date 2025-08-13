@@ -12,7 +12,6 @@ This module provides comprehensive tracking of LLM API usage including:
 - Usage patterns and trends
 """
 
-import asyncio
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
@@ -154,8 +153,8 @@ class UsageTracker:
             }
         )
 
-        # Load persisted metrics if available
-        asyncio.create_task(self._load_persisted_metrics())
+        # Load persisted metrics if available (will be done on first use)
+        self._metrics_loaded = False
 
     async def track_api_call(
         self,
@@ -183,6 +182,11 @@ class UsageTracker:
         Returns:
             ApiCall record
         """
+        # Load persisted metrics on first use
+        if not self._metrics_loaded:
+            await self._load_persisted_metrics()
+            self._metrics_loaded = True
+
         # Create provider enum
         try:
             provider_enum = Provider(provider.lower())
@@ -485,6 +489,9 @@ class UsageTracker:
         Returns:
             UsageMetrics for the period
         """
+        # Note: For async initialization, call track_api_call first
+        # which will load persisted metrics
+
         if not time_window:
             return self.metrics
 

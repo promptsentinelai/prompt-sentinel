@@ -66,10 +66,10 @@ class RoutingMetrics:
     """Metrics for routing performance monitoring."""
 
     total_requests: int = 0
-    strategy_counts: dict[str, int] = None
+    strategy_counts: dict[str, int] | None = None
     avg_complexity_score: float = 0.0
     cache_hit_rate: float = 0.0
-    avg_latency_by_strategy: dict[str, float] = None
+    avg_latency_by_strategy: dict[str, float] | None = None
 
     def __post_init__(self):
         if self.strategy_counts is None:
@@ -234,7 +234,7 @@ class IntelligentRouter:
             routing_metadata.update(
                 {
                     "experiment_id": experiment_id,
-                    "variant_id": variant_id,
+                    "variant_id": variant_id or "",
                     "experiment_override": experiment_override,
                 }
             )
@@ -463,23 +463,26 @@ class IntelligentRouter:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Combine results
-        all_reasons = []
+        all_reasons: list[Any] = []
         max_confidence = 0.0
         most_severe_verdict = Verdict.ALLOW
 
         for result in results:
-            if isinstance(result, Exception):
+            if isinstance(result, Exception | BaseException):
                 logger.error("Detection method failed", error=str(result))
                 continue
 
-            all_reasons.extend(result.reasons)
-            max_confidence = max(max_confidence, result.confidence)
+            if hasattr(result, "reasons"):
+                all_reasons.extend(result.reasons)
+            if hasattr(result, "confidence"):
+                max_confidence = max(max_confidence, result.confidence)
 
             # Update verdict to most severe
-            if result.verdict == Verdict.BLOCK:
-                most_severe_verdict = Verdict.BLOCK
-            elif result.verdict == Verdict.FLAG and most_severe_verdict != Verdict.BLOCK:
-                most_severe_verdict = Verdict.FLAG
+            if hasattr(result, "verdict"):
+                if result.verdict == Verdict.BLOCK:
+                    most_severe_verdict = Verdict.BLOCK
+                elif result.verdict == Verdict.FLAG and most_severe_verdict != Verdict.BLOCK:
+                    most_severe_verdict = Verdict.FLAG
 
         # Create comprehensive response
         response = DetectionResponse(
@@ -487,7 +490,9 @@ class IntelligentRouter:
             confidence=max_confidence,
             reasons=all_reasons,
             processing_time_ms=sum(
-                r.processing_time_ms for r in results if not isinstance(r, Exception)
+                float(r.processing_time_ms)
+                for r in results
+                if not isinstance(r, Exception) and hasattr(r, "processing_time_ms")
             ),
         )
 
@@ -510,6 +515,8 @@ class IntelligentRouter:
 
         # Update strategy counts
         strategy_key = strategy.value
+        if self.metrics.strategy_counts is None:
+            self.metrics.strategy_counts = {}
         self.metrics.strategy_counts[strategy_key] = (
             self.metrics.strategy_counts.get(strategy_key, 0) + 1
         )
@@ -522,10 +529,14 @@ class IntelligentRouter:
 
         # Update latency by strategy
         latency_ms = duration_seconds * 1000
+        if self.metrics.avg_latency_by_strategy is None:
+            self.metrics.avg_latency_by_strategy = {}
         if strategy_key not in self.metrics.avg_latency_by_strategy:
             self.metrics.avg_latency_by_strategy[strategy_key] = latency_ms
         else:
-            count = self.metrics.strategy_counts[strategy_key]
+            count = (
+                self.metrics.strategy_counts[strategy_key] if self.metrics.strategy_counts else 1
+            )
             self.metrics.avg_latency_by_strategy[strategy_key] = (
                 self.metrics.avg_latency_by_strategy[strategy_key] * (count - 1) + latency_ms
             ) / count
@@ -541,7 +552,7 @@ class IntelligentRouter:
             "strategy_distribution": self.metrics.strategy_counts,
             "average_complexity_score": round(self.metrics.avg_complexity_score, 3),
             "average_latency_by_strategy_ms": {
-                k: round(v, 2) for k, v in self.metrics.avg_latency_by_strategy.items()
+                k: round(v, 2) for k, v in (self.metrics.avg_latency_by_strategy or {}).items()
             },
             "cache_hit_rate": self.metrics.cache_hit_rate,
         }
@@ -718,7 +729,7 @@ class IntelligentRouter:
 
         # Get active experiment count
         experiments = await self.experiment_manager.list_experiments()
-        active_count = sum(1 for exp in experiments if exp.get("is_active", False))
+        active_count = sum(1 if exp.get("is_active", False) else 0 for exp in experiments)
 
         return {
             **base_metrics,

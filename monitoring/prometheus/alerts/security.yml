@@ -1,0 +1,79 @@
+groups:
+  - name: prompt_sentinel_security
+    interval: 30s
+    rules:
+      # Attack Detection Alerts
+      - alert: HighAttackRate
+        expr: rate(prompt_sentinel_detections_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "High attack detection rate"
+          description: "Attack detection rate is {{ $value }} per second (threshold: 10/s)"
+          dashboard: "http://grafana:3000/d/security/prompt-sentinel-security"
+
+      - alert: AttackRateSpike
+        expr: |
+          (rate(prompt_sentinel_detections_total[5m]) / rate(prompt_sentinel_detections_total[5m] offset 1h)) > 3
+        for: 5m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: "Attack rate spike detected (300% increase)"
+          description: "Attack detection rate increased by {{ $value }}x compared to 1 hour ago"
+          runbook: "https://wiki.internal/runbooks/prompt-sentinel/attack-spike"
+
+      # False Positive Monitoring
+      - alert: HighFalsePositiveRate
+        expr: |
+          rate(prompt_sentinel_false_positives_total[15m]) /
+          (rate(prompt_sentinel_true_positives_total[15m]) + rate(prompt_sentinel_false_positives_total[15m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "High false positive rate (>10%)"
+          description: "False positive rate is {{ $value | humanizePercentage }}"
+          action: "Review detection thresholds and pattern accuracy"
+
+      # Confidence Score Monitoring
+      - alert: LowDetectionConfidence
+        expr: |
+          histogram_quantile(0.5, rate(prompt_sentinel_detection_confidence_bucket[15m])) < 0.7
+        for: 15m
+        labels:
+          severity: warning
+          team: ml
+        annotations:
+          summary: "Detection confidence below threshold"
+          description: "Median detection confidence is {{ $value }} (threshold: 0.7)"
+
+      # Critical Attack Types
+      - alert: CriticalAttackDetected
+        expr: |
+          increase(prompt_sentinel_detections_total{severity="critical"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: security
+          page: true
+        annotations:
+          summary: "Critical severity attack detected"
+          description: "{{ $value }} critical attacks detected in the last 5 minutes"
+          action: "Immediate investigation required"
+
+      # Provider Consensus Issues
+      - alert: ProviderDisagreement
+        expr: |
+          rate(prompt_sentinel_provider_failover_total{reason="disagreement"}[10m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High provider disagreement rate"
+          description: "Providers disagree on {{ $value | humanizePercentage }} of detections"

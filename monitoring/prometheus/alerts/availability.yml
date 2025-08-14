@@ -1,0 +1,103 @@
+groups:
+  - name: prompt_sentinel_availability
+    interval: 30s
+    rules:
+      # Service Availability
+      - alert: ServiceDown
+        expr: up{job="prompt-sentinel"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          page: true
+        annotations:
+          summary: "PromptSentinel service is down"
+          description: "Service has been down for more than 2 minutes"
+          runbook: "https://wiki.internal/runbooks/prompt-sentinel/service-down"
+
+      - alert: HighErrorRate
+        expr: |
+          rate(prompt_sentinel_errors_total[5m]) / rate(prompt_sentinel_requests_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Error rate above 1%"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+          dashboard: "http://grafana:3000/d/ops/prompt-sentinel-operations"
+
+      - alert: CriticalErrorRate
+        expr: |
+          rate(prompt_sentinel_errors_total[5m]) / rate(prompt_sentinel_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          page: true
+        annotations:
+          summary: "Critical error rate (>5%)"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+          action: "Check logs and recent deployments"
+
+      # Response Time SLOs
+      - alert: HighP95Latency
+        expr: |
+          histogram_quantile(0.95, rate(prompt_sentinel_request_duration_seconds_bucket[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "P95 latency above 500ms"
+          description: "P95 latency is {{ $value }}s (threshold: 500ms)"
+
+      - alert: HighP99Latency
+        expr: |
+          histogram_quantile(0.99, rate(prompt_sentinel_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "P99 latency above 1s"
+          description: "P99 latency is {{ $value }}s (threshold: 1s)"
+          action: "Check provider latency and system load"
+
+      # LLM Provider Health
+      - alert: AllProvidersDown
+        expr: |
+          sum(up{job=~"anthropic|openai|gemini"}) == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          page: true
+        annotations:
+          summary: "All LLM providers are down"
+          description: "No LLM providers available for detection"
+          action: "CRITICAL: Detection system non-functional"
+
+      - alert: ProviderHighLatency
+        expr: |
+          histogram_quantile(0.95, rate(prompt_sentinel_llm_request_duration_seconds_bucket[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "LLM provider high latency"
+          description: "Provider {{ $labels.provider }} P95 latency is {{ $value }}s"
+
+      # Detection System Health
+      - alert: DetectionSystemFailure
+        expr: |
+          rate(prompt_sentinel_errors_total{error_type="DetectionError"}[5m]) > 0.001
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          page: true
+        annotations:
+          summary: "Detection system failures"
+          description: "Detection system failure rate: {{ $value }} per second"

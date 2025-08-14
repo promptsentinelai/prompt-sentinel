@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 import structlog
 from fastapi import FastAPI, HTTPException, Request, WebSocket, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from prompt_sentinel import __version__
@@ -82,6 +82,11 @@ from prompt_sentinel.monitoring import (
     RateLimitConfig,
     RateLimiter,
     UsageTracker,
+)
+from prompt_sentinel.monitoring.metrics import (
+    get_metrics,
+    initialize_metrics,
+    track_detection_metrics,
 )
 from prompt_sentinel.routing.router import IntelligentRouter
 
@@ -142,6 +147,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     logger.info("Starting PromptSentinel", version=__version__)
     logger.info(f"Authentication mode: {settings.auth_mode}")
+
+    # Initialize metrics
+    initialize_metrics(__version__)
 
     # Initialize ML pattern discovery first (if available)
     pattern_manager = None
@@ -711,6 +719,24 @@ async def readiness_probe():
     return {"status": "ready"}
 
 
+@app.get(
+    "/metrics",
+    tags=["System"],
+    summary="Prometheus metrics",
+    description="Prometheus metrics endpoint for monitoring",
+    include_in_schema=False,
+    response_class=Response,
+)
+async def metrics_endpoint() -> Response:
+    """Return Prometheus metrics for scraping.
+
+    Returns:
+        Response with Prometheus text format metrics
+    """
+    metrics_data = get_metrics()
+    return Response(content=metrics_data, media_type="text/plain; version=0.0.4; charset=utf-8")
+
+
 @app.post(
     "/api/v1/detect",
     response_model=DetectionResponse,
@@ -800,10 +826,66 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest) -> Dete
 
     # Perform detection
     try:
+        import time
+
+        start_time = time.time()
+
         response = await detector.detect(messages, check_format=check_format)
+
+        # Track detection metrics
+        duration = time.time() - start_time
+        from prompt_sentinel.monitoring.metrics import (
+            REQUEST_COUNT,
+            REQUEST_DURATION,
+        )
+
+        # Track request metrics
+        REQUEST_COUNT.labels(
+            method="POST",
+            endpoint="/api/v1/detect",
+            status="success",
+            detection_mode=settings.detection_mode,
+        ).inc()
+
+        REQUEST_DURATION.labels(method="POST", endpoint="/api/v1/detect").observe(duration)
+
+        # Track detection metrics
+        if response.verdict in ["block", "flag"]:
+            attack_type = (
+                response.detection_details.get("primary_threat", "unknown")
+                if response.detection_details
+                else "unknown"
+            )
+            severity = (
+                response.detection_details.get("severity", "medium")
+                if response.detection_details
+                else "medium"
+            )
+
+            track_detection_metrics(
+                attack_type=attack_type,
+                severity=severity,
+                method="combined",
+                confidence=response.confidence,
+            )
+
         return response
     except Exception as e:
         logger.error("Detection failed", error=str(e))
+
+        # Track error metrics
+        from prompt_sentinel.monitoring.metrics import ERROR_COUNT, REQUEST_COUNT
+
+        ERROR_COUNT.labels(
+            error_type=type(e).__name__, endpoint="/api/v1/detect", severity="high"
+        ).inc()
+        REQUEST_COUNT.labels(
+            method="POST",
+            endpoint="/api/v1/detect",
+            status="error",
+            detection_mode=settings.detection_mode,
+        ).inc()
+
         raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}") from e
 
 

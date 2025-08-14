@@ -18,11 +18,19 @@ Comprehensive guide for monitoring PromptSentinel in production environments.
 ## Overview
 
 PromptSentinel provides comprehensive monitoring capabilities through:
-- **Metrics**: Prometheus-compatible metrics endpoint
+- **Metrics**: Prometheus-compatible metrics endpoint at `/metrics`
 - **Logging**: Structured JSON logging with multiple levels
 - **Tracing**: OpenTelemetry support for distributed tracing
 - **Health Checks**: Liveness and readiness probes
-- **Custom Metrics**: Application-specific metrics
+- **Custom Metrics**: Application-specific security and performance metrics
+- **Alert Rules**: Pre-configured Prometheus alerts for security, availability, performance, and cost
+
+### Quick Start
+
+1. **Access Metrics**: `curl http://localhost:8080/metrics`
+2. **Launch Monitoring Stack**: `docker-compose -f monitoring/docker-compose.yml up -d`
+3. **View Dashboards**: Open Grafana at `http://localhost:3000` (admin/admin)
+4. **Check Alerts**: Access Prometheus at `http://localhost:9090/alerts`
 
 ### Key Metrics to Monitor
 
@@ -61,108 +69,104 @@ promptsentinel_request_duration_seconds_bucket{le="1.0"} 1500
 ### Available Metrics
 
 ```yaml
-# Core Metrics
-promptsentinel_requests_total          # Total requests by endpoint, method, status
-promptsentinel_request_duration_seconds # Request latency histogram
-promptsentinel_active_connections      # Current active connections
-promptsentinel_errors_total            # Total errors by type
+# Core RED Metrics (Rate, Errors, Duration)
+prompt_sentinel_requests_total           # Total requests by method, endpoint, status, detection_mode
+prompt_sentinel_request_duration_seconds # Request latency histogram with buckets
+prompt_sentinel_errors_total             # Total errors by error_type, endpoint, severity
+prompt_sentinel_active_requests          # Currently active requests gauge
 
-# Detection Metrics
-promptsentinel_detections_total        # Total detections by verdict
-promptsentinel_detection_confidence    # Confidence score distribution
-promptsentinel_threats_blocked_total   # Threats blocked by category
-promptsentinel_pii_detected_total      # PII detections by type
-
-# Cache Metrics
-promptsentinel_cache_hits_total        # Cache hits
-promptsentinel_cache_misses_total      # Cache misses
-promptsentinel_cache_evictions_total   # Cache evictions
-promptsentinel_cache_size_bytes        # Current cache size
+# Security Detection Metrics
+prompt_sentinel_detections_total         # Detections by attack_type, severity, method, confidence_range
+prompt_sentinel_detection_duration_seconds # Detection processing time by method
+prompt_sentinel_false_positives_total    # False positive reports by attack_type
+prompt_sentinel_true_positives_total     # Confirmed true positives by attack_type
+prompt_sentinel_attack_severity          # Attack severity score distribution
+prompt_sentinel_detection_confidence     # Detection confidence distribution
 
 # LLM Provider Metrics
-promptsentinel_llm_requests_total      # Requests by provider
-promptsentinel_llm_tokens_total        # Tokens consumed
-promptsentinel_llm_errors_total        # Provider errors
-promptsentinel_llm_latency_seconds     # Provider response time
+prompt_sentinel_llm_requests_total       # Requests by provider, model, status
+prompt_sentinel_llm_request_duration_seconds # Provider latency by provider, model
+prompt_sentinel_tokens_used_total        # Tokens by provider, model, token_type (input/output)
+prompt_sentinel_api_cost_usd_total       # API costs in USD by provider, model
+prompt_sentinel_provider_failover_total  # Failover events by from_provider, to_provider, reason
 
-# System Metrics
-promptsentinel_memory_usage_bytes      # Memory usage
-promptsentinel_cpu_usage_percent       # CPU usage
-promptsentinel_goroutines              # Active goroutines (Go)
-promptsentinel_open_file_descriptors   # Open file descriptors
+# Cache Performance Metrics
+prompt_sentinel_cache_hits_total         # Cache hits by cache_type
+prompt_sentinel_cache_misses_total       # Cache misses by cache_type
+prompt_sentinel_cache_size_bytes         # Current cache size gauge by cache_type
+prompt_sentinel_cache_evictions_total    # Evictions by cache_type, reason
+
+# Pattern & Feed Metrics
+prompt_sentinel_pattern_matches_total    # Pattern matches by category, pattern_id, confidence_range
+prompt_sentinel_feed_updates_total       # Feed updates by feed_id, status
+prompt_sentinel_feed_indicators_active   # Active indicators gauge by feed_id
+
+# System & Resource Metrics
+prompt_sentinel_queue_size               # Queue size gauge by queue_name
+prompt_sentinel_rate_limit_hits_total    # Rate limit hits by client_id, limit_type
+
+# Business & Cost Metrics
+prompt_sentinel_cost_per_detection_usd   # Cost per detection histogram by method
+prompt_sentinel_service_info             # Service metadata (version, environment)
 ```
 
 ### Custom Metrics Implementation
 
+The application now includes comprehensive Prometheus metrics in `src/prompt_sentinel/monitoring/metrics.py`:
+
 ```python
-# src/prompt_sentinel/monitoring/metrics.py
-from prometheus_client import Counter, Histogram, Gauge, Summary
-import time
-
-# Define custom metrics
-request_counter = Counter(
-    'promptsentinel_requests_total',
-    'Total number of requests',
-    ['method', 'endpoint', 'status']
+# Example usage of the implemented metrics
+from prompt_sentinel.monitoring.metrics import (
+    track_request_metrics,
+    track_detection_metrics,
+    track_llm_metrics,
+    track_cache_metrics,
+    get_metrics,
+    initialize_metrics
 )
 
-request_duration = Histogram(
-    'promptsentinel_request_duration_seconds',
-    'Request duration in seconds',
-    ['endpoint'],
-    buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0)
-)
+# Initialize metrics on startup
+initialize_metrics(version="1.0.0")
 
-active_connections = Gauge(
-    'promptsentinel_active_connections',
-    'Number of active connections'
-)
-
-detection_verdict = Counter(
-    'promptsentinel_detections_total',
-    'Total detections by verdict',
-    ['verdict', 'mode']
-)
-
-cache_operations = Counter(
-    'promptsentinel_cache_operations_total',
-    'Cache operations',
-    ['operation', 'result']
-)
-
-# Decorator for timing functions
-def track_time(endpoint):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            start = time.time()
-            try:
-                result = func(*args, **kwargs)
-                status = "success"
-            except Exception as e:
-                status = "error"
-                raise
-            finally:
-                duration = time.time() - start
-                request_duration.labels(endpoint=endpoint).observe(duration)
-                request_counter.labels(
-                    method="POST",
-                    endpoint=endpoint,
-                    status=status
-                ).inc()
-            return result
-        return wrapper
-    return decorator
-
-# Usage in API endpoints
-@track_time("/api/v1/detect")
+# Track API request metrics
+@track_request_metrics(endpoint="/api/v1/detect")
 async def detect_endpoint(request):
-    # Detection logic
-    verdict = perform_detection(request)
-    detection_verdict.labels(
-        verdict=verdict,
-        mode=request.detection_mode
-    ).inc()
-    return verdict
+    # Your detection logic here
+    pass
+
+# Track detection events
+track_detection_metrics(
+    attack_type="prompt_injection",
+    severity="high",
+    method="heuristic",
+    confidence=0.95
+)
+
+# Track LLM provider usage
+track_llm_metrics(
+    provider="anthropic",
+    model="claude-3-sonnet",
+    duration=1.2,
+    input_tokens=500,
+    output_tokens=150,
+    cost=0.0045,
+    success=True
+)
+
+# Track cache performance
+track_cache_metrics(
+    cache_type="detection",
+    hit=True,
+    size_bytes=1024000
+)
+
+# Expose metrics endpoint (already configured in main.py)
+@app.get("/metrics")
+async def metrics_endpoint():
+    return Response(
+        content=get_metrics(),
+        media_type="text/plain; version=0.0.4; charset=utf-8"
+    )
 ```
 
 ## Prometheus Setup
@@ -793,94 +797,125 @@ services:
 
 ## Alerting Rules
 
-### Prometheus Alert Rules
+PromptSentinel includes comprehensive alerting rules organized into four categories: Security, Availability, Performance, and Cost. These are located in `monitoring/prometheus/alerts/`.
+
+### Security Alerts (`monitoring/prometheus/alerts/security.yml`)
 
 ```yaml
-# alerts/promptsentinel.yml
-groups:
-  - name: promptsentinel
-    interval: 30s
-    rules:
-      # High error rate
-      - alert: HighErrorRate
-        expr: |
-          (
-            rate(promptsentinel_errors_total[5m]) /
-            rate(promptsentinel_requests_total[5m])
-          ) > 0.05
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High error rate detected"
-          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
-      
-      # High latency
-      - alert: HighLatency
-        expr: |
-          histogram_quantile(0.95,
-            rate(promptsentinel_request_duration_seconds_bucket[5m])
-          ) > 1
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High latency detected"
-          description: "P95 latency is {{ $value }}s"
-      
-      # Low cache hit rate
-      - alert: LowCacheHitRate
-        expr: |
-          (
-            rate(promptsentinel_cache_hits_total[5m]) /
-            (rate(promptsentinel_cache_hits_total[5m]) + rate(promptsentinel_cache_misses_total[5m]))
-          ) < 0.5
-        for: 10m
-        labels:
-          severity: info
-        annotations:
-          summary: "Cache hit rate below 50%"
-          description: "Cache hit rate is {{ $value | humanizePercentage }}"
-      
-      # High threat rate
-      - alert: HighThreatRate
-        expr: rate(promptsentinel_threats_blocked_total[5m]) > 1
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "High rate of security threats"
-          description: "Blocking {{ $value }} threats per second"
-      
-      # LLM provider failures
-      - alert: LLMProviderDown
-        expr: rate(promptsentinel_llm_errors_total[5m]) > 0.1
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "LLM provider experiencing errors"
-          description: "{{ $labels.provider }} error rate: {{ $value }}/s"
-      
-      # Budget alert
-      - alert: BudgetThresholdReached
-        expr: promptsentinel_budget_usage_percent > 80
-        for: 1m
-        labels:
-          severity: warning
-        annotations:
-          summary: "API budget usage above 80%"
-          description: "Current usage: {{ $value }}%"
-      
-      # Service down
-      - alert: ServiceDown
-        expr: up{job="promptsentinel"} == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "PromptSentinel service is down"
-          description: "Service has been down for more than 1 minute"
+# High attack rate detection
+- alert: HighAttackRate
+  expr: rate(prompt_sentinel_detections_total{severity=~"high|critical"}[5m]) > 0.5
+  for: 5m
+  annotations:
+    summary: "High rate of severe attacks detected"
+    description: "Detecting {{ $value }} high/critical threats per second"
+
+# Repeated attack patterns
+- alert: RepeatedAttackPattern
+  expr: increase(prompt_sentinel_pattern_matches_total[1h]) > 100
+  for: 10m
+  annotations:
+    summary: "Repeated attack pattern detected"
+    description: "Pattern {{ $labels.pattern_id }} matched {{ $value }} times"
+
+# Data exfiltration attempts
+- alert: DataExfiltrationAttempt
+  expr: rate(prompt_sentinel_detections_total{attack_type="data_exfiltration"}[5m]) > 0
+  for: 2m
+  annotations:
+    summary: "Data exfiltration attempt detected"
+    action: "Review logs and block source if confirmed"
+```
+
+### Availability Alerts (`monitoring/prometheus/alerts/availability.yml`)
+
+```yaml
+# Service health monitoring
+- alert: ServiceDown
+  expr: up{job="prompt-sentinel"} == 0
+  for: 2m
+  annotations:
+    summary: "PromptSentinel service is down"
+    runbook: "https://wiki.internal/runbooks/prompt-sentinel/service-down"
+
+# Error rate thresholds
+- alert: HighErrorRate
+  expr: rate(prompt_sentinel_errors_total[5m]) / rate(prompt_sentinel_requests_total[5m]) > 0.01
+  for: 5m
+  annotations:
+    summary: "Error rate above 1%"
+    dashboard: "http://grafana:3000/d/ops/prompt-sentinel-operations"
+
+# LLM provider health
+- alert: AllProvidersDown
+  expr: sum(up{job=~"anthropic|openai|gemini"}) == 0
+  for: 1m
+  annotations:
+    summary: "All LLM providers are down"
+    action: "CRITICAL: Detection system non-functional"
+```
+
+### Performance Alerts (`monitoring/prometheus/alerts/performance.yml`)
+
+```yaml
+# Cache performance
+- alert: LowCacheHitRate
+  expr: |
+    rate(prompt_sentinel_cache_hits_total[10m]) / 
+    (rate(prompt_sentinel_cache_hits_total[10m]) + rate(prompt_sentinel_cache_misses_total[10m])) < 0.7
+  for: 15m
+  annotations:
+    summary: "Cache hit rate below 70%"
+    action: "Review cache configuration and TTL settings"
+
+# Response time SLOs
+- alert: HighP95Latency
+  expr: histogram_quantile(0.95, rate(prompt_sentinel_request_duration_seconds_bucket[5m])) > 0.5
+  for: 10m
+  annotations:
+    summary: "P95 latency above 500ms"
+
+# Detection performance
+- alert: SlowDetection
+  expr: histogram_quantile(0.95, rate(prompt_sentinel_detection_duration_seconds_bucket[5m])) > 0.2
+  for: 10m
+  annotations:
+    summary: "Detection P95 latency above 200ms"
+```
+
+### Cost Alerts (`monitoring/prometheus/alerts/cost.yml`)
+
+```yaml
+# Spending monitoring
+- alert: HighAPISpend
+  expr: increase(prompt_sentinel_api_cost_usd_total[1h]) > 10
+  for: 5m
+  annotations:
+    summary: "High API spend (>$10/hour)"
+    description: "Spent ${{ $value }} in the last hour on {{ $labels.provider }}"
+
+# Daily budget tracking
+- alert: DailyBudgetWarning
+  expr: increase(prompt_sentinel_api_cost_usd_total[24h]) > 200
+  for: 5m
+  annotations:
+    summary: "Approaching daily budget limit"
+    description: "Spent ${{ $value }} today (80% of $250 budget)"
+
+- alert: DailyBudgetExceeded
+  expr: increase(prompt_sentinel_api_cost_usd_total[24h]) > 250
+  for: 1m
+  annotations:
+    summary: "Daily budget exceeded!"
+    action: "Consider throttling or switching to cheaper models"
+
+# Cost efficiency
+- alert: HighCostPerDetection
+  expr: histogram_quantile(0.95, rate(prompt_sentinel_cost_per_detection_usd_bucket[1h])) > 0.01
+  for: 30m
+  annotations:
+    summary: "High cost per detection"
+    action: "Review caching and model selection"
 ```
 
 ### AlertManager Configuration

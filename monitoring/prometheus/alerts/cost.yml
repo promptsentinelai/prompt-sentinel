@@ -1,0 +1,91 @@
+groups:
+  - name: prompt_sentinel_cost
+    interval: 60s
+    rules:
+      # Cost Monitoring
+      - alert: HighAPISpend
+        expr: |
+          increase(prompt_sentinel_api_cost_usd_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          team: finance
+        annotations:
+          summary: "High API spend (>$10/hour)"
+          description: "Spent ${{ $value }} in the last hour on {{ $labels.provider }}"
+          dashboard: "http://grafana:3000/d/cost/prompt-sentinel-costs"
+
+      - alert: DailyBudgetWarning
+        expr: |
+          increase(prompt_sentinel_api_cost_usd_total[24h]) > 200
+        for: 5m
+        labels:
+          severity: warning
+          team: finance
+        annotations:
+          summary: "Approaching daily budget limit"
+          description: "Spent ${{ $value }} today (80% of $250 budget)"
+
+      - alert: DailyBudgetExceeded
+        expr: |
+          increase(prompt_sentinel_api_cost_usd_total[24h]) > 250
+        for: 1m
+        labels:
+          severity: critical
+          team: finance
+          page: true
+        annotations:
+          summary: "Daily budget exceeded!"
+          description: "Spent ${{ $value }} today (budget: $250)"
+          action: "Consider throttling or switching to cheaper models"
+
+      # Cost Efficiency
+      - alert: HighCostPerDetection
+        expr: |
+          histogram_quantile(0.95, rate(prompt_sentinel_cost_per_detection_usd_bucket[1h])) > 0.01
+        for: 30m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High cost per detection"
+          description: "P95 cost per detection is ${{ $value }} (threshold: $0.01)"
+          action: "Review caching and model selection"
+
+      - alert: ProviderCostSpike
+        expr: |
+          rate(prompt_sentinel_api_cost_usd_total[1h]) /
+          rate(prompt_sentinel_api_cost_usd_total[1h] offset 1h) > 2
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Provider cost spike (2x increase)"
+          description: "{{ $labels.provider }} costs increased {{ $value }}x vs 1 hour ago"
+
+      # Token Usage
+      - alert: HighTokenUsage
+        expr: |
+          rate(prompt_sentinel_tokens_used_total[5m]) > 10000
+        for: 10m
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "High token consumption rate"
+          description: "Using {{ $value }} tokens/second on {{ $labels.provider }}"
+
+      # Cost Optimization Opportunities
+      - alert: LowCacheSavings
+        expr: |
+          (1 - (rate(prompt_sentinel_cache_hits_total[1h]) /
+          (rate(prompt_sentinel_cache_hits_total[1h]) + rate(prompt_sentinel_cache_misses_total[1h])))) *
+          increase(prompt_sentinel_api_cost_usd_total[1h]) > 5
+        for: 30m
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "Potential cache optimization"
+          description: "Could save ~${{ $value }}/hour with better caching"

@@ -11,7 +11,7 @@ datasources:
       timeInterval: "15s"
       queryTimeout: "60s"
       httpMethod: POST
-    
+
   - name: Loki
     type: loki
     access: proxy
@@ -19,7 +19,7 @@ datasources:
     editable: true
     jsonData:
       maxLines: 1000
-      
+
   - name: AlertManager
     type: alertmanager
     access: proxy

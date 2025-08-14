@@ -107,7 +107,7 @@ class OpenAIProvider(LLMProvider):
         try:
             await asyncio.wait_for(
                 self.client.chat.completions.create(  # type: ignore[call-overload, arg-type]
-                    model=self.model,
+                    model=self.model,  # type: ignore[arg-type]
                     messages=[{"role": "user", "content": "test"}],
                     max_tokens=10,  # type: ignore[arg-type]
                 ),

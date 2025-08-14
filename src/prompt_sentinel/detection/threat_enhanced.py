@@ -107,7 +107,7 @@ class ThreatEnhancedDetector:
             Threat context information
         """
         techniques_set: set[str] = set()
-        context = {
+        context: dict[str, Any] = {
             "threats_detected": [],
             "techniques": [],
             "severity": "low",

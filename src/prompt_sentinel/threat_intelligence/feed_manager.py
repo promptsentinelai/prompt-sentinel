@@ -367,7 +367,7 @@ class ThreatFeedManager:
 
     async def _fetch_api_feed(self, feed: ThreatFeed) -> Any:
         """Fetch data from API feed."""
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:  # nosec B113
             headers = feed.headers.copy()
             if feed.api_key:
                 headers["Authorization"] = f"Bearer {feed.api_key}"
@@ -387,7 +387,7 @@ class ThreatFeedManager:
         # Use GitHub API to fetch repository data
         api_url = f"https://api.github.com/repos/{owner}/{repo}/contents"
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:  # nosec B113
             headers = {"Accept": "application/vnd.github.v3+json"}
             if feed.api_key:
                 headers["Authorization"] = f"token {feed.api_key}"
@@ -398,7 +398,7 @@ class ThreatFeedManager:
 
     async def _fetch_http_feed(self, feed: ThreatFeed) -> Any:
         """Fetch data from HTTP feed."""
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:  # nosec B113
             response = await client.get(str(feed.url), headers=feed.headers, timeout=30.0)
             response.raise_for_status()
 

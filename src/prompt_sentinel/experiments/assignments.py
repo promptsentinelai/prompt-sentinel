@@ -329,7 +329,7 @@ class AssignmentService:
 
         # Consistent hash-based sampling
         hash_input = f"{experiment.id}:{user_id}:sample"
-        hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+        hash_value = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)
         sample_bucket = (hash_value % 10000) / 10000.0  # 0.0 to 1.0
 
         return sample_bucket < experiment.target_percentage
@@ -376,7 +376,7 @@ class AssignmentService:
         """
         # Create consistent hash
         hash_input = f"{experiment.id}:{user_id}:variant"
-        hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+        hash_value = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)
         bucket = hash_value % 10000  # 0 to 9999
 
         # Map bucket to variant based on traffic allocation
@@ -441,7 +441,7 @@ class AssignmentService:
         )
         hash_input = f"{experiment.id}:{context.user_id}:{user_segment}:stratified"
 
-        hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+        hash_value = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)
         bucket = hash_value % 10000
 
         cumulative_percentage = 0.0

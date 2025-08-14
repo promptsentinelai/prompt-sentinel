@@ -243,7 +243,7 @@ class ExperimentDatabase:
                 async with db.execute(
                     "SELECT config FROM experiments WHERE id = ?", (experiment_id,)
                 ) as cursor:
-                    row = await cursor.fetchone()
+                    row = await cursor.fetchone()  # type: ignore[assignment]
 
                 if row:
                     config_data = json.loads(row[0])
@@ -679,7 +679,7 @@ class ExperimentDatabase:
                     SELECT COUNT(*) FROM experiment_metrics
                 """
                 ) as cursor:
-                    row = await cursor.fetchone()
+                    row = await cursor.fetchone()  # type: ignore[assignment]
                     if row:
                         stats["total_metrics"] = row[0]
 
@@ -689,7 +689,7 @@ class ExperimentDatabase:
                     SELECT COUNT(*) FROM experiment_assignments
                 """
                 ) as cursor:
-                    row = await cursor.fetchone()
+                    row = await cursor.fetchone()  # type: ignore[assignment]
                     if row:
                         stats["total_assignments"] = row[0]
 
@@ -699,7 +699,7 @@ class ExperimentDatabase:
                     SELECT COUNT(*) FROM safety_violations
                 """
                 ) as cursor:
-                    row = await cursor.fetchone()
+                    row = await cursor.fetchone()  # type: ignore[assignment]
                     if row:
                         stats["total_violations"] = row[0]
 

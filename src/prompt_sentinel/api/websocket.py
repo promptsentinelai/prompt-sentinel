@@ -345,7 +345,7 @@ class StreamingDetector:
         source_confidences: dict[str, list] = {}
         if response.reasons:
             for reason in response.reasons:
-                source = reason.source
+                source: str = reason.source  # Cast to str for dict key
                 if source not in source_confidences:
                     source_confidences[source] = []
                 source_confidences[source].append(reason.confidence)

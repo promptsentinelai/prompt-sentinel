@@ -736,6 +736,8 @@ class IntelligentRouter:
             "experiments_enabled": True,
             "active_experiments": active_count,
             "experiment_overrides": sum(
-                1 for key in self.metrics.strategy_counts.keys() if "experiment" in key.lower()
+                1
+                for key in (self.metrics.strategy_counts or {}).keys()
+                if "experiment" in key.lower()
             ),
         }

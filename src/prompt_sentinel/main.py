@@ -554,7 +554,7 @@ async def detailed_health_check() -> dict:
     - Resource utilization (memory, CPU, connections)
     - Configuration status
     """
-    components = {}
+    components: dict[str, Any] = {}
 
     # Check detector health
     if detector:
@@ -871,7 +871,7 @@ async def analyze(request: AnalysisRequest) -> AnalysisResponse:
         )
 
         # Per-message analysis
-        per_message_analysis = []
+        per_message_analysis: list[dict[str, Any]] = []
         for i, message in enumerate(request.messages):
             message_result = await detector.detect([message], check_format=False)
             per_message_analysis.append(
@@ -905,7 +905,7 @@ async def analyze(request: AnalysisRequest) -> AnalysisResponse:
             }
 
         # Calculate overall risk score
-        risk_scores = [float(msg["confidence"]) for msg in per_message_analysis]
+        risk_scores = [float(msg.get("confidence", 0.0)) for msg in per_message_analysis]
         overall_risk_score = max(risk_scores) if risk_scores else 0.0
 
         return AnalysisResponse(
@@ -1382,7 +1382,7 @@ async def detect_v3_routed(request: UnifiedDetectionRequest, req: Request) -> De
 
         # Add routing information to response
         response.metadata = response.metadata or {}
-        routing_info = {
+        routing_info: dict[str, Any] = {
             "strategy": routing_decision.strategy.value,
             "complexity_level": routing_decision.complexity_score.level.value,
             "complexity_score": round(routing_decision.complexity_score.score, 3),
@@ -1560,7 +1560,7 @@ async def get_complexity_metrics(
         >>> # Get system-wide metrics
         >>> response = await client.get("/v2/metrics/complexity")
     """
-    result = {}
+    result: dict[str, Any] = {}
 
     if prompt:
         if not processor:
@@ -1690,7 +1690,7 @@ async def get_usage_metrics(
     else:
         metrics = usage_tracker.get_metrics()
 
-    result = {
+    result: dict[str, Any] = {
         "summary": {
             "total_requests": metrics.total_requests,
             "successful_requests": metrics.successful_requests,
@@ -2057,7 +2057,7 @@ async def benchmark_strategies(request: UnifiedDetectionRequest):
 
     from prompt_sentinel.routing.router import DetectionStrategy
 
-    results = {}
+    results: dict[str, Any] = {}
 
     for strategy in DetectionStrategy:
         try:

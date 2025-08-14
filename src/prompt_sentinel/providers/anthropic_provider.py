@@ -131,7 +131,7 @@ class AnthropicProvider(LLMProvider):
             # Try a minimal API call
             await asyncio.wait_for(
                 self.client.messages.create(  # type: ignore[arg-type, call-overload]
-                    model=self.model,
+                    model=self.model,  # type: ignore[arg-type]
                     max_tokens=10,
                     messages=[{"role": "user", "content": "test"}],  # type: ignore[arg-type]
                 ),

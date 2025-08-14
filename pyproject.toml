@@ -142,6 +142,7 @@ ignore = [
     "S112",  # try-except-continue (acceptable for resilient testing)
 ]
 exclude = [
+    ".local/",
     ".bzr",
     ".direnv",
     ".eggs",

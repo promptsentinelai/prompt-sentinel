@@ -30,7 +30,7 @@ config:
   debug: false
   detectionMode: strict
   confidenceThreshold: 0.8
-  
+
   # Cache TTLs for production
   cacheTtlLlm: 7200      # 2 hours
   cacheTtlDetection: 1800 # 30 minutes

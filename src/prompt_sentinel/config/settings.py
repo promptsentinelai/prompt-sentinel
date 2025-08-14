@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     )
 
     # API Configuration
-    api_host: str = Field(default="0.0.0.0")
+    api_host: str = Field(default="0.0.0.0")  # nosec B104 - Required for Docker container binding
     api_port: int = Field(default=8080)
     api_env: Literal["development", "staging", "production"] = Field(default="development")
     debug: bool = Field(default=False)

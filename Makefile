@@ -447,7 +447,7 @@ release: ci docker-build ## Prepare for release
 	@echo "$(GREEN)Ready for release!$(NC)"
 	@echo "Next steps:"
 	@echo "  1. Update version in __init__.py"
-	@echo "  2. Tag the release: git tag v0.1.0"
+	@echo "  2. Tag the release: git tag v1.0.0"
 	@echo "  3. Push tags: git push --tags"
 	@echo "  4. Push Docker image: make docker-push"
 

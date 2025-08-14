@@ -1,0 +1,98 @@
+# Default Threat Intelligence Feeds for PromptSentinel
+# These feeds provide real-time threat patterns for LLM security
+
+feeds:
+  # OWASP Top 10 for LLMs - Community patterns
+  - id: "owasp-llm-top10"
+    name: "OWASP LLM Top 10 Patterns"
+    description: "Attack patterns based on OWASP Top 10 for LLM Applications 2025"
+    type: "json"
+    url: "https://raw.githubusercontent.com/OWASP/www-project-top-10-for-large-language-model-applications/main/patterns/injection-patterns.json"
+    enabled: true
+    priority: 1
+    refresh_interval: 86400  # Daily updates
+    parser_config:
+      pattern_field: "pattern"
+      severity_field: "risk_rating"
+      technique_field: "attack_type"
+    min_confidence: 0.7
+
+  # GitHub-hosted jailbreak patterns
+  - id: "github-jailbreak-db"
+    name: "GitHub Jailbreak Database"
+    description: "Collection of known jailbreak techniques from security research"
+    type: "github"
+    url: "https://api.github.com/repos/verazuo/jailbreak_llms/contents/data"
+    enabled: true
+    priority: 2
+    refresh_interval: 43200  # Twice daily
+    parser_config:
+      file_pattern: "*.json"
+      extract_field: "prompt"
+    min_confidence: 0.6
+
+  # HuggingFace security dataset
+  - id: "huggingface-safeguard"
+    name: "HuggingFace Safe-Guard Dataset"
+    description: "Curated dataset of malicious prompts with classifications"
+    type: "api"
+    url: "https://datasets-server.huggingface.co/rows"
+    enabled: true
+    priority: 3
+    refresh_interval: 86400  # Daily
+    headers:
+      Accept: "application/json"
+    parser_config:
+      dataset: "xTRam1/safe-guard-prompt-injection"
+      config: "default"
+      split: "train"
+      offset: 0
+      length: 100  # Sample size per update
+    field_mappings:
+      pattern: "text"
+      label: "label"
+    filters:
+      label: 1  # Only malicious prompts
+
+  # MITRE ATLAS patterns
+  - id: "mitre-atlas"
+    name: "MITRE ATLAS AI Adversarial Tactics"
+    description: "Adversarial ML techniques from MITRE ATLAS framework"
+    type: "json"
+    url: "https://raw.githubusercontent.com/mitre-atlas/atlas-data/main/techniques.json"
+    enabled: true
+    priority: 4
+    refresh_interval: 604800  # Weekly
+    parser_config:
+      technique_field: "technique_id"
+      name_field: "technique_name"
+      description_field: "description"
+    min_confidence: 0.8
+
+  # Local pattern files (shipped with PromptSentinel)
+  - id: "local-patterns"
+    name: "PromptSentinel Core Patterns"
+    description: "Curated patterns maintained by PromptSentinel team"
+    type: "json"
+    url: "file:///app/feeds/patterns/core_patterns.json"
+    enabled: true
+    priority: 1
+    refresh_interval: 0  # No refresh for local files
+    auto_validate: true
+    min_confidence: 0.9
+
+# Feed management settings
+settings:
+  max_indicators: 10000  # Maximum indicators to keep in memory
+  cache_ttl: 3600  # Cache TTL in seconds
+  validation_batch_size: 100
+  parallel_fetches: 3
+  retry_attempts: 3
+  retry_delay: 60
+
+# Quality metrics
+quality_thresholds:
+  min_pattern_length: 10  # Minimum pattern length in characters
+  max_pattern_length: 5000  # Maximum pattern length
+  min_unique_words: 3  # Minimum unique words in pattern
+  max_false_positive_rate: 0.05  # 5% max false positive rate

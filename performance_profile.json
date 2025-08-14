@@ -1,0 +1,39 @@
+{
+  "detection": {
+    "count": 60,
+    "mean_ms": 1.336362511695673,
+    "median_ms": 1.2858129921369255,
+    "stdev_ms": 0.5252106632042371,
+    "min_ms": 0.9043338941410184,
+    "max_ms": 4.995749914087355,
+    "p50_ms": 1.2870840728282928,
+    "p95_ms": 1.7027499852702022,
+    "p99_ms": 4.995749914087355,
+    "errors": 40,
+    "success_rate": 60.0
+  },
+  "concurrent": {
+    "total_time_ms": 22.094791987910867,
+    "avg_response_ms": 16.428864537738264,
+    "max_response_ms": 20.539291901513934,
+    "min_response_ms": 3.649666905403137,
+    "success_rate": 60.0,
+    "throughput": 905.1906897762591
+  },
+  "cache": {
+    "first_request_ms": 2.0201250445097685,
+    "second_request_ms": 2.2455420112237334,
+    "cache_improvement": -11.158565026783664,
+    "avg_cached_ms": 2.020604186691344,
+    "cache_effective": false
+  },
+  "batch": {
+    "10": {
+      "error": "Not implemented"
+    },
+    "50": {
+      "error": "Not implemented"
+    }
+  },
+  "memory": {}
+}

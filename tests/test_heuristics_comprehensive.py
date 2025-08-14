@@ -436,21 +436,17 @@ class TestHeuristicDetector:
 
     def test_check_ml_patterns_with_matches(self, detector_with_pattern_manager):
         """Test ML pattern checking with matching patterns."""
-        # Mock pattern that matches
-        mock_pattern = MagicMock()
-        mock_pattern.pattern_id = "ml_001"
-        mock_pattern.confidence = 0.85
-        mock_pattern.description = "ML detected threat"
-        mock_pattern.test.return_value = True
+        # Create pattern as tuple (pattern_str, confidence, description)
+        pattern_tuple = ("malicious", 0.85, "ML detected threat")
 
         # Set patterns directly and update timestamp to avoid refresh
-        detector_with_pattern_manager.ml_patterns = [mock_pattern]
+        detector_with_pattern_manager.ml_patterns = [pattern_tuple]
         detector_with_pattern_manager.ml_patterns_last_update = MagicMock()
 
         matches = detector_with_pattern_manager._check_ml_patterns("malicious content")
 
         assert len(matches) == 1
-        assert matches[0][0] == "ml_001"
+        assert matches[0][0] == "malicious"
         assert matches[0][1] == 0.85
         assert "ML Pattern" in matches[0][2]
 
@@ -670,19 +666,17 @@ class TestHeuristicDetector:
 
     def test_analyze_message_with_ml_patterns_hit(self, detector_with_pattern_manager):
         """Test message analysis that triggers ML pattern hit to cover line 222."""
-        # Create mock pattern that matches
-        mock_pattern = MagicMock()
-        mock_pattern.pattern_id = "ml_hit"
-        mock_pattern.confidence = 0.9
-        mock_pattern.description = "ML hit pattern"
-        mock_pattern.test.return_value = True
+        # Create pattern as tuple (pattern_str, confidence, description)
+        pattern_tuple = ("malicious", 0.9, "ML hit pattern")
 
-        detector_with_pattern_manager.ml_patterns = [mock_pattern]
+        detector_with_pattern_manager.ml_patterns = [pattern_tuple]
         detector_with_pattern_manager.ml_patterns_last_update = MagicMock()
 
         message = Message(role=Role.USER, content="malicious content")
         reasons = detector_with_pattern_manager._analyze_message(message)
 
         # Should have ML pattern reason which covers line 222
-        ml_reasons = [r for r in reasons if r.patterns_matched and "ml_hit" in r.patterns_matched]
+        ml_reasons = [
+            r for r in reasons if r.patterns_matched and "malicious" in r.patterns_matched
+        ]
         assert len(ml_reasons) > 0

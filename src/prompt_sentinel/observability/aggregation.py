@@ -16,7 +16,7 @@ class LogAggregator:
     def __init__(self):
         """Initialize log aggregator."""
         self.patterns = {}
-        self.clusters = defaultdict(list)
+        self.clusters: dict[str, list[dict[str, Any]]] = {}
         self.anomalies = []
 
     def detect_patterns(self, logs: list[dict[str, Any]]) -> dict[str, int]:

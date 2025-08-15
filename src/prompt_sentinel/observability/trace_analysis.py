@@ -5,6 +5,7 @@
 
 """Trace analysis for observability."""
 
+from collections import defaultdict
 from typing import Any
 
 from .tracing import Span
@@ -29,7 +30,7 @@ class TraceAnalyzer:
             root_spans = [spans[0]]
 
         # Find longest path from root
-        critical_path = []
+        critical_path: list[Span] = []
         for root in root_spans:
             path = self._find_longest_path(root, spans)
             if len(path) > len(critical_path):
@@ -44,7 +45,7 @@ class TraceAnalyzer:
         if not children:
             return [root]
 
-        longest_child_path = []
+        longest_child_path: list[Span] = []
         for child in children:
             child_path = self._find_longest_path(child, all_spans)
             if sum(s.get_duration() for s in child_path) > sum(
@@ -78,7 +79,7 @@ class TraceAnalyzer:
 
     def generate_dependency_graph(self, spans: list[Span]) -> dict[str, list[str]]:
         """Generate dependency graph from spans."""
-        dependencies = {}
+        dependencies: dict[str, list[str]] = {}
 
         for span in spans:
             if span.parent_id:
@@ -105,7 +106,7 @@ class TraceAnalyzer:
         """Analyze errors in spans."""
         error_spans = [s for s in spans if s.status == "error"]
 
-        error_summary = {
+        error_summary: dict[str, Any] = {
             "total_errors": len(error_spans),
             "error_rate": len(error_spans) / len(spans) if spans else 0,
             "error_types": defaultdict(int),
@@ -117,6 +118,3 @@ class TraceAnalyzer:
 
         error_summary["error_types"] = dict(error_summary["error_types"])
         return error_summary
-
-
-from collections import defaultdict

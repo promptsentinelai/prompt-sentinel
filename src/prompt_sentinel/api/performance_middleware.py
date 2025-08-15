@@ -9,6 +9,7 @@
 
 import time
 from collections.abc import Callable
+from typing import Any
 
 import orjson
 import structlog
@@ -121,7 +122,7 @@ def setup_performance_middleware(app):
 class OptimizedJSONResponse(ORJSONResponse):
     """Optimized JSON response using orjson with custom options."""
 
-    def render(self, content: any) -> bytes:
+    def render(self, content: Any) -> bytes:
         """
         Render content to JSON bytes with optimizations.
 

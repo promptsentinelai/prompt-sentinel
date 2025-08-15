@@ -24,7 +24,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 
 class Role(str, Enum):
@@ -223,7 +223,12 @@ class DetectionResponse(BaseModel):
     processing_time_ms: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
-    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
+    model_config = ConfigDict()
+
+    @field_serializer("timestamp")
+    def serialize_timestamp(self, timestamp: datetime) -> str:
+        """Serialize datetime to ISO format string."""
+        return timestamp.isoformat()
 
 
 class AnalysisRequest(BaseModel):
@@ -276,4 +281,9 @@ class CorpusEntry(BaseModel):
     created_at: datetime
     metadata: dict | None = None
 
-    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat()})
+    model_config = ConfigDict()
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, created_at: datetime) -> str:
+        """Serialize datetime to ISO format string."""
+        return created_at.isoformat()

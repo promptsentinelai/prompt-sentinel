@@ -161,7 +161,7 @@ class AlertManager:
 
     def get_alert_summary(self) -> dict[str, Any]:
         """Get alert summary."""
-        active_by_severity = defaultdict(int)
+        active_by_severity: defaultdict[str, int] = defaultdict(int)
         for alert in self.active_alerts.values():
             active_by_severity[alert.severity] += 1
 

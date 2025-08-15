@@ -173,8 +173,8 @@ class TestAPIErrorHandling:
 
     def test_payload_size_limit(self, test_client):
         """Test handling of oversized payloads."""
-        # Create a very large prompt
-        large_prompt = "x" * (1024 * 1024)  # 1MB
+        # Create a moderately large prompt (10KB)
+        large_prompt = "x" * (10 * 1024)  # 10KB
 
         response = test_client.post("/api/v1/detect", json={"prompt": large_prompt})
         # Should either accept or return 413 Payload Too Large

@@ -133,6 +133,8 @@ class OptimizedCache:
 
     async def _store_redis_async(self, key: str, value: Any, ttl: int) -> None:
         """Store in Redis asynchronously without blocking."""
+        if self.redis_cache is None:
+            return
         try:
             await self.redis_cache.set(key, value, ttl)
         except Exception as e:
@@ -227,7 +229,7 @@ class BatchCache:
         # Compute missing items in batch
         if missing_items:
             # Create futures for pending computations
-            futures = {}
+            futures: dict[str, asyncio.Future[Any]] = {}
             for _idx, (key, _) in enumerate([items[i] for i in missing_indices]):
                 futures[key] = asyncio.Future()
                 self.pending_computations[key] = futures[key]

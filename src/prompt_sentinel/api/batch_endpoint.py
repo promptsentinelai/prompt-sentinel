@@ -17,7 +17,12 @@ from pydantic import BaseModel, Field
 
 from prompt_sentinel.cache.optimized_cache import BatchCache, OptimizedCache
 from prompt_sentinel.detection.detector import PromptDetector
-from prompt_sentinel.models.schemas import DetectionResponse, SimplePromptRequest, Verdict
+from prompt_sentinel.models.schemas import (
+    DetectionResponse,
+    Message,
+    Role,
+    Verdict,
+)
 from prompt_sentinel.monitoring.metrics import track_detection_metrics
 
 logger = structlog.get_logger()
@@ -132,7 +137,7 @@ class BatchProcessor:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Handle any exceptions
-        processed_results = []
+        processed_results: list[DetectionResponse] = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 logger.error(f"Detection failed for prompt {i}", error=str(result))
@@ -146,6 +151,8 @@ class BatchProcessor:
                     )
                 )
             else:
+                # Type assertion - we know result is DetectionResponse if not Exception
+                assert isinstance(result, DetectionResponse)
                 processed_results.append(result)
 
         return processed_results
@@ -212,20 +219,16 @@ class BatchProcessor:
 
     async def _perform_detection(self, prompt: str, detection_mode: str) -> DetectionResponse:
         """Perform actual detection."""
-        # Create detection request
-        request = SimplePromptRequest(prompt=prompt)
+        # Create messages for detector
+        messages = [Message(role=Role.USER, content=prompt)]
 
-        # Use detector
-        verdict, reasons, confidence = await self.detector.detect(
-            request.prompt, detection_mode=detection_mode
-        )
+        # Use detector - it returns DetectionResponse directly
+        result = await self.detector.detect(messages)
 
-        return DetectionResponse(
-            verdict=verdict,
-            confidence=confidence,
-            reasons=reasons,
-            processing_time_ms=0,  # Will be set by caller
-        )
+        # Note: detection_mode parameter is not supported by the detector
+        # The mode is configured at detector initialization
+
+        return result
 
 
 # Global batch processor instance (initialized in main.py)

@@ -140,7 +140,7 @@ class SlidingWindowLimiter:
             current_time = time.time()
 
             if cache_manager.client is None:
-                return True  # Allow if cache is not available
+                return True, 0, self.config.max_requests  # Allow if cache is not available
 
             result = await cache_manager.client.eval(
                 self.lua_script,
@@ -248,17 +248,19 @@ class DDoSProtectionMiddleware:
 
         # Analyze User-Agent
         user_agent = request.headers.get("user-agent", "").lower()
-        for suspicious_agent in self.config.suspicious_user_agents:
-            if suspicious_agent in user_agent:
-                threat_level = max(threat_level, ThreatLevel.MEDIUM)
-                break
+        if self.config.suspicious_user_agents:
+            for suspicious_agent in self.config.suspicious_user_agents:
+                if suspicious_agent in user_agent:
+                    threat_level = max(threat_level, ThreatLevel.MEDIUM)
+                    break
 
         # Analyze request path for suspicious patterns
         path = request.url.path.lower()
-        for pattern in self.config.suspicious_patterns:
-            if pattern in path:
-                threat_level = max(threat_level, ThreatLevel.MEDIUM)
-                break
+        if self.config.suspicious_patterns:
+            for pattern in self.config.suspicious_patterns:
+                if pattern in path:
+                    threat_level = max(threat_level, ThreatLevel.MEDIUM)
+                    break
 
         # Check for missing common headers
         if not request.headers.get("accept") or not request.headers.get("user-agent"):
@@ -409,6 +411,7 @@ class EnhancedRateLimitingMiddleware(BaseHTTPMiddleware):
         self.enable_adaptive = enable_adaptive_limits
 
         # Initialize sliding window limiter if enabled
+        self.sliding_window: SlidingWindowLimiter | None
         if enable_sliding_window and cache_manager.connected:
             self.sliding_window = SlidingWindowLimiter(
                 SlidingWindowConfig(
@@ -421,6 +424,7 @@ class EnhancedRateLimitingMiddleware(BaseHTTPMiddleware):
             self.sliding_window = None
 
         # Initialize DDoS protection
+        self.ddos_protection: DDoSProtectionMiddleware | None
         if enable_ddos_protection:
             self.ddos_protection = DDoSProtectionMiddleware(DDoSConfig())
         else:

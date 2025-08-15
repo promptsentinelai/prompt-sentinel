@@ -129,9 +129,10 @@ class ObservabilityPipeline:
                 return self
 
             async def __aexit__(self, exc_type, exc_val, exc_tb):
-                if exc_type:
-                    self.span.set_status(Status(StatusCode.ERROR))
-                self.pipeline.end_trace(self.span)
+                if self.span:
+                    if exc_type:
+                        self.span.set_status(Status(StatusCode.ERROR))
+                    self.pipeline.end_trace(self.span)
                 return False
 
         return TraceContext(self, name)
@@ -140,7 +141,7 @@ class ObservabilityPipeline:
         """Log a message."""
         self.log_event("INFO", message, kwargs)
 
-    def log_error(self, message: str, error: Exception = None, **kwargs) -> None:
+    def log_error(self, message: str, error: Exception | None = None, **kwargs) -> None:
         """Log an error."""
         context = kwargs
         if error:

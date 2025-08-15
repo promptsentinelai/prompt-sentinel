@@ -80,6 +80,10 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379)
     redis_db: int = Field(default=0)
     redis_password: str | None = Field(default=None)
+
+    # Cache Configuration
+    cache_enabled: bool = Field(default=True, description="Enable detection result caching")
+    cache_ttl: int = Field(default=300, description="Cache TTL in seconds (default: 5 minutes)")
     redis_ttl: int = Field(default=3600)  # Default TTL
 
     # Cache TTLs for different types (seconds)

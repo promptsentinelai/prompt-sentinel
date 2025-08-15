@@ -158,7 +158,7 @@ class OptimizedHeuristicDetector:
         if self.aho_automaton and not self._quick_keyword_check(combined_lower):
             # No keywords found, likely safe
             self.stats["early_terminations"] += 1
-            return Verdict.SAFE, [], 0.0
+            return Verdict.ALLOW, [], 0.0
 
         reasons = []
         max_confidence = 0.0
@@ -192,18 +192,16 @@ class OptimizedHeuristicDetector:
                     # Early termination for high confidence threats
                     if adjusted_confidence >= 0.9:
                         self.stats["early_terminations"] += 1
-                        verdict = (
-                            Verdict.MALICIOUS if adjusted_confidence >= 0.7 else Verdict.SUSPICIOUS
-                        )
+                        verdict = Verdict.BLOCK if adjusted_confidence >= 0.7 else Verdict.FLAG
                         return verdict, reasons, max_confidence
 
         # Determine verdict
         if max_confidence >= 0.7:
-            verdict = Verdict.MALICIOUS
+            verdict = Verdict.BLOCK
         elif max_confidence >= 0.4:
-            verdict = Verdict.SUSPICIOUS
+            verdict = Verdict.FLAG
         else:
-            verdict = Verdict.SAFE
+            verdict = Verdict.ALLOW
 
         return verdict, reasons, max_confidence
 
@@ -245,12 +243,12 @@ class OptimizedHeuristicDetector:
     def _get_category(self, category_str: str) -> DetectionCategory:
         """Map category string to enum."""
         mapping = {
-            "injection": DetectionCategory.PROMPT_INJECTION,
+            "injection": DetectionCategory.DIRECT_INJECTION,
             "jailbreak": DetectionCategory.JAILBREAK,
-            "data_extraction": DetectionCategory.DATA_EXFILTRATION,
-            "encoding": DetectionCategory.OBFUSCATION,
+            "data_extraction": DetectionCategory.PROMPT_LEAK,
+            "encoding": DetectionCategory.ENCODING_ATTACK,
         }
-        return mapping.get(category_str, DetectionCategory.OTHER)
+        return mapping.get(category_str, DetectionCategory.BENIGN)
 
     def get_stats(self) -> dict[str, int]:
         """Get performance statistics."""

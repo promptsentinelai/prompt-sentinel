@@ -16,7 +16,7 @@ import structlog
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 logger = structlog.get_logger()
 
@@ -89,7 +89,7 @@ class FieldEncryption:
         key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
         return key.decode()
 
-    def encrypt_field(self, value: str | dict | Any) -> str:
+    def encrypt_field(self, value: str | dict | Any) -> str | None:
         """
         Encrypt a field value.
 
@@ -97,7 +97,7 @@ class FieldEncryption:
             value: Value to encrypt
 
         Returns:
-            Base64 encoded encrypted value
+            Base64 encoded encrypted value or None
         """
         if value is None:
             return None
@@ -116,7 +116,7 @@ class FieldEncryption:
             logger.error("Encryption failed", error=str(e))
             raise EncryptionError(f"Failed to encrypt data: {e}") from e
 
-    def decrypt_field(self, encrypted_value: str) -> str:
+    def decrypt_field(self, encrypted_value: str) -> str | None:
         """
         Decrypt a field value.
 
@@ -124,7 +124,7 @@ class FieldEncryption:
             encrypted_value: Base64 encoded encrypted value
 
         Returns:
-            Decrypted value as string
+            Decrypted value as string or None
         """
         if not encrypted_value:
             return None
@@ -175,11 +175,14 @@ class FieldEncryption:
             encrypted_field = f"{field}_encrypted"
             if encrypted_field in decrypted_data and decrypted_data[encrypted_field] is not None:
                 decrypted_value = self.decrypt_field(decrypted_data[encrypted_field])
-                # Try to restore original type
-                try:
-                    decrypted_data[field] = json.loads(decrypted_value)
-                except (json.JSONDecodeError, TypeError):
-                    decrypted_data[field] = decrypted_value
+                if decrypted_value is not None:
+                    # Try to restore original type
+                    try:
+                        decrypted_data[field] = json.loads(decrypted_value)
+                    except (json.JSONDecodeError, TypeError):
+                        decrypted_data[field] = decrypted_value
+                else:
+                    decrypted_data[field] = None
                 # Remove encrypted field
                 del decrypted_data[encrypted_field]
 
@@ -221,10 +224,7 @@ class EncryptedBaseModel(BaseModel):
 
     _encryption: FieldEncryption | None = None
 
-    class Config:
-        """Pydantic configuration for EncryptedBaseModel."""
-
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init__(self, **data):
         """
@@ -245,6 +245,9 @@ class EncryptedBaseModel(BaseModel):
         Args:
             fields: List of field names to encrypt
         """
+        if self._encryption is None:
+            self._encryption = FieldEncryption()
+
         for field_name in fields:
             if hasattr(self, field_name):
                 value = getattr(self, field_name)
@@ -261,17 +264,23 @@ class EncryptedBaseModel(BaseModel):
         Args:
             fields: List of field names to decrypt
         """
+        if self._encryption is None:
+            self._encryption = FieldEncryption()
+
         for field_name in fields:
             encrypted_field = f"{field_name}_encrypted"
             if hasattr(self, encrypted_field):
                 encrypted_value = getattr(self, encrypted_field)
                 if encrypted_value is not None:
                     decrypted_value = self._encryption.decrypt_field(encrypted_value)
-                    # Try to restore original type
-                    try:
-                        setattr(self, field_name, json.loads(decrypted_value))
-                    except (json.JSONDecodeError, TypeError):
-                        setattr(self, field_name, decrypted_value)
+                    if decrypted_value is not None:
+                        # Try to restore original type
+                        try:
+                            setattr(self, field_name, json.loads(decrypted_value))
+                        except (json.JSONDecodeError, TypeError):
+                            setattr(self, field_name, decrypted_value)
+                    else:
+                        setattr(self, field_name, None)
                     # Clear encrypted field
                     setattr(self, encrypted_field, None)
 
@@ -285,6 +294,9 @@ class EncryptedBaseModel(BaseModel):
         Returns:
             Dictionary with encrypted fields
         """
+        if self._encryption is None:
+            self._encryption = FieldEncryption()
+
         data = self.model_dump()
         return self._encryption.encrypt_dict(data, fields_to_encrypt)
 
@@ -300,10 +312,9 @@ class EncryptedBaseModel(BaseModel):
         Returns:
             Model instance with decrypted fields
         """
-        if not hasattr(cls, "_encryption"):
-            cls._encryption = FieldEncryption()
-
-        decrypted_data = cls._encryption.decrypt_dict(data, fields_to_decrypt)
+        # Create a temporary encryption instance for decryption
+        encryption = FieldEncryption()
+        decrypted_data = encryption.decrypt_dict(data, fields_to_decrypt)
         return cls(**decrypted_data)
 
 

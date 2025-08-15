@@ -61,6 +61,7 @@ class CacheManager:
         self.max_ttl = 3600  # 1 hour max for security
         self._connection_attempts = 0
         self._max_connection_attempts = 3
+        self.pool = None  # Store reference to connection pool
 
         if self.enabled:
             self._initialize_client()
@@ -69,6 +70,10 @@ class CacheManager:
         """Initialize Redis client with connection pooling."""
         try:
             # Create connection pool for better resource management
+            # Pool size based on expected concurrency
+            pool_size = getattr(settings, "redis_pool_size", 20)
+            # pool_timeout = getattr(settings, "redis_pool_timeout", 5)  # Reserved for future use
+
             pool = redis.ConnectionPool(
                 host=settings.redis_host,
                 port=settings.redis_port,
@@ -78,13 +83,18 @@ class CacheManager:
                 socket_timeout=2,
                 socket_keepalive=True,
                 socket_keepalive_options={},
-                max_connections=10,
+                max_connections=pool_size,  # Configurable pool size
                 health_check_interval=30,
                 retry_on_timeout=False,
                 retry_on_error=[RedisConnectionError],
+                connection_pool_kwargs={
+                    "max_idle_time": 60,  # Close idle connections after 60s
+                    "retry_on_timeout": True,
+                },
             )
+            self.pool = pool  # Store pool reference for monitoring
             self.client = redis.Redis(connection_pool=pool)
-            logger.debug("Redis client initialized")
+            logger.debug(f"Redis client initialized with pool size {pool_size}")
         except Exception as e:
             logger.warning(f"Redis client initialization failed: {e}")
             self.enabled = False
@@ -374,6 +384,23 @@ class CacheManager:
                 if isinstance(db_info, dict) and "keys" in db_info:
                     total_keys += db_info["keys"]
 
+            # Add connection pool stats if available
+            pool_stats = {}
+            if self.pool:
+                pool_stats = {
+                    "pool_size": self.pool.max_connections,
+                    "pool_in_use": (
+                        len(self.pool._in_use_connections)
+                        if hasattr(self.pool, "_in_use_connections")
+                        else 0
+                    ),
+                    "pool_available": (
+                        len(self.pool._available_connections)
+                        if hasattr(self.pool, "_available_connections")
+                        else 0
+                    ),
+                }
+
             return {
                 "enabled": True,
                 "connected": True,
@@ -385,6 +412,7 @@ class CacheManager:
                 "memory_peak": memory.get("used_memory_peak_human", "0"),
                 "evicted_keys": info.get("evicted_keys", 0),
                 "expired_keys": info.get("expired_keys", 0),
+                **pool_stats,  # Include pool statistics
                 "uptime_seconds": info.get("uptime_in_seconds", 0),
             }
         except Exception as e:

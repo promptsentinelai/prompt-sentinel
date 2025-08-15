@@ -22,6 +22,7 @@ from prompt_sentinel.threat_intelligence import (
 router = APIRouter(prefix="/api/v1/threat", tags=["Threat Intelligence"])
 
 # Global feed manager instance
+# This is initialized in the main app's lifespan context
 feed_manager = ThreatFeedManager()
 
 
@@ -351,13 +352,4 @@ async def get_threat_statistics():
     }
 
 
-@router.on_event("startup")
-async def startup():
-    """Initialize feed manager on startup."""
-    await feed_manager.initialize()
-
-
-@router.on_event("shutdown")
-async def shutdown():
-    """Shutdown feed manager."""
-    await feed_manager.shutdown()
+# Startup and shutdown are now handled by the lifespan context manager

@@ -17,10 +17,10 @@ class TrainingPipeline:
     def __init__(self, config: dict[str, Any] | None = None):
         """Initialize training pipeline."""
         self.config = config or {}
-        self.model = None
-        self.preprocessor = None
-        self.feature_extractor = None
-        self.best_params = None
+        self.model: dict[str, Any] | None = None
+        self.preprocessor: Any | None = None
+        self.feature_extractor: Any | None = None
+        self.best_params: dict[str, Any] | None = None
 
     def preprocess_data(self, data: list[dict[str, Any]]) -> tuple[list[str], list[int]]:
         """Preprocess training data."""

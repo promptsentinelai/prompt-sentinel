@@ -84,14 +84,15 @@ class Tracer:
                 return self.span
 
             async def __aexit__(self, exc_type, exc_val, exc_tb):
-                if exc_type:
-                    self.span.set_status("error")
-                self.span.end()
+                if self.span:
+                    if exc_type:
+                        self.span.set_status("error")
+                    self.span.end()
                 return False
 
         return TraceContext(self, name)
 
-    def get_trace_context(self) -> dict[str, str]:
+    def get_trace_context(self) -> dict[str, str | None]:
         """Get trace context for propagation."""
         return {
             "trace_id": self.trace_id,
@@ -102,12 +103,14 @@ class Tracer:
     def inject_context(self, headers: dict[str, str]) -> None:
         """Inject trace context into headers."""
         context = self.get_trace_context()
-        headers["X-Trace-Id"] = context["trace_id"]
+        if context["trace_id"]:
+            headers["X-Trace-Id"] = context["trace_id"]
         if context["span_id"]:
             headers["X-Span-Id"] = context["span_id"]
-        headers["X-Service"] = context["service"]
+        if context["service"]:
+            headers["X-Service"] = context["service"]
 
-    def extract_context(self, headers: dict[str, str]) -> dict[str, str]:
+    def extract_context(self, headers: dict[str, str]) -> dict[str, str | None]:
         """Extract trace context from headers."""
         return {
             "trace_id": headers.get("X-Trace-Id", str(uuid.uuid4())),

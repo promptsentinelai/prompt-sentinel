@@ -163,8 +163,8 @@ class BatchPromptRequest(BaseModel):
 
     prompts: list[str] = Field(
         ...,
-        min_items=1,
-        max_items=100,
+        min_length=1,
+        max_length=100,
         description="List of prompts to analyze",
     )
     detection_mode: str | None = Field(

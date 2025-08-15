@@ -96,7 +96,10 @@ class RetentionPolicy:
             return False
 
         age = datetime.utcnow() - created_at
-        return age > self.anonymization_timedelta and not self.is_expired(created_at)
+        anonymization_td = self.anonymization_timedelta
+        if anonymization_td is None:
+            return False
+        return age > anonymization_td and not self.is_expired(created_at)
 
 
 class DataLifecycleManager:
@@ -211,7 +214,7 @@ class DataLifecycleManager:
             Deletion summary
         """
         categories = categories or list(DataCategory)
-        deletion_summary = {
+        deletion_summary: dict[str, Any] = {
             "data_subject_id": data_subject_id,
             "timestamp": datetime.utcnow().isoformat(),
             "reason": reason,
@@ -307,6 +310,8 @@ class DataLifecycleManager:
             cursor = 0
 
             while True:
+                if cache_manager.client is None:
+                    break
                 cursor, keys = await cache_manager.client.scan(cursor, match=pattern, count=100)
 
                 if keys:
@@ -337,7 +342,7 @@ class DataLifecycleManager:
         self, data_subject_id: str, category: DataCategory, count: int, reason: str
     ):
         """Log deletion action for audit trail."""
-        audit_entry = {
+        audit_entry: dict[str, Any] = {
             "event_type": "data_deletion",
             "data_subject_id": data_subject_id,
             "category": category.value,
@@ -358,7 +363,7 @@ class DataLifecycleManager:
         """Run automated retention cleanup based on policies."""
         logger.info("Starting retention cleanup")
 
-        cleanup_summary = {
+        cleanup_summary: dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
             "categories_processed": 0,
             "total_deleted": 0,
@@ -379,7 +384,7 @@ class DataLifecycleManager:
                     cleanup_summary["total_deleted"] += deleted
 
                 elif policy.action == RetentionAction.ANONYMIZE:
-                    if policy.anonymization_days:
+                    if policy.anonymization_days and policy.anonymization_timedelta:
                         anon_cutoff = datetime.utcnow() - policy.anonymization_timedelta
                         anonymized = await self._anonymize_old_data(category, anon_cutoff)
                         cleanup_summary["total_anonymized"] += anonymized
@@ -425,7 +430,7 @@ class DataLifecycleManager:
 
     def get_retention_report(self) -> dict[str, Any]:
         """Generate retention policy report."""
-        report = {
+        report: dict[str, Any] = {
             "generated_at": datetime.utcnow().isoformat(),
             "policies": {},
             "compliance_status": "compliant",
@@ -457,7 +462,7 @@ class DataLifecycleManager:
         """
         categories = categories or list(DataCategory)
 
-        export_data = {
+        export_data: dict[str, Any] = {
             "data_subject_id": data_subject_id,
             "export_timestamp": datetime.utcnow().isoformat(),
             "categories": {},

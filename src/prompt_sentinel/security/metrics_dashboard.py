@@ -281,9 +281,10 @@ class SecurityMetricsDashboard:
                 matching = [m for m in recent if m.name == metric.name]
 
                 # Calculate rate or average
+                actual_value: float
                 if config.get("check_rate", True):
                     # Check rate (count per window)
-                    actual_value = len(matching)
+                    actual_value = float(len(matching))
                 else:
                     # Check average value
                     actual_value = sum(m.value for m in matching) / len(matching) if matching else 0
@@ -338,7 +339,7 @@ class SecurityMetricsDashboard:
 
     def get_dashboard_summary(self) -> dict[str, Any]:
         """Get comprehensive dashboard summary."""
-        summary = {
+        summary: dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
             "metrics_by_type": {},
             "recent_alerts": [],
@@ -395,11 +396,11 @@ class SecurityMetricsDashboard:
             ("performance", "response_time_ms"),
         ]
 
-        for metric_type, metric_name in key_metrics:
-            type_enum = MetricType(metric_type)
+        for metric_type_str, metric_name in key_metrics:
+            type_enum = MetricType(metric_type_str)
             if type_enum in self.aggregations:
                 stats = self.aggregations[type_enum].calculate_statistics(metric_name)
-                summary["statistics"][f"{metric_type}.{metric_name}"] = stats
+                summary["statistics"][f"{metric_type_str}.{metric_name}"] = stats
 
         # Determine health status
         critical_alerts = [a for a in all_alerts if a.severity == AlertSeverity.CRITICAL]
@@ -485,7 +486,7 @@ class SecurityMetricsDashboard:
 
     async def run_health_check(self) -> dict[str, Any]:
         """Run comprehensive health check."""
-        health_report = {
+        health_report: dict[str, Any] = {
             "timestamp": datetime.utcnow().isoformat(),
             "status": "healthy",
             "checks": {},

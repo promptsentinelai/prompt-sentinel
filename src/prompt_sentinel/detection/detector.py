@@ -27,9 +27,12 @@ Key Features:
     - Batch processing support
 """
 
+import asyncio
 import logging
 import time
 
+from prompt_sentinel.cache.cache_manager import CacheManager
+from prompt_sentinel.cache.detection_cache import DetectionCache
 from prompt_sentinel.config.settings import settings
 from prompt_sentinel.detection.custom_pii_loader import CustomPIIRulesLoader
 from prompt_sentinel.detection.heuristics import HeuristicDetector
@@ -76,6 +79,10 @@ class PromptDetector:
         )
         self.llm_classifier = LLMClassifierManager()
         self.threat_detector = None  # Will be set by main.py if threat intelligence is available
+
+        # Initialize detection cache
+        cache_manager = CacheManager() if settings.cache_enabled else None
+        self.detection_cache = DetectionCache(cache_manager, ttl=settings.cache_ttl)
 
         # Initialize PII detector if enabled
         if settings.pii_detection_enabled:
@@ -140,6 +147,21 @@ class PromptDetector:
         use_llm = use_llm if use_llm is not None else settings.llm_classification_enabled
         check_pii = check_pii if check_pii is not None else settings.pii_detection_enabled
 
+        # Check cache first (only for heuristic detection without LLM/PII)
+        if use_heuristics and not use_llm and not check_pii:
+            cached_result = await self.detection_cache.get(messages, settings.detection_mode)
+            if cached_result:
+                verdict, reasons, confidence = cached_result
+                processing_time = (time.time() - start_time) * 1000
+
+                return DetectionResponse(
+                    verdict=verdict,
+                    confidence=confidence,
+                    reasons=reasons,
+                    processing_time_ms=processing_time,
+                    metadata={"cache": "hit"},
+                )
+
         # Check if any detection is enabled
         if not use_heuristics and not use_llm and not check_pii:
             logger = logging.getLogger(__name__)
@@ -177,38 +199,67 @@ class PromptDetector:
         all_reasons = []
         confidences = []
 
-        # Heuristic detection
-        heuristic_verdict = Verdict.ALLOW
+        # PARALLEL DETECTION - Run all detection methods concurrently
+        detection_tasks = []
+        task_names = []
+
+        # Prepare heuristic detection task
         if use_heuristics:
-            heuristic_verdict, heuristic_reasons, heuristic_confidence = (
-                self.heuristic_detector.detect(messages)
+            # Wrap synchronous heuristic detection in executor
+            detection_tasks.append(
+                asyncio.get_running_loop().run_in_executor(
+                    None, self.heuristic_detector.detect, messages
+                )
             )
-            all_reasons.extend(heuristic_reasons)
-            if heuristic_confidence > 0:
-                confidences.append(heuristic_confidence)
+            task_names.append("heuristic")
 
-        # LLM classification
-        llm_verdict = Verdict.ALLOW
+        # Prepare LLM detection task
         if use_llm:
-            llm_verdict, llm_reasons, llm_confidence = await self.llm_classifier.classify(messages)
-            all_reasons.extend(llm_reasons)
-            if llm_confidence > 0:
-                confidences.append(llm_confidence)
+            detection_tasks.append(self.llm_classifier.classify(messages))
+            task_names.append("llm")
 
-        # Threat intelligence detection
-        threat_verdict = Verdict.ALLOW
+        # Prepare threat detection task
         if self.threat_detector and settings.threat_intelligence_enabled:
-            try:
-                (
-                    threat_verdict,
-                    threat_reasons,
-                    threat_confidence,
-                ) = await self.threat_detector.detect(messages)
-                all_reasons.extend(threat_reasons)
-                if threat_confidence > 0:
-                    confidences.append(threat_confidence)
-            except Exception as e:
-                logging.error(f"Threat detection error: {e}")
+            detection_tasks.append(self.threat_detector.detect(messages))
+            task_names.append("threat")
+
+        # Execute all detection tasks in parallel
+        parallel_start = time.time()
+        if detection_tasks:
+            results = await asyncio.gather(*detection_tasks, return_exceptions=True)
+            parallel_time = (time.time() - parallel_start) * 1000
+            logging.debug(f"Parallel detection completed in {parallel_time:.2f}ms")
+        else:
+            results = []
+            parallel_time = 0
+
+        # Process results
+        heuristic_verdict = Verdict.ALLOW
+        llm_verdict = Verdict.ALLOW
+        # threat_verdict = Verdict.ALLOW  # Reserved for future threat-specific logic
+
+        for name, result in zip(task_names, results, strict=False):
+            if isinstance(result, Exception):
+                logging.error(f"{name} detection error: {result}")
+                continue
+
+            verdict, reasons, confidence = result
+
+            if name == "heuristic":
+                heuristic_verdict = verdict
+                all_reasons.extend(reasons)
+                if confidence > 0:
+                    confidences.append(confidence)
+            elif name == "llm":
+                llm_verdict = verdict
+                all_reasons.extend(reasons)
+                if confidence > 0:
+                    confidences.append(confidence)
+            elif name == "threat":
+                # threat_verdict = verdict  # Reserved for future threat-specific logic
+                all_reasons.extend(reasons)
+                if confidence > 0:
+                    confidences.append(confidence)
 
         # PII detection
         pii_detections = []
@@ -300,8 +351,6 @@ class PromptDetector:
                             patterns.extend(r.patterns_matched)
 
                     # Collect event asynchronously (fire and forget)
-                    import asyncio
-
                     asyncio.create_task(
                         self.pattern_manager.collector.collect_event(
                             prompt="\n".join([msg.content for msg in messages]),
@@ -326,6 +375,12 @@ class PromptDetector:
         if settings.pii_redaction_mode == "pass-alert" and pii_detections:
             metadata["pii_warning"] = "PII detected but passed through (pass-alert mode)"  # type: ignore[assignment]
             # Note: pass-silent doesn't add warnings by design
+
+        # Cache the result for future use (only for heuristic-only detection)
+        if use_heuristics and not use_llm and not check_pii:
+            await self.detection_cache.set(
+                messages, settings.detection_mode, final_verdict, all_reasons, final_confidence
+            )
 
         return DetectionResponse(
             verdict=final_verdict,

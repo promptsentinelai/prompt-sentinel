@@ -290,7 +290,7 @@ def track_llm_metrics(
         API_COST.labels(provider=provider, model=model).inc(cost)
 
 
-def track_cache_metrics(cache_type: str, hit: bool, size_bytes: int = None):
+def track_cache_metrics(cache_type: str, hit: bool, size_bytes: int | None = None):
     """Track cache-related metrics."""
     if hit:
         CACHE_HITS.labels(cache_type=cache_type).inc()

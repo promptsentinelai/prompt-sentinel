@@ -15,7 +15,7 @@ from enum import Enum
 from typing import Any
 
 import structlog
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 logger = structlog.get_logger()
 
@@ -235,9 +235,13 @@ class ExperimentConfig(BaseModel):
                 return variant
         return None
 
+    @field_serializer("created_at", "updated_at", "start_time", "end_time")
+    def serialize_datetime(self, dt: datetime | None) -> str | None:
+        """Serialize datetime to ISO format string."""
+        return dt.isoformat() if dt else None
+
     model_config = ConfigDict(
         use_enum_values=True,
-        json_encoders={datetime: lambda dt: dt.isoformat()},
         json_schema_extra={
             "example": {
                 "id": "detection_strategy_test_001",
@@ -304,4 +308,9 @@ class ExperimentMetadata(BaseModel):
     experiment_overhead_ms: float = Field(default=0.0, description="Average experiment overhead")
     assignment_cache_hit_rate: float = Field(default=0.0, description="Assignment cache hit rate")
 
-    model_config = ConfigDict(json_encoders={datetime: lambda dt: dt.isoformat()})
+    model_config = ConfigDict()
+
+    @field_serializer("last_updated", "estimated_completion")
+    def serialize_datetime(self, dt: datetime | None) -> str | None:
+        """Serialize datetime to ISO format string."""
+        return dt.isoformat() if dt else None

@@ -6,7 +6,7 @@
 """Character encoding handling for internationalization."""
 
 import unicodedata
-from typing import Any
+from typing import Any, Literal
 
 
 class EncodingHandler:
@@ -68,7 +68,7 @@ class EncodingHandler:
             "special_chars": list(set(special_chars)),
         }
 
-    def normalize(self, text: str, form: str = "NFC") -> str:
+    def normalize(self, text: str, form: Literal["NFC", "NFD", "NFKC", "NFKD"] = "NFC") -> str:
         """Normalize Unicode text."""
         return unicodedata.normalize(form, text)
 

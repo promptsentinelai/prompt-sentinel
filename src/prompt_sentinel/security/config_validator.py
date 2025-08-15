@@ -348,7 +348,7 @@ class SecretManager:
         secret_lower = secret.lower()
         return any(pattern in secret_lower for pattern in weak_patterns)
 
-    def scan_for_exposed_secrets(self, text: str) -> list[dict[str, str]]:
+    def scan_for_exposed_secrets(self, text: str) -> list[dict[str, Any]]:
         """Scan text for exposed secrets."""
         exposed_secrets = []
 

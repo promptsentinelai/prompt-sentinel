@@ -15,8 +15,8 @@ class InferenceEngine:
 
     def __init__(self, model_path: str | None = None):
         """Initialize inference engine."""
-        self.model = None
-        self.preprocessor = None
+        self.model: dict[str, Any] | None = None
+        self.preprocessor: Any | None = None
         if model_path:
             self.load_model(model_path)
 

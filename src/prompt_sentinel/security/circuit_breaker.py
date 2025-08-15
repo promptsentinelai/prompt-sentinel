@@ -264,7 +264,7 @@ class LLMProviderCircuitBreakerManager:
         self, func: Callable, *args, primary_provider: str | None = None, **kwargs
     ) -> Any:
         """Call function with automatic provider fallback."""
-        last_exception = None
+        last_exception: Exception | None = None
         providers_to_try = []
 
         # If primary provider specified, try it first

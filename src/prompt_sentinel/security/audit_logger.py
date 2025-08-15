@@ -70,7 +70,7 @@ class SecurityAuditLogger:
     ) -> None:
         """Log a security event with full context."""
 
-        event_data = {
+        event_data: dict[str, Any] = {
             "event_type": event_type.value,
             "description": description,
             "severity": severity,

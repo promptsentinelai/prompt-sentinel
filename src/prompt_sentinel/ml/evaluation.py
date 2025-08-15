@@ -89,7 +89,7 @@ class ModelEvaluator:
     def auc_score(self, fpr: list[float], tpr: list[float]) -> float:
         """Calculate AUC score from ROC curve."""
         # Trapezoidal rule for AUC
-        auc = 0
+        auc = 0.0
         for i in range(1, len(fpr)):
             auc += (fpr[i - 1] - fpr[i]) * (tpr[i - 1] + tpr[i]) / 2
         return abs(auc)

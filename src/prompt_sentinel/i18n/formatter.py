@@ -96,6 +96,22 @@ class LocaleFormatter:
         else:
             return time.strftime("%H:%M")
 
+    def format_datetime(self, dt: datetime) -> str:
+        """Format datetime according to locale."""
+        date_part = self.format_date(dt)
+        time_part = self.format_time(dt)
+
+        if self.locale.startswith("en"):
+            return f"{date_part} {time_part}"
+        elif self.locale.startswith("de"):
+            return f"{date_part}, {time_part}"
+        elif self.locale.startswith("fr"):
+            return f"{date_part} à {time_part}"
+        elif self.locale.startswith("ja"):
+            return f"{date_part} {time_part}"
+        else:
+            return f"{date_part} {time_part}"
+
     def get_decimal_separator(self) -> str:
         """Get decimal separator for locale."""
         if self.locale.startswith("en"):

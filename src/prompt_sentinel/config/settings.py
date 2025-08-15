@@ -146,6 +146,15 @@ class Settings(BaseSettings):
     rate_limit_tokens_per_minute: int = Field(default=10000)
     rate_limit_client_requests_per_minute: int = Field(default=20)
 
+    # Security Headers Configuration
+    security_headers_enabled: bool = Field(default=True)
+    dev_cors_origins: str = Field(default="")  # Comma-separated development CORS origins
+
+    # Input Validation Configuration
+    max_request_size_mb: int = Field(default=10)
+    max_header_size: int = Field(default=4096)
+    max_url_length: int = Field(default=2048)
+
     # Threat Intelligence Configuration
     threat_intelligence_enabled: bool = Field(default=False)
 

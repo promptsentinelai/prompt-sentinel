@@ -851,16 +851,20 @@ async def detect(request: UnifiedDetectionRequest | SimplePromptRequest) -> Dete
 
         # Track detection metrics
         if response.verdict in ["block", "flag"]:
-            attack_type = (
-                response.detection_details.get("primary_threat", "unknown")
-                if response.detection_details
-                else "unknown"
-            )
-            severity = (
-                response.detection_details.get("severity", "medium")
-                if response.detection_details
-                else "medium"
-            )
+            # Get attack type from metadata if available
+            attack_type = "unknown"
+            severity = "medium"
+
+            if hasattr(response, "metadata") and response.metadata:
+                attack_type = response.metadata.get("primary_threat", "unknown")
+                severity = response.metadata.get("severity", "medium")
+            elif response.reasons:
+                # Try to infer from reasons
+                for reason in response.reasons:
+                    if "injection" in reason.description.lower():
+                        attack_type = "injection"
+                        severity = "high"
+                        break
 
             track_detection_metrics(
                 attack_type=attack_type,

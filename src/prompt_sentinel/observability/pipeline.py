@@ -100,3 +100,63 @@ class ObservabilityPipeline:
     async def health_check(self) -> bool:
         """Check if pipeline is healthy."""
         return self._initialized
+
+    async def configure(self, config: dict[str, Any]) -> None:
+        """Configure the pipeline."""
+        self.config = config
+        self._initialized = True
+        await asyncio.sleep(0.001)
+
+    async def start(self) -> None:
+        """Start the pipeline."""
+        await self.initialize()
+
+    async def stop(self) -> None:
+        """Stop the pipeline."""
+        await self.shutdown()
+
+    def trace(self, name: str):
+        """Context manager for tracing."""
+
+        class TraceContext:
+            def __init__(self, pipeline, name):
+                self.pipeline = pipeline
+                self.name = name
+                self.span = None
+
+            async def __aenter__(self):
+                self.span = self.pipeline.start_trace(self.name)
+                return self
+
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                if exc_type:
+                    self.span.set_status(Status(StatusCode.ERROR))
+                self.pipeline.end_trace(self.span)
+                return False
+
+        return TraceContext(self, name)
+
+    def log(self, message: str, **kwargs) -> None:
+        """Log a message."""
+        self.log_event("INFO", message, kwargs)
+
+    def log_error(self, message: str, error: Exception = None, **kwargs) -> None:
+        """Log an error."""
+        context = kwargs
+        if error:
+            context["error"] = str(error)
+        self.log_event("ERROR", message, context)
+
+    def metric(self, name: str, value: float, **tags) -> None:
+        """Record a metric."""
+        self.record_metric(name, value, tags)
+
+    async def get_request_data(self, request_id: str) -> dict[str, Any]:
+        """Get data for a specific request."""
+        return {
+            "logs": [
+                log for log in self.logs if log.get("context", {}).get("request_id") == request_id
+            ],
+            "traces": {"duration": 50.0},  # Mock duration
+            "metrics": {"request_count": 1, "error_count": 0},
+        }

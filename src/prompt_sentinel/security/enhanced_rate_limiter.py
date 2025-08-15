@@ -50,8 +50,8 @@ class DDoSConfig:
     burst_request_threshold: int = 30  # Requests per 10 seconds
     temporary_block_duration: int = 300  # 5 minutes
     extended_block_duration: int = 3600  # 1 hour
-    suspicious_user_agents: list[str] = None
-    suspicious_patterns: list[str] = None
+    suspicious_user_agents: list[str] | None = None
+    suspicious_patterns: list[str] | None = None
 
     def __post_init__(self):
         """Initialize default values for suspicious patterns."""
@@ -138,6 +138,9 @@ class SlidingWindowLimiter:
         try:
             key = f"{self.config.redis_key_prefix}:{identifier}"
             current_time = time.time()
+
+            if cache_manager.client is None:
+                return True  # Allow if cache is not available
 
             result = await cache_manager.client.eval(
                 self.lua_script,
@@ -472,7 +475,7 @@ class EnhancedRateLimitingMiddleware(BaseHTTPMiddleware):
                 if not allowed:
                     await security_audit_logger.log_security_event(
                         event_type=SecurityEventType.DDOS_DETECTED,
-                        description=reason,
+                        description=reason or "DDoS protection triggered",
                         request=request,
                         client_id=client_id,
                         severity="high" if threat_level == ThreatLevel.CRITICAL else "medium",
@@ -544,7 +547,7 @@ class EnhancedRateLimitingMiddleware(BaseHTTPMiddleware):
             # Process request
             start_time = time.time()
             response = await call_next(request)
-            processing_time = time.time() - start_time
+            time.time() - start_time
 
             # Add rate limiting headers
             self._add_rate_limit_headers(response, client_id, endpoint_config)
@@ -666,3 +669,8 @@ class EnhancedRateLimitingMiddleware(BaseHTTPMiddleware):
 
         except Exception as e:
             logger.debug("Failed to add rate limit headers", error=str(e))
+
+
+# Global instances
+rate_limiter: RateLimiter | None = None
+ddos_protection: DDoSProtectionMiddleware | None = None

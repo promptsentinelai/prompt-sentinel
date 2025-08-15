@@ -172,7 +172,7 @@ class PromptMasker:
             mask = type_masks[strategy]
             if callable(mask):
                 return mask(value)
-            return mask
+            return str(mask)
 
         # Default to generic redaction
         return f"[{pii_type.value.upper()}]"
@@ -249,7 +249,7 @@ class PromptMasker:
         pii_matches = self.pii_detector.detect(prompt)
 
         # Categorize by type
-        pii_by_type = {}
+        pii_by_type: dict[str, list[dict[str, Any]]] = {}
         for match in pii_matches:
             pii_type = match.pii_type.value
             if pii_type not in pii_by_type:

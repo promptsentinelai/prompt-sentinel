@@ -75,6 +75,7 @@ class LLMCircuitBreaker:
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
+        self.half_open_attempts = 0
         self.last_failure_time: float | None = None
         self.stats = CircuitBreakerStats()
         self._lock = asyncio.Lock()
@@ -94,6 +95,7 @@ class LLMCircuitBreaker:
                 else:
                     self.state = CircuitState.HALF_OPEN
                     self.success_count = 0
+                    self.half_open_attempts += 1
                     logger.info(
                         "Circuit breaker entering HALF_OPEN state", provider=self.provider_name
                     )
@@ -199,6 +201,13 @@ class LLMCircuitBreaker:
                 ),
             },
         }
+
+    def reset(self) -> None:
+        """Manually reset the circuit breaker to closed state."""
+        self.state = CircuitState.CLOSED
+        self.failure_count = 0
+        self.success_count = 0
+        self.last_failure_time = None
 
 
 class LLMProviderError(Exception):

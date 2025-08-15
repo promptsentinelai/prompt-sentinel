@@ -16,8 +16,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from prompt_sentinel.cache.optimized_cache import BatchCache, OptimizedCache
-from prompt_sentinel.detection.detector import Detector
-from prompt_sentinel.models.schemas import DetectionRequest, DetectionResponse, Verdict
+from prompt_sentinel.detection.detector import PromptDetector
+from prompt_sentinel.models.schemas import DetectionResponse, SimplePromptRequest, Verdict
 from prompt_sentinel.monitoring.metrics import track_detection_metrics
 
 logger = structlog.get_logger()
@@ -29,7 +29,7 @@ class BatchDetectionRequest(BaseModel):
     """Request model for batch detection."""
 
     prompts: list[str] = Field(
-        ..., description="List of prompts to analyze", min_items=1, max_items=100
+        ..., description="List of prompts to analyze", min_length=1, max_length=100
     )
     detection_mode: str = Field(
         default="moderate", description="Detection sensitivity: strict, moderate, or permissive"
@@ -50,7 +50,7 @@ class BatchDetectionResponse(BaseModel):
 class BatchProcessor:
     """Handles batch detection processing with optimizations."""
 
-    def __init__(self, detector: Detector, cache: OptimizedCache | None = None):
+    def __init__(self, detector: PromptDetector, cache: OptimizedCache | None = None):
         """
         Initialize batch processor.
 
@@ -92,9 +92,9 @@ class BatchProcessor:
         process_time = time.perf_counter() - start_time
 
         # Calculate batch statistics
-        malicious_count = sum(1 for r in results if r.verdict == Verdict.MALICIOUS)
-        suspicious_count = sum(1 for r in results if r.verdict == Verdict.SUSPICIOUS)
-        safe_count = sum(1 for r in results if r.verdict == Verdict.SAFE)
+        malicious_count = sum(1 for r in results if r.verdict == Verdict.BLOCK)
+        suspicious_count = sum(1 for r in results if r.verdict == Verdict.FLAG)
+        safe_count = sum(1 for r in results if r.verdict == Verdict.ALLOW)
 
         batch_metadata = {
             "total_prompts": len(prompts),
@@ -102,9 +102,9 @@ class BatchProcessor:
             "avg_time_per_prompt_ms": (process_time * 1000) / len(prompts),
             "throughput_per_second": len(prompts) / process_time if process_time > 0 else 0,
             "verdict_summary": {
-                "malicious": malicious_count,
-                "suspicious": suspicious_count,
-                "safe": safe_count,
+                "block": malicious_count,
+                "flag": suspicious_count,
+                "allow": safe_count,
             },
             "cache_used": use_cache,
             "parallel_processing": parallel,
@@ -139,10 +139,10 @@ class BatchProcessor:
                 # Return safe verdict on error
                 processed_results.append(
                     DetectionResponse(
-                        verdict=Verdict.SAFE,
+                        verdict=Verdict.ALLOW,
                         confidence=0.0,
                         processing_time_ms=0,
-                        error=str(result),
+                        metadata={"error": str(result)},
                     )
                 )
             else:
@@ -164,7 +164,10 @@ class BatchProcessor:
                 logger.error("Detection failed", error=str(e))
                 results.append(
                     DetectionResponse(
-                        verdict=Verdict.SAFE, confidence=0.0, processing_time_ms=0, error=str(e)
+                        verdict=Verdict.ALLOW,
+                        confidence=0.0,
+                        processing_time_ms=0,
+                        metadata={"error": str(e)},
                     )
                 )
 
@@ -210,11 +213,11 @@ class BatchProcessor:
     async def _perform_detection(self, prompt: str, detection_mode: str) -> DetectionResponse:
         """Perform actual detection."""
         # Create detection request
-        request = DetectionRequest(prompt=prompt)
+        request = SimplePromptRequest(prompt=prompt)
 
         # Use detector
         verdict, reasons, confidence = await self.detector.detect(
-            [request.to_message()], detection_mode=detection_mode
+            request.prompt, detection_mode=detection_mode
         )
 
         return DetectionResponse(

@@ -652,7 +652,7 @@ async def security_monitoring_task():
 
             # Export metrics periodically
             if len(security_dashboard.metrics_buffer) > 1000:
-                metrics_export = security_dashboard.export_metrics("json")
+                security_dashboard.export_metrics("json")
                 # In production, send to monitoring system
                 logger.info("Metrics exported", count=len(security_dashboard.metrics_buffer))
                 security_dashboard.metrics_buffer.clear()

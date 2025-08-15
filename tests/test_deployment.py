@@ -426,7 +426,7 @@ class TestDeploymentVerification:
         """Test smoke test execution."""
         smoke_tests = [
             {"name": "health_check", "endpoint": "/health"},
-            {"name": "api_responsive", "endpoint": "/v1/detect", "method": "POST"},
+            {"name": "api_responsive", "endpoint": "/api/v1/detect", "method": "POST"},
             {"name": "database_connected", "check": "db_connection"},
             {"name": "cache_working", "check": "redis_ping"},
         ]

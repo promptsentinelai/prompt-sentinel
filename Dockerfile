@@ -3,8 +3,12 @@
 # Stage 1: Builder
 FROM python:3.11-slim as builder
 
-# Install UV for fast dependency installation
-RUN pip install --no-cache-dir uv
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -12,8 +16,8 @@ WORKDIR /app
 COPY pyproject.toml .
 COPY src/ ./src/
 
-# Install dependencies using UV
-RUN uv pip install --system --no-cache .
+# Install dependencies using pip
+RUN pip install --no-cache-dir .
 
 # Stage 2: Runtime
 FROM python:3.11-slim

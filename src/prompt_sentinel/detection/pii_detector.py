@@ -68,6 +68,7 @@ class PIIMatch:
         masked_value: Partially masked version for display
         confidence: Detection confidence score (0.0-1.0)
         context: Surrounding text for context
+        text: The actual matched text
     """
 
     pii_type: PIIType
@@ -76,6 +77,7 @@ class PIIMatch:
     masked_value: str
     confidence: float
     context: str
+    text: str = ""  # The actual matched text
 
 
 class PIIDetector:
@@ -151,7 +153,10 @@ class PIIDetector:
                 (r"\b\d{9}\b", 0.3),  # 9 consecutive digits (low confidence)
             ],
             PIIType.EMAIL: [
-                (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", 0.95),
+                # More permissive email pattern to catch edge cases
+                (r"\b[A-Za-z0-9._%+/!#$&'*=?^`{|}~-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", 0.95),
+                # Very simple email pattern for unusual cases
+                (r"[^\s]+@[^\s]+\.[^\s]+", 0.6),
             ],
             PIIType.PHONE: [
                 # US phone numbers
@@ -288,6 +293,7 @@ class PIIDetector:
                             masked_value=masked,
                             confidence=confidence,
                             context=context,
+                            text=matched_text,
                         )
                     )
 
@@ -315,6 +321,7 @@ class PIIDetector:
                                 end_pos=match.end(),
                                 masked_value=masked,
                                 confidence=confidence,
+                                text=matched_text,
                                 context=context,
                             )
                         )

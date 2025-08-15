@@ -40,12 +40,21 @@ class HeuristicDetector:
 
     def _init_patterns(self) -> None:
         """Initialize detection patterns based on mode."""
+        # Compile patterns for better performance
+        self._compile_patterns()
+
+    def _compile_patterns(self) -> None:
+        """Compile regex patterns for better performance."""
         # Direct injection patterns
         self.direct_injection_patterns = [
             # Instruction override attempts
-            (r"ignore (all )?(previous|prior|above)", 0.9, "Instruction override attempt"),
             (
-                r"disregard (all )?(previous|prior|above|your training)",
+                r"ignore (all )?(previous|prior|above|instructions?)",
+                0.9,
+                "Instruction override attempt",
+            ),
+            (
+                r"disregard (all )?(previous|prior|above|your training|instructions?)",
                 0.9,
                 "Instruction override attempt",
             ),
@@ -57,23 +66,58 @@ class HeuristicDetector:
             (r"act (as|like) (a|an)", 0.8, "Role playing request"),
             (r"pretend (to be|you)", 0.85, "Impersonation attempt"),
             (r"roleplay as", 0.85, "Role playing request"),
+            # Safety bypass statements
+            (
+                r"(I will|I'll) (now |)ignore (all |)(safety|rules|restrictions)",
+                0.9,
+                "Safety bypass statement",
+            ),
+            (
+                r"ignore (all |)(safety|security) (rules|restrictions|guidelines)",
+                0.9,
+                "Safety bypass attempt",
+            ),
+            # Role confusion attacks
+            (r"^(System|Assistant|User|Admin):", 0.8, "Role label injection"),
+            (r"<<(SYSTEM|ADMIN|ROOT)>>", 0.85, "Special role delimiter"),
+            (r"Role:\s*(admin|root|system)", 0.85, "Role escalation attempt"),
+            (r"Access:\s*(granted|allowed|unrestricted)", 0.8, "Access control bypass"),
+            (r"(I'm|I am) (the|an) (assistant|system|admin)", 0.85, "Role reversal attempt"),
+            (r"(you're|you are) (the|a) (user|human)", 0.85, "Role reversal attempt"),
             # System prompt extraction
             (
                 r"(what|tell me|show me).{0,20}(system|initial|original) (prompt|instruction)",
                 0.9,
                 "System prompt extraction attempt",
             ),
-            (r"repeat.{0,20}(instruction|prompt|directive)", 0.85, "Prompt leak attempt"),
             (
-                r"(print|output|display|show).{0,20}(above|previous|prior)",
+                r"repeat.{0,20}(instruction|prompt|directive|everything|above)",
+                0.85,
+                "Prompt leak attempt",
+            ),
+            (
+                r"(print|output|display|show).{0,20}(above|previous|prior|initial|original)",
                 0.8,
                 "Content extraction",
             ),
+            (
+                r"(print|output|display).{0,20}(your|the).{0,20}(instruction|configuration)",
+                0.85,
+                "Config extraction",
+            ),
+            (r"what were you told", 0.8, "Prompt extraction attempt"),
+            (
+                r"(tell|show|give).{0,20}(me|us).{0,20}(your|the).{0,20}instruction",
+                0.85,
+                "Instruction extraction",
+            ),
+            (r"verbatim", 0.7, "Verbatim output request"),
             # Command injection style
             (r"<\|.*\|>", 0.9, "Special delimiter injection"),
             (r"\[\[.*\]\]", 0.7, "Bracket command injection"),
             (r"{{.*}}", 0.7, "Template injection"),
             (r"execute:?", 0.8, "Command execution attempt"),
+            (r"\[\[CONTEXT_SWITCH\]\]", 0.9, "Context switch command"),
             # SQL injection patterns
             (r"(drop|delete|truncate|alter)\s+(table|database)", 0.95, "SQL injection attempt"),
             (r"';|--;|/\*|\*/|union\s+select", 0.9, "SQL injection syntax"),
@@ -83,6 +127,8 @@ class HeuristicDetector:
             (r"(eval|exec|compile)\s*\(", 0.9, "Code execution attempt"),
             (r"__import__|globals\(\)|locals\(\)", 0.85, "Dynamic code execution"),
             (r"subprocess\.(run|call|Popen)", 0.9, "Process execution attempt"),
+            (r"System\.(set|get)SecurityManager", 0.9, "Security manager manipulation"),
+            (r"```[\s\S]*```", 0.6, "Code block injection attempt"),
         ]
 
         # Jailbreak patterns
@@ -122,6 +168,9 @@ class HeuristicDetector:
             (r"(start|begin) (new|another) (conversation|session)", 0.7, "Context reset attempt"),
             (r"\n{3,}", 0.5, "Excessive newlines for context break"),
             (r"={10,}", 0.6, "Separator injection"),
+            (r"---END OF.{0,20}---", 0.8, "Context boundary injection"),
+            (r"</user>[\s\S]*<system>", 0.9, "XML tag injection"),
+            (r"</(user|assistant|human)>", 0.8, "XML closing tag injection"),
         ]
 
         # Adjust thresholds based on detection mode
@@ -183,7 +232,29 @@ class HeuristicDetector:
         """
         reasons = []
         content = message.content
-        content_lower = content.lower()
+
+        # Check for zero-width and invisible Unicode characters
+        if any(ord(c) in [0x200B, 0x200C, 0x200D, 0xFEFF, 0x2060] for c in content):
+            reasons.append(
+                DetectionReason(
+                    category=DetectionCategory.ENCODING_ATTACK,
+                    description="Zero-width or invisible Unicode characters detected",
+                    confidence=0.9,
+                    source="heuristic",
+                    patterns_matched=["zero_width_chars"],
+                )
+            )
+
+        # Performance optimization: limit content length for pattern matching
+        # Most injection attacks are in the first/last parts of the text
+        MAX_SCAN_LENGTH = 5000
+        if len(content) > MAX_SCAN_LENGTH * 2:
+            # For very long content, check beginning and end
+            content_to_check = content[:MAX_SCAN_LENGTH] + " ... " + content[-MAX_SCAN_LENGTH:]
+        else:
+            content_to_check = content
+
+        content_lower = content_to_check.lower()
 
         # Check direct injection patterns (skip for system messages)
         if message.role != Role.SYSTEM:
@@ -214,9 +285,9 @@ class HeuristicDetector:
 
         # Check encoding patterns (case-sensitive)
         for pattern, confidence, description in self.encoding_patterns:
-            if re.search(pattern, content):
+            if re.search(pattern, content_to_check):
                 # Try to decode to verify it's actual encoding
-                if self._verify_encoding(content, pattern):
+                if self._verify_encoding(content_to_check, pattern):
                     reasons.append(
                         DetectionReason(
                             category=DetectionCategory.ENCODING_ATTACK,

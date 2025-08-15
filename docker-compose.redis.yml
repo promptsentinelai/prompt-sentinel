@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: prompt-sentinel
     ports:
-      - "8081:8080"  # Changed from 8080 to 8081 to avoid conflict with cadvisor
+      - "8092:8080"  # Changed from 8081 to 8092 to avoid conflict with existing services
     environment:
       - API_ENV=development
       - LOG_LEVEL=INFO

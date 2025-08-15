@@ -154,8 +154,8 @@ async def set_threshold(
         config.threshold,
         config.severity,
         config.window_minutes,
-        config.description,
-        config.action,
+        config.description or "",
+        config.action or "",
     )
 
     return {"status": "configured", "threshold": config.name}
@@ -361,7 +361,7 @@ async def get_rate_limit_status(
         rate_limiter,
     )
 
-    status = {
+    status: dict[str, Any] = {
         "timestamp": datetime.utcnow().isoformat(),
         "global_status": "active",
         "ddos_protection": "enabled",
@@ -372,11 +372,11 @@ async def get_rate_limit_status(
         client_status = {}
 
         # Check token bucket
-        if hasattr(rate_limiter, "get_client_status"):
+        if rate_limiter and hasattr(rate_limiter, "get_client_status"):
             client_status["token_bucket"] = rate_limiter.get_client_status(client_id)
 
         # Check sliding window
-        if hasattr(rate_limiter, "sliding_window") and rate_limiter.sliding_window:
+        if rate_limiter and hasattr(rate_limiter, "sliding_window") and rate_limiter.sliding_window:
             remaining = await rate_limiter.sliding_window.get_remaining(client_id)
             client_status["sliding_window"] = {
                 "remaining_requests": remaining,
@@ -384,7 +384,11 @@ async def get_rate_limit_status(
             }
 
         # Check if blocked
-        if ddos_protection and client_id in ddos_protection.blocked_ips:
+        if (
+            ddos_protection
+            and hasattr(ddos_protection, "blocked_ips")
+            and client_id in ddos_protection.blocked_ips
+        ):
             block_info = ddos_protection.blocked_ips[client_id]
             client_status["blocked"] = {
                 "until": block_info["until"].isoformat(),
@@ -396,7 +400,9 @@ async def get_rate_limit_status(
     else:
         # Get overall statistics
         status["statistics"] = {
-            "blocked_ips": len(ddos_protection.blocked_ips) if ddos_protection else 0,
+            "blocked_ips": (
+                len(getattr(ddos_protection, "blocked_ips", {})) if ddos_protection else 0
+            ),
             "rate_limited_clients": 0,  # Would need to track this
         }
 
@@ -418,15 +424,17 @@ async def get_circuit_breaker_status(
     """
     from prompt_sentinel.security.circuit_breaker import circuit_breaker_manager
 
-    status = {"timestamp": datetime.utcnow().isoformat(), "providers": {}}
+    status: dict[str, Any] = {"timestamp": datetime.utcnow().isoformat(), "providers": {}}
 
-    for provider_name, breaker in circuit_breaker_manager.breakers.items():
+    for provider_name, breaker in circuit_breaker_manager.circuit_breakers.items():
         status["providers"][provider_name] = {
             "state": breaker.state.value,
             "failure_count": breaker.failure_count,
             "success_count": breaker.success_count,
             "last_failure_time": (
-                breaker.last_failure_time.isoformat() if breaker.last_failure_time else None
+                datetime.fromtimestamp(breaker.last_failure_time).isoformat()
+                if breaker.last_failure_time
+                else None
             ),
             "half_open_attempts": breaker.half_open_attempts,
         }
@@ -449,12 +457,12 @@ async def reset_circuit_breaker(
     """
     from prompt_sentinel.security.circuit_breaker import circuit_breaker_manager
 
-    if provider not in circuit_breaker_manager.breakers:
+    if provider not in circuit_breaker_manager.circuit_breakers:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Circuit breaker for provider '{provider}' not found",
         )
 
-    circuit_breaker_manager.breakers[provider].reset()
+    circuit_breaker_manager.circuit_breakers[provider].reset()
 
     return {"status": "reset", "provider": provider, "timestamp": datetime.utcnow().isoformat()}

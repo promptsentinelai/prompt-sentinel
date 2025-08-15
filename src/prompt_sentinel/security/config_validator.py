@@ -89,7 +89,7 @@ class SecurityConfigValidator:
 
         # Check for development settings in production
         if settings.api_env == "production":
-            if settings.api_host == "0.0.0.0":
+            if settings.api_host == "0.0.0.0":  # nosec B104
                 self._add_issue(
                     "medium",
                     "Permissive host binding in production",
@@ -311,7 +311,10 @@ class SecretManager:
         }
 
     def validate_secret(
-        self, secret_name: str, secret_value: str, secret_type: str = "api_key"
+        self,
+        secret_name: str,
+        secret_value: str,
+        secret_type: str = "api_key",  # noqa: S107
     ) -> bool:
         """Validate secret format and strength."""
         if not secret_value:

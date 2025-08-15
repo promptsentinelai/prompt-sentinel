@@ -143,7 +143,7 @@ class APIKeyManager:
         """Generate new API key."""
 
         # Generate secure random key
-        key_bytes = secrets.token_bytes(32)
+        secrets.token_bytes(32)
         key_string = f"{settings.api_key_prefix}{secrets.token_urlsafe(32)}"
 
         # Hash the key for storage

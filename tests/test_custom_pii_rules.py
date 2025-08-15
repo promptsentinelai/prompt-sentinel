@@ -15,7 +15,7 @@ from prompt_sentinel.detection.custom_pii_loader import (
     CustomPIIRule,
     CustomPIIRulesLoader,
 )
-from prompt_sentinel.detection.pii_detector import PIIDetector
+from prompt_sentinel.detection.pii_detector import PIIDetector, PIIType
 
 
 class TestCustomPIIPattern:
@@ -404,8 +404,9 @@ custom_pii_rules:
 
         # Should detect both custom and built-in patterns
         assert len(matches) >= 2
-        assert any(str(m.pii_type) == "custom_test_id" for m in matches)
-        assert any("ssn" in str(m.pii_type).lower() for m in matches)
+        # Custom patterns are mapped to GENERIC_SECRET type
+        assert any(m.pii_type == PIIType.GENERIC_SECRET and "TEST" in m.text for m in matches)
+        assert any(m.pii_type == PIIType.SSN for m in matches)
 
     def test_detector_custom_masking(self, custom_rules_loader):
         """Test custom masking formats."""
@@ -444,5 +445,6 @@ custom_pii_rules:
         text = "Email: test@example.com, ID: TEST5678"
         matches = detector.detect(text)
 
-        assert any("email" in str(m.pii_type).lower() for m in matches)
-        assert any("custom_test_id" in str(m.pii_type) for m in matches)
+        assert any(m.pii_type == PIIType.EMAIL for m in matches)
+        # Custom patterns are mapped to GENERIC_SECRET type
+        assert any(m.pii_type == PIIType.GENERIC_SECRET and "TEST" in m.text for m in matches)

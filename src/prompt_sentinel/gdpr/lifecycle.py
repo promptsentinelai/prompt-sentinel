@@ -412,7 +412,6 @@ class DataLifecycleManager:
 
         if category == DataCategory.CACHED_PROMPTS:
             # Cache has its own TTL, but we can force cleanup
-            pattern = f"{category.value}:*"
             # Would check timestamps and delete old entries
             deleted_count = 0  # Placeholder
 

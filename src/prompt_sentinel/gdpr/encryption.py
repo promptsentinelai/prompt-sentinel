@@ -45,7 +45,7 @@ class FieldEncryption:
                 )
             except Exception as e:
                 logger.error("Invalid encryption key format", error=str(e))
-                raise EncryptionError(f"Invalid encryption key: {e}")
+                raise EncryptionError(f"Invalid encryption key: {e}") from e
         else:
             # Try to get from environment
             env_key = os.environ.get("GDPR_MASTER_KEY")
@@ -114,7 +114,7 @@ class FieldEncryption:
             return base64.b64encode(encrypted_bytes).decode()
         except Exception as e:
             logger.error("Encryption failed", error=str(e))
-            raise EncryptionError(f"Failed to encrypt data: {e}")
+            raise EncryptionError(f"Failed to encrypt data: {e}") from e
 
     def decrypt_field(self, encrypted_value: str) -> str:
         """
@@ -135,7 +135,7 @@ class FieldEncryption:
             return decrypted_bytes.decode()
         except Exception as e:
             logger.error("Decryption failed", error=str(e))
-            raise EncryptionError(f"Failed to decrypt data: {e}")
+            raise EncryptionError(f"Failed to decrypt data: {e}") from e
 
     def encrypt_dict(self, data: dict[str, Any], fields_to_encrypt: list[str]) -> dict[str, Any]:
         """
@@ -219,6 +219,8 @@ class EncryptedField:
 class EncryptedBaseModel(BaseModel):
     """Base model with field encryption support."""
 
+    _encryption: FieldEncryption | None = None
+
     class Config:
         """Pydantic configuration for EncryptedBaseModel."""
 
@@ -232,8 +234,8 @@ class EncryptedBaseModel(BaseModel):
             **data: Model field values
         """
         # Initialize encryption
-        if not hasattr(self.__class__, "_encryption"):
-            self.__class__._encryption = FieldEncryption()
+        if self._encryption is None:
+            self._encryption = FieldEncryption()
         super().__init__(**data)
 
     def encrypt_sensitive_fields(self, fields: list[str]) -> None:

@@ -222,10 +222,13 @@ class TestDockerContainer:
         # Build image
         tag = docker_manager.build_image(tag="prompt-sentinel:api-test")
 
-        # Run container
+        # Run container with unique name
+        import uuid
+
+        container_name = f"prompt-sentinel-test-{uuid.uuid4().hex[:8]}"
         docker_manager.run_container(
             image=tag,
-            name="prompt-sentinel-test",
+            name=container_name,
             ports=["8888:8080"],
             env={
                 "HEURISTIC_ENABLED": "true",
@@ -240,8 +243,8 @@ class TestDockerContainer:
         time.sleep(5)  # Initial startup time
 
         # Wait for health check
-        if not docker_manager.wait_for_health("prompt-sentinel-test", timeout=30):
-            logs = docker_manager.get_container_logs("prompt-sentinel-test")
+        if not docker_manager.wait_for_health(container_name, timeout=30):
+            logs = docker_manager.get_container_logs(container_name)
             pytest.fail(f"Container did not become healthy. Logs:\n{logs}")
 
         yield "http://localhost:8888"
@@ -392,7 +395,7 @@ class TestDockerComposeStack:
         # Wait for services to be ready
         time.sleep(10)
 
-        yield "http://localhost:8081"
+        yield "http://localhost:8092"
 
         # Cleanup
         subprocess.run(
@@ -428,7 +431,7 @@ class TestDockerComposeStack:
             async with httpx.AsyncClient() as client:
                 # Make a request to cache
                 response1 = await client.post(
-                    "http://localhost:8081/api/v1/detect",
+                    "http://localhost:8092/api/v1/detect",
                     json={"prompt": "Test caching"},
                     timeout=10,
                 )
@@ -436,7 +439,7 @@ class TestDockerComposeStack:
 
                 # Check cache stats
                 cache_response = await client.get(
-                    "http://localhost:8081/api/v1/cache/stats", timeout=10
+                    "http://localhost:8092/api/v1/cache/stats", timeout=10
                 )
 
                 if cache_response.status_code == 200:
@@ -466,7 +469,7 @@ class TestDockerComposeStack:
             async with httpx.AsyncClient() as client:
                 for i in range(5):
                     await client.post(
-                        "http://localhost:8081/api/v1/detect",
+                        "http://localhost:8092/api/v1/detect",
                         json={"prompt": f"Test {i}"},
                         timeout=10,
                     )
@@ -494,9 +497,13 @@ class TestDockerNetworking:
         # Build and run on different port
         tag = docker_manager.build_image(tag="prompt-sentinel:port-test")
 
+        # Use unique container name
+        import uuid
+
+        container_name = f"prompt-sentinel-port-test-{uuid.uuid4().hex[:8]}"
         docker_manager.run_container(
             image=tag,
-            name="prompt-sentinel-port-test",
+            name=container_name,
             ports=["9999:8080"],
             env={"REDIS_ENABLED": "false"},
         )

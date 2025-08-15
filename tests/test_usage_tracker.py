@@ -75,7 +75,7 @@ class TestApiCall:
             latency_ms=150.5,
             cost_usd=0.025,
             success=True,
-            endpoint="/v1/messages",
+            endpoint="/api/v1/messages",
             metadata={"request_id": "req_123"},
         )
 
@@ -86,7 +86,7 @@ class TestApiCall:
         assert call.latency_ms == 150.5
         assert call.cost_usd == 0.025
         assert call.success is True
-        assert call.endpoint == "/v1/messages"
+        assert call.endpoint == "/api/v1/messages"
         assert call.metadata["request_id"] == "req_123"
 
 
@@ -235,7 +235,7 @@ class TestUsageTracker:
             completion_tokens=50,
             latency_ms=150.5,
             success=True,
-            endpoint="/v1/messages",
+            endpoint="/api/v1/messages",
             metadata={"request_id": "req_123"},
         )
 
@@ -246,7 +246,7 @@ class TestUsageTracker:
         assert api_call.tokens.total_tokens == 150
         assert api_call.latency_ms == 150.5
         assert api_call.success is True
-        assert api_call.endpoint == "/v1/messages"
+        assert api_call.endpoint == "/api/v1/messages"
         assert api_call.metadata["request_id"] == "req_123"
         assert api_call.cost_usd > 0
 
@@ -792,7 +792,7 @@ class TestUsageTrackerIntegration:
 
         # Add cache hits
         await tracker.track_cache_hit("/api/v1/detect", 5.0)
-        await tracker.track_cache_hit("/v1/analyze", 3.0)
+        await tracker.track_cache_hit("/api/v1/analyze", 3.0)
 
         # Verify aggregated metrics
         assert tracker.metrics.total_requests == 5  # 3 API + 2 cache

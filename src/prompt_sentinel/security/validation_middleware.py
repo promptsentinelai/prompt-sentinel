@@ -112,7 +112,7 @@ class EnhancedPromptRequest(BaseModel):
         try:
             v.encode("utf-8")
         except UnicodeEncodeError as e:
-            raise ValueError(f"Invalid character encoding: {e}")
+            raise ValueError(f"Invalid character encoding: {e}") from e
 
         # 2. Control character check (except newlines and tabs)
         if re.search(r"[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]", v):
@@ -192,8 +192,8 @@ class BatchPromptRequest(BaseModel):
             # Basic encoding check
             try:
                 prompt.encode("utf-8")
-            except UnicodeEncodeError:
-                raise ValueError(f"Prompt {i} has invalid encoding")
+            except UnicodeEncodeError as e:
+                raise ValueError(f"Prompt {i} has invalid encoding") from e
 
         return v
 

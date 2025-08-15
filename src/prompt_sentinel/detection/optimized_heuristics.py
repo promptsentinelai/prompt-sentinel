@@ -9,8 +9,14 @@
 
 import re
 
-import pyahocorasick
 import structlog
+
+try:
+    import pyahocorasick
+
+    HAS_AHOCORASICK = True
+except ImportError:
+    HAS_AHOCORASICK = False
 
 from prompt_sentinel.models.schemas import (
     DetectionCategory,
@@ -123,9 +129,12 @@ class OptimizedHeuristicDetector:
 
     def _build_aho_corasick(self) -> None:
         """Build Aho-Corasick automaton for fast keyword matching."""
-        try:
-            import pyahocorasick
+        if not HAS_AHOCORASICK:
+            logger.warning("pyahocorasick not installed, Aho-Corasick optimization disabled")
+            self.aho_automaton = None
+            return
 
+        try:
             self.aho_automaton = pyahocorasick.Automaton()
 
             # Add all keywords
@@ -273,7 +282,7 @@ class BloomFilterDetector:
             self.enabled = True
             logger.info("Bloom filter initialized", capacity=expected_items)
         except ImportError:
-            logger.warning("pybloom_live not installed, bloom filter disabled")
+            logger.debug("pybloom_live not installed, bloom filter disabled")
             self.bloom = None
             self.enabled = False
 

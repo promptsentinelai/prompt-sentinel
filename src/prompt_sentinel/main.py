@@ -44,6 +44,7 @@ from pydantic import BaseModel, Field
 
 from prompt_sentinel import __version__
 from prompt_sentinel.api.auth.routes import router as auth_router
+from prompt_sentinel.api.batch_endpoint import router as batch_router
 from prompt_sentinel.api.experiments import experiment_router
 from prompt_sentinel.api_docs import (
     API_DESCRIPTION,
@@ -324,6 +325,9 @@ app.add_middleware(
 
 # Include authentication API routes (admin endpoints)
 app.include_router(auth_router, prefix="/api/v1")
+
+# Include batch processing API routes
+app.include_router(batch_router)
 
 # Include experiment management API routes
 app.include_router(experiment_router, prefix="/api/v1")

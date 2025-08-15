@@ -176,7 +176,7 @@ class ResponseFormatter:
 
     def format_response(self, response: DetectionResponse) -> dict[str, Any]:
         """Format detection response for the current locale."""
-        formatted = {
+        formatted: dict[str, Any] = {
             "verdict": self.format_verdict(response.verdict),
             "confidence": self.format_confidence(response.confidence),
             "processing_time": self.formatter.format_number(response.processing_time_ms, 2) + " ms",

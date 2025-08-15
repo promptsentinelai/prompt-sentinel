@@ -398,7 +398,10 @@ def test_encryption():
     # Test string encryption
     original = "This is sensitive data"
     encrypted = encryption.encrypt_field(original)
-    decrypted = encryption.decrypt_field(encrypted)
+    if encrypted:
+        decrypted = encryption.decrypt_field(encrypted)
+    else:
+        decrypted = None
     assert original == decrypted
     print("✅ String encryption test passed")
 

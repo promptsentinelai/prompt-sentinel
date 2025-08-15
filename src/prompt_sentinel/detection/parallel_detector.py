@@ -58,11 +58,15 @@ class ParallelDetectionExecutor:
             self.logger.error(f"Threat detection error: {e}")
             return Verdict.ALLOW, [], 0.0
 
-    async def run_pii_detection(self, messages: list[Message]) -> tuple[list, Verdict]:
+    async def run_pii_detection(
+        self, messages: list[Message]
+    ) -> tuple[Verdict, list[DetectionReason], float]:
         """Run PII detection asynchronously."""
+        from prompt_sentinel.models.schemas import DetectionCategory, DetectionReason
+
         try:
             if not self.detector.pii_detector:
-                return [], Verdict.ALLOW
+                return Verdict.ALLOW, [], 0.0
 
             # Run PII detection in executor since it's synchronous
             loop = asyncio.get_event_loop()
@@ -72,22 +76,36 @@ class ParallelDetectionExecutor:
                 None, self.detector.pii_detector.detect, combined_text
             )
 
-            # Determine verdict based on matches
+            # Convert PII matches to detection reasons
             if pii_matches:
                 from prompt_sentinel.config.settings import settings
 
-                if settings.pii_redaction_mode == "reject":
-                    return pii_matches, Verdict.BLOCK
-                elif settings.pii_redaction_mode in ["pass-silent", "pass-alert"]:
-                    return pii_matches, Verdict.ALLOW
-                else:
-                    return pii_matches, Verdict.REDACT
+                reasons = [
+                    DetectionReason(
+                        category=DetectionCategory.PII_DETECTED,
+                        description=(
+                            f"PII detected: {match['type']} - {match['value']}"
+                            if isinstance(match, dict)
+                            else f"PII detected: {match}"
+                        ),
+                        confidence=0.9,
+                        source="heuristic",  # PII detection is part of heuristic checks
+                    )
+                    for match in pii_matches[:3]  # Limit to first 3 matches
+                ]
 
-            return [], Verdict.ALLOW
+                if settings.pii_redaction_mode == "reject":
+                    return Verdict.BLOCK, reasons, 0.9
+                elif settings.pii_redaction_mode in ["pass-silent", "pass-alert"]:
+                    return Verdict.ALLOW, reasons, 0.9
+                else:
+                    return Verdict.REDACT, reasons, 0.9
+
+            return Verdict.ALLOW, [], 0.0
 
         except Exception as e:
             self.logger.error(f"PII detection error: {e}")
-            return [], Verdict.ALLOW
+            return Verdict.ALLOW, [], 0.0
 
     async def execute_parallel_detection(
         self,
@@ -181,7 +199,11 @@ class ParallelDetectionMixin:
         """
         from prompt_sentinel.config.settings import settings
 
-        use_threat = self.threat_detector is not None and settings.threat_intelligence_enabled
+        use_threat = (
+            hasattr(self, "threat_detector")
+            and self.threat_detector is not None
+            and settings.threat_intelligence_enabled
+        )
 
         return await self.parallel_executor.execute_parallel_detection(
             messages, use_heuristics, use_llm, use_threat, check_pii

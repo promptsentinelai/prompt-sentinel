@@ -5,23 +5,37 @@
 # This source code is licensed under the Elastic License 2.0 found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Batch detection endpoint for high-throughput processing."""
+"""Batch detection endpoint for high-throughput processing.
 
-import asyncio
+This module provides API endpoints for batch processing of multiple
+detection requests in a single call. It supports parallel processing,
+intelligent caching, and comprehensive error handling.
+
+Key features:
+- Process up to 100 items per batch
+- Parallel or sequential processing modes
+- Partial failure handling with continue_on_error
+- Detailed statistics and performance metrics
+- CSV export support for results
+"""
+
+import csv
+import io
 import time
+import uuid
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 
-from prompt_sentinel.cache.optimized_cache import BatchCache, OptimizedCache
+from prompt_sentinel.config.settings import settings
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.models.schemas import (
-    DetectionResponse,
-    Message,
-    Role,
-    Verdict,
+    BatchDetectionRequest,
+    BatchDetectionResponse,
+    BatchDetectionResult,
+    BatchStatistics,
 )
 from prompt_sentinel.monitoring.metrics import track_detection_metrics
 
@@ -29,274 +43,317 @@ logger = structlog.get_logger()
 
 router = APIRouter(prefix="/api/v1", tags=["Batch Processing"])
 
+# Global detector instance (initialized in main.py)
+_detector: PromptDetector | None = None
 
-class BatchDetectionRequest(BaseModel):
-    """Request model for batch detection."""
 
-    prompts: list[str] = Field(
-        ..., description="List of prompts to analyze", min_length=1, max_length=100
+def get_detector() -> PromptDetector:
+    """Get the global detector instance."""
+    global _detector
+    if _detector is None:
+        _detector = PromptDetector()
+    return _detector
+
+
+@router.post("/detect/batch", response_model=BatchDetectionResponse)
+async def batch_detect(
+    request: BatchDetectionRequest,
+    detector: PromptDetector = Depends(get_detector),
+) -> BatchDetectionResponse:
+    """Process multiple detection requests in a single batch.
+
+    Efficiently processes up to 100 detection requests with support for
+    parallel execution, error handling, and comprehensive statistics.
+
+    Args:
+        request: Batch detection request with items to process
+        detector: Injected detector instance
+
+    Returns:
+        BatchDetectionResponse with individual results and statistics
+
+    Raises:
+        HTTPException: If batch processing fails completely
+    """
+    start_time = time.time()
+    batch_id = str(uuid.uuid4())
+
+    logger.info(
+        "Batch detection request",
+        batch_id=batch_id,
+        item_count=len(request.items),
+        parallel=request.parallel,
     )
-    detection_mode: str = Field(
-        default="moderate", description="Detection sensitivity: strict, moderate, or permissive"
-    )
-    use_cache: bool = Field(default=True, description="Whether to use caching for results")
-    parallel: bool = Field(default=True, description="Process prompts in parallel")
 
+    try:
+        # Convert request items to detector format
+        detector_items = []
+        for item in request.items:
+            messages = item.to_messages()
+            detector_items.append((item.id, messages))
 
-class BatchDetectionResponse(BaseModel):
-    """Response model for batch detection."""
-
-    results: list[DetectionResponse] = Field(..., description="Detection results for each prompt")
-    batch_metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Batch processing metadata"
-    )
-
-
-class BatchProcessor:
-    """Handles batch detection processing with optimizations."""
-
-    def __init__(self, detector: PromptDetector, cache: OptimizedCache | None = None):
-        """
-        Initialize batch processor.
-
-        Args:
-            detector: Detection engine
-            cache: Optional cache manager
-        """
-        self.detector = detector
-        self.cache = cache
-        self.batch_cache = BatchCache(cache) if cache else None
-        self.semaphore = asyncio.Semaphore(10)  # Limit concurrent detections
-
-    async def process_batch(
-        self,
-        prompts: list[str],
-        detection_mode: str = "moderate",
-        use_cache: bool = True,
-        parallel: bool = True,
-    ) -> BatchDetectionResponse:
-        """
-        Process multiple prompts efficiently.
-
-        Args:
-            prompts: List of prompts to analyze
-            detection_mode: Detection sensitivity
-            use_cache: Whether to use caching
-            parallel: Process in parallel
-
-        Returns:
-            Batch detection response
-        """
-        start_time = time.perf_counter()
-
-        if parallel and len(prompts) > 1:
-            results = await self._process_parallel(prompts, detection_mode, use_cache)
-        else:
-            results = await self._process_sequential(prompts, detection_mode, use_cache)
-
-        process_time = time.perf_counter() - start_time
-
-        # Calculate batch statistics
-        malicious_count = sum(1 for r in results if r.verdict == Verdict.BLOCK)
-        suspicious_count = sum(1 for r in results if r.verdict == Verdict.FLAG)
-        safe_count = sum(1 for r in results if r.verdict == Verdict.ALLOW)
-
-        batch_metadata = {
-            "total_prompts": len(prompts),
-            "processing_time_ms": process_time * 1000,
-            "avg_time_per_prompt_ms": (process_time * 1000) / len(prompts),
-            "throughput_per_second": len(prompts) / process_time if process_time > 0 else 0,
-            "verdict_summary": {
-                "block": malicious_count,
-                "flag": suspicious_count,
-                "allow": safe_count,
-            },
-            "cache_used": use_cache,
-            "parallel_processing": parallel,
-        }
-
-        logger.info(
-            "Batch processing complete",
-            prompts=len(prompts),
-            time_ms=process_time * 1000,
-            throughput=batch_metadata["throughput_per_second"],
+        # Process batch using detector
+        detection_results, stats = await detector.detect_batch(
+            items=detector_items,
+            parallel=request.parallel,
+            continue_on_error=request.continue_on_error,
+            chunk_size=10,  # Process 10 items at a time when parallel
+            check_format=True,
+            use_heuristics=settings.heuristic_enabled,
+            use_llm=settings.llm_classification_enabled,
+            check_pii=settings.pii_detection_enabled,
         )
 
-        return BatchDetectionResponse(results=results, batch_metadata=batch_metadata)
+        # Convert results to response format
+        results = []
+        for item_id, detection_result in detection_results:
+            if detection_result is None:
+                # Find error message from stats
+                error_msg = None
+                if stats.get("errors"):
+                    for err_id, err_msg in stats["errors"]:
+                        if err_id == item_id:
+                            error_msg = err_msg
+                            break
 
-    async def _process_parallel(
-        self, prompts: list[str], detection_mode: str, use_cache: bool
-    ) -> list[DetectionResponse]:
-        """Process prompts in parallel with concurrency control."""
-        tasks = []
-
-        for prompt in prompts:
-            task = self._detect_with_semaphore(prompt, detection_mode, use_cache)
-            tasks.append(task)
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        # Handle any exceptions
-        processed_results: list[DetectionResponse] = []
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
-                logger.error(f"Detection failed for prompt {i}", error=str(result))
-                # Return safe verdict on error
-                processed_results.append(
-                    DetectionResponse(
-                        verdict=Verdict.ALLOW,
-                        confidence=0.0,
+                results.append(
+                    BatchDetectionResult(
+                        id=item_id,
+                        success=False,
+                        result=None,
+                        error=error_msg or "Unknown error",
                         processing_time_ms=0,
-                        metadata={"error": str(result)},
                     )
                 )
             else:
-                # Type assertion - we know result is DetectionResponse if not Exception
-                assert isinstance(result, DetectionResponse)
-                processed_results.append(result)
-
-        return processed_results
-
-    async def _process_sequential(
-        self, prompts: list[str], detection_mode: str, use_cache: bool
-    ) -> list[DetectionResponse]:
-        """Process prompts sequentially."""
-        results = []
-
-        for prompt in prompts:
-            try:
-                result = await self._detect_single(prompt, detection_mode, use_cache)
-                results.append(result)
-            except Exception as e:
-                logger.error("Detection failed", error=str(e))
                 results.append(
-                    DetectionResponse(
-                        verdict=Verdict.ALLOW,
-                        confidence=0.0,
-                        processing_time_ms=0,
-                        metadata={"error": str(e)},
+                    BatchDetectionResult(
+                        id=item_id,
+                        success=True,
+                        result=detection_result,
+                        error=None,
+                        processing_time_ms=detection_result.processing_time_ms,
                     )
                 )
 
-        return results
-
-    async def _detect_with_semaphore(
-        self, prompt: str, detection_mode: str, use_cache: bool
-    ) -> DetectionResponse:
-        """Detect with concurrency control."""
-        async with self.semaphore:
-            return await self._detect_single(prompt, detection_mode, use_cache)
-
-    async def _detect_single(
-        self, prompt: str, detection_mode: str, use_cache: bool
-    ) -> DetectionResponse:
-        """Perform detection on a single prompt."""
-        # Generate cache key
-        if use_cache and self.cache:
-            cache_key = self.cache._generate_fast_key(f"{prompt}:{detection_mode}")
-
-            # Try cache first
-            cached = await self.cache.get_multi_tier(
-                cache_key,
-                lambda: self._perform_detection(prompt, detection_mode),
-                ttl=300,
-                memory_ttl=60,
+        # Create statistics
+        if request.include_statistics:
+            batch_stats = BatchStatistics(
+                total_items=stats["total_items"],
+                successful_items=stats["successful"],
+                failed_items=stats["failed"],
+                total_processing_time_ms=stats["total_processing_time_ms"],
+                average_processing_time_ms=stats["average_processing_time_ms"],
+                min_processing_time_ms=stats["min_processing_time_ms"],
+                max_processing_time_ms=stats["max_processing_time_ms"],
+                cache_hits=stats["cache_hits"],
+                verdicts=stats["verdicts"],
+                average_confidence=stats["average_confidence"],
             )
-
-            if cached and isinstance(cached, dict):
-                # Convert dict to DetectionResponse
-                return DetectionResponse(**cached)
-
-        # No cache or cache miss
-        result = await self._perform_detection(prompt, detection_mode)
+        else:
+            batch_stats = None
 
         # Track metrics
-        track_detection_metrics(
-            attack_type="batch", severity="low", method="batch", confidence=result.confidence
+        for verdict_str, _count in stats["verdicts"].items():
+            # Map verdict to attack type
+            attack_type = "benign" if verdict_str == "ALLOW" else "malicious"
+            severity = (
+                "low"
+                if verdict_str == "ALLOW"
+                else ("high" if verdict_str == "BLOCK" else "medium")
+            )
+
+            track_detection_metrics(
+                attack_type=attack_type,
+                severity=severity,
+                method="batch",
+                confidence=stats["average_confidence"] or 0,
+            )
+
+        # Create response
+        response = BatchDetectionResponse(
+            batch_id=batch_id,
+            results=results,
+            statistics=batch_stats,
+            metadata={
+                "config": request.config or {},
+                "parallel": request.parallel,
+                "cache_hit_rate": stats.get("cache_hit_rate", 0),
+                "detection_mode": settings.detection_mode,
+            },
         )
 
-        return result
-
-    async def _perform_detection(self, prompt: str, detection_mode: str) -> DetectionResponse:
-        """Perform actual detection."""
-        # Create messages for detector
-        messages = [Message(role=Role.USER, content=prompt)]
-
-        # Use detector - it returns DetectionResponse directly
-        result = await self.detector.detect(messages)
-
-        # Note: detection_mode parameter is not supported by the detector
-        # The mode is configured at detector initialization
-
-        return result
-
-
-# Global batch processor instance (initialized in main.py)
-batch_processor: BatchProcessor | None = None
-
-
-def get_batch_processor() -> BatchProcessor:
-    """Get batch processor dependency."""
-    if not batch_processor:
-        raise RuntimeError("Batch processor not initialized")
-    return batch_processor
-
-
-@router.post(
-    "/detect/batch",
-    response_model=BatchDetectionResponse,
-    summary="Batch prompt injection detection",
-    description="Analyze multiple prompts for injection attacks in a single request",
-)
-async def detect_batch(
-    request: BatchDetectionRequest,
-    background_tasks: BackgroundTasks,
-    processor: BatchProcessor = Depends(get_batch_processor),
-) -> BatchDetectionResponse:
-    """
-    Perform batch detection on multiple prompts.
-
-    This endpoint is optimized for high-throughput scenarios where multiple
-    prompts need to be analyzed efficiently. It supports:
-    - Parallel processing for better performance
-    - Caching to avoid redundant computations
-    - Batch statistics and metadata
-
-    Args:
-        request: Batch detection request
-        background_tasks: FastAPI background tasks
-        processor: Batch processor instance
-
-    Returns:
-        Batch detection response with results and metadata
-
-    Raises:
-        HTTPException: If batch processing fails
-    """
-    try:
-        response = await processor.process_batch(
-            prompts=request.prompts,
-            detection_mode=request.detection_mode,
-            use_cache=request.use_cache,
-            parallel=request.parallel,
+        total_time = (time.time() - start_time) * 1000
+        logger.info(
+            "Batch detection completed",
+            batch_id=batch_id,
+            successful=stats["successful"],
+            failed=stats["failed"],
+            total_time_ms=total_time,
         )
-
-        # Log batch summary in background
-        background_tasks.add_task(log_batch_summary, request.prompts, response.batch_metadata)
 
         return response
 
     except Exception as e:
-        logger.error("Batch detection failed", error=str(e))
+        logger.error("Batch detection failed", batch_id=batch_id, error=str(e))
         raise HTTPException(status_code=500, detail=f"Batch processing failed: {str(e)}") from e
 
 
-async def log_batch_summary(prompts: list[str], metadata: dict[str, Any]):
-    """Log batch processing summary."""
-    logger.info(
-        "Batch detection summary",
-        total_prompts=metadata.get("total_prompts"),
-        processing_time_ms=metadata.get("processing_time_ms"),
-        throughput=metadata.get("throughput_per_second"),
-        verdicts=metadata.get("verdict_summary"),
+@router.post("/detect/batch/csv")
+async def batch_detect_csv(
+    request: BatchDetectionRequest,
+    detector: PromptDetector = Depends(get_detector),
+) -> StreamingResponse:
+    """Process batch detection and return results as CSV.
+
+    Useful for data analysis and export to spreadsheet applications.
+
+    Args:
+        request: Batch detection request
+        detector: Injected detector instance
+
+    Returns:
+        StreamingResponse with CSV content
+    """
+    # Process batch
+    response = await batch_detect(request, detector)
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow(
+        [
+            "ID",
+            "Success",
+            "Verdict",
+            "Confidence",
+            "Processing Time (ms)",
+            "Reasons",
+            "Error",
+        ]
     )
+
+    # Write data rows
+    for result in response.results:
+        if result.success and result.result:
+            reasons = "; ".join([r.description for r in result.result.reasons])
+            writer.writerow(
+                [
+                    result.id,
+                    "Yes",
+                    result.result.verdict.value,
+                    f"{result.result.confidence:.2f}",
+                    f"{result.processing_time_ms:.2f}",
+                    reasons,
+                    "",
+                ]
+            )
+        else:
+            writer.writerow(
+                [
+                    result.id,
+                    "No",
+                    "",
+                    "",
+                    f"{result.processing_time_ms:.2f}",
+                    "",
+                    result.error or "Unknown error",
+                ]
+            )
+
+    # Add statistics if included
+    if response.statistics:
+        writer.writerow([])  # Empty row
+        writer.writerow(["Statistics"])
+        writer.writerow(["Total Items", response.statistics.total_items])
+        writer.writerow(["Successful", response.statistics.successful_items])
+        writer.writerow(["Failed", response.statistics.failed_items])
+        writer.writerow(
+            [
+                "Average Processing Time (ms)",
+                f"{response.statistics.average_processing_time_ms:.2f}",
+            ]
+        )
+        writer.writerow(["Cache Hits", response.statistics.cache_hits])
+
+    # Return CSV as streaming response
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode()),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="batch_results_{response.batch_id}.csv"'
+        },
+    )
+
+
+@router.get("/detect/batch/{batch_id}/status")
+async def get_batch_status(batch_id: str) -> dict[str, Any]:
+    """Get status of a batch processing job.
+
+    Future enhancement: Track async batch jobs.
+
+    Args:
+        batch_id: Batch identifier
+
+    Returns:
+        Status information
+
+    Note:
+        Currently returns placeholder for future async job tracking
+    """
+    # TODO: Implement async batch job tracking with Redis
+    return {
+        "batch_id": batch_id,
+        "status": "completed",
+        "message": "Batch processing is currently synchronous. Async job tracking coming soon.",
+    }
+
+
+@router.post("/detect/batch/validate")
+async def validate_batch(request: BatchDetectionRequest) -> dict[str, Any]:
+    """Validate a batch request without processing.
+
+    Useful for pre-flight checks before submitting large batches.
+
+    Args:
+        request: Batch detection request to validate
+
+    Returns:
+        Validation results
+    """
+    validation: dict[str, Any] = {
+        "valid": True,
+        "item_count": len(request.items),
+        "estimated_time_ms": len(request.items) * 50,  # Rough estimate
+        "warnings": [],
+        "errors": [],
+    }
+
+    # Check for duplicate IDs
+    ids = [item.id for item in request.items]
+    if len(ids) != len(set(ids)):
+        validation["errors"].append("Duplicate item IDs found")
+        validation["valid"] = False
+
+    # Check for empty content
+    empty_items = [item.id for item in request.items if not item.input]
+    if empty_items:
+        validation["warnings"].append(f"Empty content in items: {empty_items}")
+
+    # Warn about large batches
+    if len(request.items) > 50:
+        validation["warnings"].append(
+            f"Large batch size ({len(request.items)}). Consider splitting for better performance."
+        )
+
+    # Check configuration
+    if request.config:
+        if "detection_mode" in request.config:
+            if request.config["detection_mode"] not in ["strict", "moderate", "permissive"]:
+                validation["errors"].append("Invalid detection_mode in config")
+                validation["valid"] = False
+
+    return validation

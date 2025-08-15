@@ -1,0 +1,85 @@
+{
+  "batch_sizes": {
+    "1": {
+      "avg_time_ms": 1.499666638361911,
+      "time_per_item_ms": 1.499666638361911,
+      "throughput_items_per_sec": 666.8148603294277
+    },
+    "5": {
+      "avg_time_ms": 0.6796252758552631,
+      "time_per_item_ms": 0.13592505517105263,
+      "throughput_items_per_sec": 7356.995358519933
+    },
+    "10": {
+      "avg_time_ms": 1.0673470484713714,
+      "time_per_item_ms": 0.10673470484713714,
+      "throughput_items_per_sec": 9369.023893701451
+    },
+    "25": {
+      "avg_time_ms": 2.581444646542271,
+      "time_per_item_ms": 0.10325778586169085,
+      "throughput_items_per_sec": 9684.499736799073
+    },
+    "50": {
+      "avg_time_ms": 4.4477496994659305,
+      "time_per_item_ms": 0.08895499398931861,
+      "throughput_items_per_sec": 11241.639790567311
+    },
+    "100": {
+      "avg_time_ms": 10.139791294932365,
+      "time_per_item_ms": 0.10139791294932365,
+      "throughput_items_per_sec": 9862.135924826944
+    }
+  },
+  "parallel_vs_sequential": {
+    "10": {
+      "sequential_ms": 1.660763945740958,
+      "parallel_ms": 0.8790139884998401,
+      "speedup": 1.8893487105652131
+    },
+    "25": {
+      "sequential_ms": 3.3179303475966058,
+      "parallel_ms": 2.334402990527451,
+      "speedup": 1.421318581693099
+    },
+    "50": {
+      "sequential_ms": 7.495583306687574,
+      "parallel_ms": 4.247194699322184,
+      "speedup": 1.7648315740937908
+    }
+  },
+  "chunk_sizes": {
+    "1": {
+      "avg_time_ms": 9.8959303383405,
+      "chunks_needed": 50
+    },
+    "5": {
+      "avg_time_ms": 5.150957964360714,
+      "chunks_needed": 10
+    },
+    "10": {
+      "avg_time_ms": 4.948416647190849,
+      "chunks_needed": 5
+    },
+    "20": {
+      "avg_time_ms": 4.478569336545964,
+      "chunks_needed": 3
+    },
+    "50": {
+      "avg_time_ms": 4.3170136244346695,
+      "chunks_needed": 1
+    }
+  },
+  "cache_effectiveness": {
+    "cold_cache_ms": 4.303541965782642,
+    "warm_cache_ms": 4.4600419932976365,
+    "cache_hits": 0,
+    "cache_hit_rate": 0.0,
+    "speedup": 0.9649106381172697
+  },
+  "error_handling": {
+    "with_errors_ms": 3.904416924342513,
+    "without_errors_ms": 3.880416974425316,
+    "overhead_percent": 0.6184889426928555
+  }
+}

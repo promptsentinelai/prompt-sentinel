@@ -61,7 +61,7 @@ class CacheManager:
         self.max_ttl = 3600  # 1 hour max for security
         self._connection_attempts = 0
         self._max_connection_attempts = 3
-        self.pool = None  # Store reference to connection pool
+        self.pool: redis.ConnectionPool | None = None  # Store reference to connection pool
 
         if self.enabled:
             self._initialize_client()
@@ -385,7 +385,7 @@ class CacheManager:
                     total_keys += db_info["keys"]
 
             # Add connection pool stats if available
-            pool_stats = {}
+            pool_stats: dict[str, Any] = {}
             if self.pool:
                 pool_stats = {
                     "pool_size": self.pool.max_connections,

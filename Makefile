@@ -128,12 +128,27 @@ test-coverage: ## Run tests with coverage report
 .PHONY: test-unit
 test-unit: ## Run only unit tests (no integration/e2e)
 	@echo "$(GREEN)Running unit tests...$(NC)"
-	$(UV) run pytest -m "unit" -v
+	$(UV) run pytest tests/unit/ -v
 
 .PHONY: test-integration
 test-integration: ## Run only integration tests
 	@echo "$(GREEN)Running integration tests...$(NC)"
-	$(UV) run pytest -m "integration" -v
+	$(UV) run pytest tests/integration/ -v
+
+.PHONY: test-e2e
+test-e2e: ## Run only end-to-end tests
+	@echo "$(GREEN)Running e2e tests...$(NC)"
+	$(UV) run pytest tests/e2e/ -v
+
+.PHONY: test-security
+test-security: ## Run only security tests
+	@echo "$(GREEN)Running security tests...$(NC)"
+	$(UV) run pytest tests/security/ -v
+
+.PHONY: test-performance
+test-performance: ## Run performance tests and benchmarks
+	@echo "$(GREEN)Running performance tests...$(NC)"
+	$(UV) run pytest tests/performance/ -v
 
 .PHONY: test-fast
 test-fast: ## Run tests excluding slow tests

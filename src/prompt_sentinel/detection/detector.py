@@ -30,6 +30,7 @@ Key Features:
 import asyncio
 import logging
 import time
+from typing import Any
 
 from prompt_sentinel.cache.cache_manager import CacheManager
 from prompt_sentinel.cache.detection_cache import DetectionCache
@@ -200,8 +201,8 @@ class PromptDetector:
         confidences = []
 
         # PARALLEL DETECTION - Run all detection methods concurrently
-        detection_tasks = []
-        task_names = []
+        detection_tasks: list[Any] = []  # Mix of Future and Coroutine
+        task_names: list[str] = []
 
         # Prepare heuristic detection task
         if use_heuristics:
@@ -241,6 +242,11 @@ class PromptDetector:
         for name, result in zip(task_names, results, strict=False):
             if isinstance(result, Exception):
                 logging.error(f"{name} detection error: {result}")
+                continue
+
+            # Safely unpack result tuple
+            if not isinstance(result, tuple) or len(result) != 3:
+                logging.error(f"{name} detection returned invalid result: {result}")
                 continue
 
             verdict, reasons, confidence = result
@@ -558,6 +564,198 @@ class PromptDetector:
             result = await self.detect(messages)
             results.append(result)
         return results
+
+    async def detect_batch(
+        self,
+        items: list[tuple[str, list[Message]]],
+        parallel: bool = True,
+        continue_on_error: bool = True,
+        chunk_size: int = 10,
+        **detect_kwargs,
+    ) -> tuple[list[tuple[str, DetectionResponse | None]], dict[str, Any]]:
+        """Process multiple detection requests efficiently.
+
+        Implements intelligent batch processing with parallel execution,
+        error handling, and performance optimization. Supports chunking
+        for large batches to prevent resource exhaustion.
+
+        Args:
+            items: List of (id, messages) tuples to process
+            parallel: Whether to process items in parallel
+            continue_on_error: Continue processing if individual items fail
+            chunk_size: Number of items to process in parallel per chunk
+            **detect_kwargs: Additional arguments passed to detect()
+
+        Returns:
+            Tuple containing:
+            - List of (id, result) tuples where result is DetectionResponse or None on error
+            - Statistics dictionary with processing metrics
+
+        Example:
+            >>> items = [("item1", [msg1]), ("item2", [msg2, msg3])]
+            >>> results, stats = await detector.detect_batch(items)
+            >>> print(f"Processed {stats['successful']} items successfully")
+        """
+        import time
+        import uuid
+
+        batch_id = str(uuid.uuid4())
+        start_time = time.time()
+        results: list[tuple[str, DetectionResponse | None]] = []
+        errors: list[tuple[str, str]] = []
+        processing_times: list[float] = []
+
+        # Statistics tracking
+        stats: dict[str, Any] = {
+            "batch_id": batch_id,
+            "total_items": len(items),
+            "successful": 0,
+            "failed": 0,
+            "cache_hits": 0,
+            "verdicts": {},
+            "confidences": [],
+        }
+
+        if parallel:
+            # Process in chunks to avoid overwhelming the system
+            for i in range(0, len(items), chunk_size):
+                chunk = items[i : i + chunk_size]
+
+                # Create detection tasks for this chunk
+                tasks = []
+                for item_id, messages in chunk:
+                    task = self._detect_with_error_handling(
+                        item_id, messages, continue_on_error, **detect_kwargs
+                    )
+                    tasks.append(task)
+
+                # Execute chunk in parallel
+                chunk_start = time.time()
+                chunk_results = await asyncio.gather(*tasks)
+                chunk_time = (time.time() - chunk_start) * 1000
+
+                # Process chunk results
+                for (item_id, _), (result, error, item_time) in zip(
+                    chunk, chunk_results, strict=False
+                ):
+                    processing_times.append(item_time)
+
+                    if error:
+                        results.append((item_id, None))
+                        errors.append((item_id, error))
+                        stats["failed"] += 1
+                    else:
+                        results.append((item_id, result))
+                        stats["successful"] += 1
+
+                        # Update statistics
+                        if result:
+                            verdict_str = result.verdict.value
+                            stats["verdicts"][verdict_str] = (
+                                stats["verdicts"].get(verdict_str, 0) + 1
+                            )
+                            stats["confidences"].append(result.confidence)
+
+                            # Check for cache hit
+                            if result.metadata.get("cache") == "hit":
+                                stats["cache_hits"] += 1
+
+                logging.debug(f"Processed chunk {i // chunk_size + 1}, time: {chunk_time:.2f}ms")
+
+        else:
+            # Sequential processing
+            for item_id, messages in items:
+                item_start = time.time()
+
+                try:
+                    result = await self.detect(messages, **detect_kwargs)
+                    item_time = (time.time() - item_start) * 1000
+                    processing_times.append(item_time)
+
+                    results.append((item_id, result))
+                    stats["successful"] += 1
+
+                    # Update statistics
+                    verdict_str = result.verdict.value
+                    stats["verdicts"][verdict_str] = stats["verdicts"].get(verdict_str, 0) + 1
+                    stats["confidences"].append(result.confidence)
+
+                    if result.metadata.get("cache") == "hit":
+                        stats["cache_hits"] += 1
+
+                except Exception as e:
+                    item_time = (time.time() - item_start) * 1000
+                    processing_times.append(item_time)
+
+                    if continue_on_error:
+                        results.append((item_id, None))
+                        errors.append((item_id, str(e)))
+                        stats["failed"] += 1
+                        logging.error(f"Batch item {item_id} failed: {e}")
+                    else:
+                        raise
+
+        # Calculate final statistics
+        total_time = (time.time() - start_time) * 1000
+        stats.update(
+            {
+                "total_processing_time_ms": total_time,
+                "average_processing_time_ms": (
+                    sum(processing_times) / len(processing_times) if processing_times else 0
+                ),
+                "min_processing_time_ms": min(processing_times) if processing_times else 0,
+                "max_processing_time_ms": max(processing_times) if processing_times else 0,
+                "average_confidence": (
+                    sum(stats["confidences"]) / len(stats["confidences"])
+                    if stats["confidences"]
+                    else None
+                ),
+                "errors": errors if errors else None,
+                "cache_hit_rate": (
+                    stats["cache_hits"] / stats["successful"] if stats["successful"] > 0 else 0
+                ),
+            }
+        )
+
+        logging.info(
+            f"Batch {batch_id} completed: {stats['successful']}/{stats['total_items']} successful, "
+            f"time: {total_time:.2f}ms, cache hits: {stats['cache_hits']}"
+        )
+
+        return results, stats
+
+    async def _detect_with_error_handling(
+        self, item_id: str, messages: list[Message], continue_on_error: bool, **detect_kwargs
+    ) -> tuple[DetectionResponse | None, str | None, float]:
+        """Detect with error handling for batch processing.
+
+        Args:
+            item_id: Unique identifier for this item
+            messages: Messages to analyze
+            continue_on_error: Whether to catch exceptions
+            **detect_kwargs: Arguments for detect()
+
+        Returns:
+            Tuple of (result, error_message, processing_time_ms)
+        """
+        import time
+
+        start_time = time.time()
+
+        try:
+            result = await self.detect(messages, **detect_kwargs)
+            processing_time = (time.time() - start_time) * 1000
+            return result, None, processing_time
+
+        except Exception as e:
+            processing_time = (time.time() - start_time) * 1000
+            error_msg = f"Detection failed for item {item_id}: {str(e)}"
+            logging.error(error_msg)
+
+            if continue_on_error:
+                return None, error_msg, processing_time
+            else:
+                raise
 
     def get_complexity_analysis(self, messages: list[Message]) -> dict:
         """Get complexity metrics for messages.

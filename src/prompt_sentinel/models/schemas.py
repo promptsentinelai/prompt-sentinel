@@ -287,3 +287,96 @@ class CorpusEntry(BaseModel):
     def serialize_created_at(self, created_at: datetime) -> str:
         """Serialize datetime to ISO format string."""
         return created_at.isoformat()
+
+
+class BatchDetectionItem(BaseModel):
+    """Individual item in a batch detection request."""
+
+    id: str = Field(..., description="Unique identifier for this item")
+    input: str | list[dict[str, str]] = Field(..., description="Prompt as string or message array")
+    role: Role | None = Field(default=None, description="Role hint for string inputs")
+    metadata: dict[str, Any] | None = Field(default=None, description="Optional item metadata")
+
+    def to_messages(self) -> list[Message]:
+        """Convert input to standardized message format."""
+        if isinstance(self.input, str):
+            role = self.role or Role.USER
+            return [Message(role=role, content=self.input)]
+        else:
+            return [Message(role=Role(msg["role"]), content=msg["content"]) for msg in self.input]
+
+
+class BatchDetectionRequest(BaseModel):
+    """Batch detection request for processing multiple prompts."""
+
+    items: list[BatchDetectionItem] = Field(
+        ..., description="List of items to process", min_length=1, max_length=100
+    )
+    config: dict | None = Field(default=None, description="Optional detection configuration")
+    parallel: bool = Field(default=True, description="Process items in parallel")
+    continue_on_error: bool = Field(
+        default=True, description="Continue processing if individual items fail"
+    )
+    include_statistics: bool = Field(default=True, description="Include batch statistics")
+
+    @field_validator("items")
+    @classmethod
+    def validate_batch_size(cls, v: list[BatchDetectionItem]) -> list[BatchDetectionItem]:
+        """Validate batch size limits."""
+        if len(v) > 100:
+            raise ValueError(f"Batch size {len(v)} exceeds maximum of 100 items")
+        if len(v) == 0:
+            raise ValueError("Batch must contain at least one item")
+
+        # Ensure unique IDs
+        ids = [item.id for item in v]
+        if len(ids) != len(set(ids)):
+            raise ValueError("All items must have unique IDs")
+
+        return v
+
+
+class BatchDetectionResult(BaseModel):
+    """Result for a single item in batch detection."""
+
+    id: str = Field(..., description="Item identifier from request")
+    success: bool = Field(..., description="Whether detection succeeded")
+    result: DetectionResponse | None = Field(
+        default=None, description="Detection result if successful"
+    )
+    error: str | None = Field(default=None, description="Error message if failed")
+    processing_time_ms: float = Field(..., description="Time to process this item")
+
+
+class BatchStatistics(BaseModel):
+    """Statistics for batch processing."""
+
+    total_items: int
+    successful_items: int
+    failed_items: int
+    total_processing_time_ms: float
+    average_processing_time_ms: float
+    min_processing_time_ms: float
+    max_processing_time_ms: float
+    cache_hits: int = 0
+    verdicts: dict[str, int] = Field(default_factory=dict)
+    average_confidence: float | None = None
+
+
+class BatchDetectionResponse(BaseModel):
+    """Response for batch detection request."""
+
+    batch_id: str = Field(..., description="Unique batch identifier")
+    results: list[BatchDetectionResult] = Field(..., description="Individual item results")
+    statistics: BatchStatistics | None = Field(
+        default=None, description="Batch processing statistics"
+    )
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = ConfigDict()
+
+    @field_serializer("timestamp")
+    def serialize_timestamp(self, timestamp: datetime) -> str:
+        """Serialize datetime to ISO format string."""
+        return timestamp.isoformat()

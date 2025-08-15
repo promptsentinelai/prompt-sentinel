@@ -1,0 +1,718 @@
+{
+  "Original": {
+    "detector": "Original",
+    "total_detections": 1500,
+    "total_time_ms": 49.80445804540068,
+    "average_time_ms": 0.032908280147239566,
+    "median_time_ms": 0.018270453438162804,
+    "std_dev_ms": 0.05335130313776648,
+    "min_time_ms": 0.01304189208894968,
+    "max_time_ms": 0.34558295737951994,
+    "verdicts": {
+      "allow": 900,
+      "block": 400,
+      "strip": 200
+    },
+    "pattern_hits": 850,
+    "throughput_per_sec": 30117.785814125957
+  },
+  "Optimized (Aho-Corasick)": {
+    "detector": "Optimized (Aho-Corasick)",
+    "total_detections": 1500,
+    "total_time_ms": 21.699458942748606,
+    "average_time_ms": 0.014280155301094055,
+    "median_time_ms": 0.006084039341658354,
+    "std_dev_ms": 0.043923279462251406,
+    "min_time_ms": 0.0014170072972774506,
+    "max_time_ms": 0.32525009009987116,
+    "verdicts": {
+      "allow": 900,
+      "block": 600
+    },
+    "pattern_hits": 600,
+    "throughput_per_sec": 69126.14752089295
+  },
+  "Enhanced (Adaptive)": {
+    "detector": "Enhanced (Adaptive)",
+    "total_detections": 1500,
+    "total_time_ms": 14.002916985191405,
+    "average_time_ms": 0.00911327552360793,
+    "median_time_ms": 0.0020420411601662636,
+    "std_dev_ms": 0.01313805477585272,
+    "min_time_ms": 0.0008329516276717186,
+    "max_time_ms": 0.3215409815311432,
+    "verdicts": {
+      "allow": 800,
+      "block": 700
+    },
+    "pattern_hits": 1300,
+    "throughput_per_sec": 107120.53792694084,
+    "detector_stats": {
+      "total_detections": 1505,
+      "average_detection_time_ms": 0.003075107245201684,
+      "detection_mode": "moderate",
+      "optimization_enabled": true,
+      "pruning_enabled": true,
+      "pattern_stats": {
+        "total_patterns": 28,
+        "total_checks": 840,
+        "total_hits": 26,
+        "overall_hit_rate": 3.0952380952380953,
+        "total_time_ms": 0.7474999874830246,
+        "avg_time_per_check_ms": 0.0008898809374797912,
+        "top_performers": [
+          {
+            "id": "inj_003",
+            "category": "injection",
+            "hit_rate": 10.0,
+            "effectiveness": 0.53,
+            "avg_time_ms": 0.0003528858845432599
+          },
+          {
+            "id": "inj_001",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0008320319466292858
+          },
+          {
+            "id": "inj_002",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0003667160247762998
+          },
+          {
+            "id": "inj_009",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0004263672356804212
+          },
+          {
+            "id": "jail_001",
+            "category": "jailbreak",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.001126481220126152
+          }
+        ],
+        "worst_performers": [
+          {
+            "id": "inj_004",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005028365800778071
+          },
+          {
+            "id": "inj_005",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.000540225300937891
+          },
+          {
+            "id": "inj_006",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.00046947582935293514
+          },
+          {
+            "id": "inj_007",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.00042926597719391185
+          },
+          {
+            "id": "inj_010",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0007180807491143545
+          }
+        ],
+        "pattern_order": [
+          "inj_001",
+          "inj_002",
+          "inj_003",
+          "inj_004",
+          "inj_005",
+          "inj_006",
+          "inj_007",
+          "inj_008",
+          "inj_009",
+          "inj_010"
+        ]
+      },
+      "cache_stats": {
+        "cache_size": 30,
+        "cache_hits": 1475,
+        "cache_misses": 30,
+        "hit_rate": 98.00664451827242,
+        "context_patterns": {
+          "chat": 3,
+          "general": 12,
+          "api_call": 10
+        }
+      }
+    }
+  },
+  "adaptive_learning": [
+    {
+      "epoch": 1,
+      "avg_time_ms": 0.009782732037516931,
+      "pattern_stats": {
+        "total_patterns": 28,
+        "total_checks": 840,
+        "total_hits": 26,
+        "overall_hit_rate": 3.0952380952380953,
+        "total_time_ms": 0.7584681734442711,
+        "avg_time_per_check_ms": 0.0009029383017193703,
+        "top_performers": [
+          {
+            "id": "inj_003",
+            "category": "injection",
+            "hit_rate": 10.0,
+            "effectiveness": 0.53,
+            "avg_time_ms": 0.0003472280999024709
+          },
+          {
+            "id": "inj_001",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0008888969508310159
+          },
+          {
+            "id": "inj_002",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0003943879467745622
+          },
+          {
+            "id": "inj_009",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0004541284094254176
+          },
+          {
+            "id": "jail_001",
+            "category": "jailbreak",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0011541453811029594
+          }
+        ],
+        "worst_performers": [
+          {
+            "id": "inj_004",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005430386712153753
+          },
+          {
+            "id": "inj_005",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005598335216442744
+          },
+          {
+            "id": "inj_006",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004693632945418358
+          },
+          {
+            "id": "inj_007",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004416642089684804
+          },
+          {
+            "id": "inj_010",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0007610263613363107
+          }
+        ],
+        "pattern_order": [
+          "inj_001",
+          "inj_002",
+          "inj_003",
+          "inj_004",
+          "inj_005",
+          "inj_006",
+          "inj_007",
+          "inj_008",
+          "inj_009",
+          "inj_010"
+        ]
+      },
+      "cache_stats": {
+        "cache_size": 30,
+        "cache_hits": 570,
+        "cache_misses": 30,
+        "hit_rate": 95.0,
+        "context_patterns": {
+          "chat": 3,
+          "general": 12,
+          "api_call": 10
+        }
+      }
+    },
+    {
+      "epoch": 2,
+      "avg_time_ms": 0.008358124565954009,
+      "pattern_stats": {
+        "total_patterns": 28,
+        "total_checks": 840,
+        "total_hits": 26,
+        "overall_hit_rate": 3.0952380952380953,
+        "total_time_ms": 0.7584681734442711,
+        "avg_time_per_check_ms": 0.0009029383017193703,
+        "top_performers": [
+          {
+            "id": "inj_003",
+            "category": "injection",
+            "hit_rate": 10.0,
+            "effectiveness": 0.53,
+            "avg_time_ms": 0.0003472280999024709
+          },
+          {
+            "id": "inj_001",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0008888969508310159
+          },
+          {
+            "id": "inj_002",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0003943879467745622
+          },
+          {
+            "id": "inj_009",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0004541284094254176
+          },
+          {
+            "id": "jail_001",
+            "category": "jailbreak",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0011541453811029594
+          }
+        ],
+        "worst_performers": [
+          {
+            "id": "inj_004",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005430386712153753
+          },
+          {
+            "id": "inj_005",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005598335216442744
+          },
+          {
+            "id": "inj_006",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004693632945418358
+          },
+          {
+            "id": "inj_007",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004416642089684804
+          },
+          {
+            "id": "inj_010",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0007610263613363107
+          }
+        ],
+        "pattern_order": [
+          "inj_001",
+          "inj_002",
+          "inj_003",
+          "inj_004",
+          "inj_005",
+          "inj_006",
+          "inj_007",
+          "inj_008",
+          "inj_009",
+          "inj_010"
+        ]
+      },
+      "cache_stats": {
+        "cache_size": 30,
+        "cache_hits": 1170,
+        "cache_misses": 30,
+        "hit_rate": 97.5,
+        "context_patterns": {
+          "chat": 3,
+          "general": 12,
+          "api_call": 10
+        }
+      }
+    },
+    {
+      "epoch": 3,
+      "avg_time_ms": 0.00831782022335877,
+      "pattern_stats": {
+        "total_patterns": 28,
+        "total_checks": 840,
+        "total_hits": 26,
+        "overall_hit_rate": 3.0952380952380953,
+        "total_time_ms": 0.7584681734442711,
+        "avg_time_per_check_ms": 0.0009029383017193703,
+        "top_performers": [
+          {
+            "id": "inj_003",
+            "category": "injection",
+            "hit_rate": 10.0,
+            "effectiveness": 0.53,
+            "avg_time_ms": 0.0003472280999024709
+          },
+          {
+            "id": "inj_001",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0008888969508310159
+          },
+          {
+            "id": "inj_002",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0003943879467745622
+          },
+          {
+            "id": "inj_009",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0004541284094254176
+          },
+          {
+            "id": "jail_001",
+            "category": "jailbreak",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0011541453811029594
+          }
+        ],
+        "worst_performers": [
+          {
+            "id": "inj_004",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005430386712153753
+          },
+          {
+            "id": "inj_005",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005598335216442744
+          },
+          {
+            "id": "inj_006",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004693632945418358
+          },
+          {
+            "id": "inj_007",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004416642089684804
+          },
+          {
+            "id": "inj_010",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0007610263613363107
+          }
+        ],
+        "pattern_order": [
+          "inj_001",
+          "inj_002",
+          "inj_003",
+          "inj_004",
+          "inj_005",
+          "inj_006",
+          "inj_007",
+          "inj_008",
+          "inj_009",
+          "inj_010"
+        ]
+      },
+      "cache_stats": {
+        "cache_size": 30,
+        "cache_hits": 1770,
+        "cache_misses": 30,
+        "hit_rate": 98.33333333333333,
+        "context_patterns": {
+          "chat": 3,
+          "general": 12,
+          "api_call": 10
+        }
+      }
+    },
+    {
+      "epoch": 4,
+      "avg_time_ms": 0.0086532636002327,
+      "pattern_stats": {
+        "total_patterns": 28,
+        "total_checks": 840,
+        "total_hits": 26,
+        "overall_hit_rate": 3.0952380952380953,
+        "total_time_ms": 0.7584681734442711,
+        "avg_time_per_check_ms": 0.0009029383017193703,
+        "top_performers": [
+          {
+            "id": "inj_003",
+            "category": "injection",
+            "hit_rate": 10.0,
+            "effectiveness": 0.53,
+            "avg_time_ms": 0.0003472280999024709
+          },
+          {
+            "id": "inj_001",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0008888969508310159
+          },
+          {
+            "id": "inj_002",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0003943879467745622
+          },
+          {
+            "id": "inj_009",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0004541284094254176
+          },
+          {
+            "id": "jail_001",
+            "category": "jailbreak",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0011541453811029594
+          }
+        ],
+        "worst_performers": [
+          {
+            "id": "inj_004",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005430386712153753
+          },
+          {
+            "id": "inj_005",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005598335216442744
+          },
+          {
+            "id": "inj_006",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004693632945418358
+          },
+          {
+            "id": "inj_007",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004416642089684804
+          },
+          {
+            "id": "inj_010",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0007610263613363107
+          }
+        ],
+        "pattern_order": [
+          "inj_001",
+          "inj_002",
+          "inj_003",
+          "inj_004",
+          "inj_005",
+          "inj_006",
+          "inj_007",
+          "inj_008",
+          "inj_009",
+          "inj_010"
+        ]
+      },
+      "cache_stats": {
+        "cache_size": 30,
+        "cache_hits": 2370,
+        "cache_misses": 30,
+        "hit_rate": 98.75,
+        "context_patterns": {
+          "chat": 3,
+          "general": 12,
+          "api_call": 10
+        }
+      }
+    },
+    {
+      "epoch": 5,
+      "avg_time_ms": 0.008458483304517964,
+      "pattern_stats": {
+        "total_patterns": 28,
+        "total_checks": 840,
+        "total_hits": 26,
+        "overall_hit_rate": 3.0952380952380953,
+        "total_time_ms": 0.7584681734442711,
+        "avg_time_per_check_ms": 0.0009029383017193703,
+        "top_performers": [
+          {
+            "id": "inj_003",
+            "category": "injection",
+            "hit_rate": 10.0,
+            "effectiveness": 0.53,
+            "avg_time_ms": 0.0003472280999024709
+          },
+          {
+            "id": "inj_001",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0008888969508310159
+          },
+          {
+            "id": "inj_002",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0003943879467745622
+          },
+          {
+            "id": "inj_009",
+            "category": "injection",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0004541284094254176
+          },
+          {
+            "id": "jail_001",
+            "category": "jailbreak",
+            "hit_rate": 6.666666666666667,
+            "effectiveness": 0.52,
+            "avg_time_ms": 0.0011541453811029594
+          }
+        ],
+        "worst_performers": [
+          {
+            "id": "inj_004",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005430386712153753
+          },
+          {
+            "id": "inj_005",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0005598335216442744
+          },
+          {
+            "id": "inj_006",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004693632945418358
+          },
+          {
+            "id": "inj_007",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0004416642089684804
+          },
+          {
+            "id": "inj_010",
+            "category": "injection",
+            "hit_rate": 0.0,
+            "effectiveness": 0.4600000000000001,
+            "avg_time_ms": 0.0007610263613363107
+          }
+        ],
+        "pattern_order": [
+          "inj_001",
+          "inj_002",
+          "inj_003",
+          "inj_004",
+          "inj_005",
+          "inj_006",
+          "inj_007",
+          "inj_008",
+          "inj_009",
+          "inj_010"
+        ]
+      },
+      "cache_stats": {
+        "cache_size": 30,
+        "cache_hits": 2970,
+        "cache_misses": 30,
+        "hit_rate": 99.0,
+        "context_patterns": {
+          "chat": 3,
+          "general": 12,
+          "api_call": 10
+        }
+      }
+    }
+  ],
+  "pruning_No Pruning": {
+    "avg_time_ms": 0.0090673859231174,
+    "pattern_count": 28
+  },
+  "pruning_With Pruning": {
+    "avg_time_ms": 0.009371252614073455,
+    "pattern_count": 28
+  }
+}

@@ -90,7 +90,10 @@ class DetectionCache:
                 data = json.loads(cached_data)
 
                 # Reconstruct verdict
-                verdict = Verdict(data["verdict"]) if data.get("verdict") else None
+                verdict_str = data.get("verdict")
+                if not verdict_str:
+                    return None
+                verdict = Verdict(verdict_str)
 
                 # Reconstruct reasons
                 reasons = []

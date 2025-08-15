@@ -53,7 +53,7 @@ jobs:
       - name: Run comprehensive tests (fast)
         run: |
           source .venv/bin/activate
-          pytest tests/*comprehensive*.py -n auto --tb=short
+          pytest tests/unit/ -n auto --tb=short
         env:
           REDIS_ENABLED: false
           HEURISTIC_ENABLED: true
@@ -123,7 +123,7 @@ jobs:
       - name: Run integration tests with Redis
         run: |
           source .venv/bin/activate
-          pytest tests/test_cache.py tests/test_integration.py -v
+          pytest tests/unit/cache/ tests/integration/test_system_integration.py -v
         env:
           REDIS_ENABLED: true
           REDIS_HOST: localhost

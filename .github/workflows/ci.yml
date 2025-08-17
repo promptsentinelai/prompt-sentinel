@@ -65,9 +65,6 @@ jobs:
     name: Full Test Suite
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    strategy:
-      matrix:
-        python-version: ['3.11', '3.12']
 
     services:
       redis:
@@ -84,10 +81,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install UV
         run: |
@@ -100,13 +97,13 @@ jobs:
           path: |
             ~/.cache/uv
             .venv
-          key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          key: ${{ runner.os }}-uv-${{ env.PYTHON_VERSION }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-uv-${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-${{ env.PYTHON_VERSION }}-
 
       - name: Install dependencies
         run: |
-          uv venv --python python${{ matrix.python-version }}
+          uv venv --python python${{ env.PYTHON_VERSION }}
           source .venv/bin/activate
           uv pip install -e ".[dev,test]"
 
@@ -135,7 +132,7 @@ jobs:
         with:
           files: ./coverage.xml
           flags: unittests
-          name: codecov-${{ matrix.python-version }}
+          name: codecov-${{ env.PYTHON_VERSION }}
         continue-on-error: true
 
   lint:

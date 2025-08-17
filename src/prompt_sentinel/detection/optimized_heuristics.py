@@ -54,77 +54,31 @@ class OptimizedHeuristicDetector:
         """Pre-compile all regex patterns for better performance."""
         logger.info("Compiling detection patterns")
 
-        # Pattern categories with compiled regex
-        pattern_definitions = {
-            "injection": [
-                (r"ignore (all )?(previous|prior|above)", 0.9, "Instruction override"),
-                (
-                    r"disregard (all )?(previous|prior|above|your training)",
-                    0.9,
-                    "Instruction override",
-                ),
-                (r"forget (everything|all|previous)", 0.85, "Memory manipulation"),
-                (r"new (instructions?|commands?|rules?):", 0.8, "New instruction injection"),
-                (r"(you are|you're) now", 0.75, "Role manipulation"),
-                (r"act as if you (are|were)", 0.75, "Role manipulation"),
-                (r"pretend (you are|to be)", 0.7, "Role pretending"),
-                (r"from now on", 0.7, "Context switching"),
-            ],
-            "jailbreak": [
-                (r"(DAN|dan) mode", 0.95, "DAN jailbreak"),
-                (r"developer mode", 0.9, "Developer mode attempt"),
-                (r"(disable|bypass|ignore) (safety|filters?|restrictions?)", 0.9, "Safety bypass"),
-                (r"unlimited power", 0.85, "Unrestricted mode"),
-                (r"no (restrictions?|limits?|rules?)", 0.8, "Restriction removal"),
-            ],
-            "data_extraction": [
-                (
-                    r"(show|reveal|display) (your )?(system )?(prompt|instructions?)",
-                    0.9,
-                    "System prompt extraction",
-                ),
-                (r"what are your (instructions?|rules?|guidelines?)", 0.85, "Instruction fishing"),
-                (r"repeat (your |the )?(first|initial|original)", 0.8, "Context extraction"),
-                (r"(list|show) all (your )?capabilities", 0.75, "Capability enumeration"),
-            ],
-            "encoding": [
-                (r"base64|base32|hex|binary", 0.7, "Encoding detected"),
-                (r"rot13|caesar|cipher", 0.75, "Cipher detected"),
-                (r"[A-Za-z0-9+/]{50,}={0,2}", 0.6, "Possible base64"),
-            ],
-        }
+        # Source pattern definitions from shared module
+        from prompt_sentinel.detection.patterns import OPTIMIZED_PATTERN_DEFINITIONS
+
+        pattern_definitions = OPTIMIZED_PATTERN_DEFINITIONS
 
         # Compile patterns
-        for category, patterns in pattern_definitions.items():
-            self.compiled_patterns[category] = []
-            self.pattern_metadata[category] = []
+        for category_key, patterns in pattern_definitions.items():
+            self.compiled_patterns[category_key] = []
+            self.pattern_metadata[category_key] = []
 
             for pattern_str, confidence, description in patterns:
                 try:
                     compiled = re.compile(pattern_str, re.IGNORECASE)
-                    self.compiled_patterns[category].append(compiled)
-                    self.pattern_metadata[category].append((confidence, description))
+                    self.compiled_patterns[category_key].append(compiled)
+                    self.pattern_metadata[category_key].append((confidence, description))
                 except re.error as e:
                     logger.error("Pattern compilation failed", pattern=pattern_str, error=str(e))
 
-        # Extract keywords for Aho-Corasick
-        keywords = [
-            "ignore",
-            "disregard",
-            "forget",
-            "override",
-            "bypass",
-            "jailbreak",
-            "DAN",
-            "developer mode",
-            "unlimited",
-            "system prompt",
-            "initial instructions",
-            "reveal",
-            "base64",
-            "rot13",
-            "cipher",
-        ]
+        # Extract keywords for Aho-Corasick from union of all pattern tokens
+        keywords: list[str] = []
+        for patterns in pattern_definitions.values():
+            for pattern_str, _, _ in patterns:
+                # Heuristic: take simple words that are likely useful for keyword pre-checks
+                for token in re.findall(r"[A-Za-z][A-Za-z0-9_-]{2,}", pattern_str):
+                    keywords.append(token.lower())
         self.keyword_patterns = set(keywords)
 
     def _build_aho_corasick(self) -> None:

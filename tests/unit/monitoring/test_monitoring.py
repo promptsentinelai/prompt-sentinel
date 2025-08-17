@@ -12,7 +12,7 @@ from prompt_sentinel.monitoring.rate_limiter import RateLimiter
 from prompt_sentinel.monitoring.usage_tracker import UsageTracker
 
 
-@pytest.mark.skip(reason="Tests use outdated API - monitoring modules have been refactored")
+@pytest.mark.experimental
 class TestBudgetManagerActual:
     """Test the actual BudgetManager implementation."""
 
@@ -122,7 +122,7 @@ class TestBudgetManagerActual:
         assert budget_manager.last_reset is not None
 
 
-@pytest.mark.skip(reason="Tests use outdated API - monitoring modules have been refactored")
+@pytest.mark.experimental
 class TestUsageTrackerActual:
     """Test the actual UsageTracker implementation."""
 
@@ -226,7 +226,7 @@ class TestUsageTrackerActual:
         assert stats["hit_rate"] == 0.7
 
 
-@pytest.mark.skip(reason="Tests use outdated API - monitoring modules have been refactored")
+@pytest.mark.experimental
 class TestRateLimiterActual:
     """Test the actual RateLimiter implementation."""
 
@@ -343,7 +343,7 @@ class TestRateLimiterActual:
         assert rate_limiter.config.burst_size == 20
 
 
-@pytest.mark.skip(reason="Tests use outdated API - monitoring modules have been refactored")
+@pytest.mark.experimental
 class TestMonitoringIntegration:
     """Test integration between monitoring components."""
 

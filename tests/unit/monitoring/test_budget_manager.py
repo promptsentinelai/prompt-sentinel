@@ -203,6 +203,7 @@ class TestBudgetStatus:
         assert len(status.recommendations) == 1
 
 
+@pytest.mark.experimental
 class TestBudgetManager:
     """Test suite for BudgetManager."""
 

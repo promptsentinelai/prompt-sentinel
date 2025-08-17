@@ -44,6 +44,7 @@ A production-ready defensive security microservice for detecting and mitigating 
 - [Deployment](#-deployment)
 - [Performance](#-performance)
 - [Security](#-security)
+- [Roadmap](#-roadmap)
 
 ## 🚀 Quick Start
 
@@ -1193,16 +1194,19 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
 
 ### 🚧 In Development
 
-
-- **A/B Testing Framework**: Experimentation system for optimizing detection strategies
+- **A/B Testing Framework**: Experimentation system for optimizing detection strategies (stubbed endpoints present; see `docs/ROADMAP.md`)
 - **Grafana Dashboards**: Monitoring dashboards (templates available, pending refinement)
+- **Observability Modules**: Structured logging/tracing/test-only metrics are experimental stubs; prefer `prompt_sentinel.monitoring` in production
+- **Performance Middleware**: Available but not wired by default; experimental
 
 ### 📋 Roadmap
-- **Package Registry Publishing**: Publish SDKs to PyPI, npm, and pkg.go.dev
-- **Enhanced ML Features**: Advanced clustering algorithms and embedding-based detection
-- **Multi-Language Support**: Detection patterns for non-English languages
-- **Cloud-Native Integrations**: AWS Lambda, Google Cloud Functions, Azure Functions support
-- **Enterprise Features**: SAML/SSO, audit logging, compliance reporting
+- See `docs/ROADMAP.md` for the full, regularly updated roadmap including:
+  - SDK publishing (PyPI, npm, pkg.go.dev)
+  - Enhanced ML features (advanced clustering, embeddings)
+  - Multi-language support (i18n patterns, translation-assisted detection)
+  - Observability (tracing, logging, alerting) maturation
+  - Cloud-native integrations (Lambda, Cloud Functions, Azure Functions)
+  - Enterprise features (SAML/SSO, audit logging, compliance)
 
 ---
 

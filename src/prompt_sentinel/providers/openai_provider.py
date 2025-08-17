@@ -16,12 +16,11 @@ Supported models:
 """
 
 import asyncio
-import json
 
 from openai import AsyncOpenAI
 
 from prompt_sentinel.models.schemas import DetectionCategory, Message
-from prompt_sentinel.providers.base import LLMProvider
+from prompt_sentinel.providers.base import LLMProvider, parse_llm_json_payload
 
 
 class OpenAIProvider(LLMProvider):
@@ -29,10 +28,6 @@ class OpenAIProvider(LLMProvider):
 
     Provides integration with OpenAI's GPT models for prompt
     injection detection using the chat completions API.
-
-    Attributes:
-        client: AsyncOpenAI client instance
-        model_mapping: Dictionary mapping short names to model IDs
     """
 
     def __init__(self, config: dict):
@@ -59,13 +54,6 @@ class OpenAIProvider(LLMProvider):
     ) -> tuple[DetectionCategory, float, str]:
         """
         Classify messages using OpenAI GPT.
-
-        Args:
-            messages: Messages to classify
-            system_prompt: Optional custom system prompt
-
-        Returns:
-            Tuple of (category, confidence, explanation)
         """
         try:
             # Prepare messages
@@ -87,9 +75,8 @@ class OpenAIProvider(LLMProvider):
                 timeout=self.timeout,
             )
 
-            # Parse response
             content = response.choices[0].message.content if response.choices else ""
-            return self._parse_response(content)
+            return parse_llm_json_payload(content or "{}")
 
         except TimeoutError:
             return (DetectionCategory.BENIGN, 0.0, "Classification timeout")
@@ -98,8 +85,7 @@ class OpenAIProvider(LLMProvider):
             return (DetectionCategory.BENIGN, 0.0, f"Classification error: {str(e)}")
 
     async def health_check(self) -> bool:
-        """
-        Check if OpenAI API is available.
+        """Check if OpenAI API is available.
 
         Returns:
             True if API is healthy
@@ -116,41 +102,6 @@ class OpenAIProvider(LLMProvider):
             return True
         except Exception:
             return False
-
-    def _parse_response(self, content: str) -> tuple[DetectionCategory, float, str]:
-        """
-        Parse OpenAI's response into structured format.
-
-        Args:
-            content: Raw response content
-
-        Returns:
-            Tuple of (category, confidence, explanation)
-        """
-        try:
-            data = json.loads(content)
-
-            # Parse category
-            category_str = data.get("category", "benign").lower()
-            category_map = {
-                "direct_injection": DetectionCategory.DIRECT_INJECTION,
-                "indirect_injection": DetectionCategory.INDIRECT_INJECTION,
-                "jailbreak": DetectionCategory.JAILBREAK,
-                "prompt_leak": DetectionCategory.PROMPT_LEAK,
-                "encoding_attack": DetectionCategory.ENCODING_ATTACK,
-                "context_switching": DetectionCategory.CONTEXT_SWITCHING,
-                "role_manipulation": DetectionCategory.ROLE_MANIPULATION,
-                "benign": DetectionCategory.BENIGN,
-            }
-
-            category = category_map.get(category_str, DetectionCategory.BENIGN)
-            confidence = float(data.get("confidence", 0.0))
-            explanation = data.get("explanation", "")
-
-            return (category, confidence, explanation)
-
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
-            return (DetectionCategory.BENIGN, 0.0, f"Response parsing error: {str(e)}")
 
     def get_system_prompt(self) -> str:
         """Get OpenAI-optimized system prompt."""
@@ -169,3 +120,11 @@ Example response:
     "confidence": 0.85,
     "explanation": "User attempts to override system instructions"
 }"""
+
+    def _parse_response(self, content: str) -> tuple[DetectionCategory, float, str]:
+        """Compatibility helper to parse raw content into structured tuple.
+
+        Some unit tests call `_parse_response` on providers directly. Delegate
+        to the shared JSON payload parser for consistent behavior.
+        """
+        return parse_llm_json_payload(content or "{}")

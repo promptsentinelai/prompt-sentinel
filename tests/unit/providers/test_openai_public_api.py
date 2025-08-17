@@ -1,0 +1,44 @@
+# Copyright 2025 PromptSentinel
+# Licensed under the Elastic License 2.0
+
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from prompt_sentinel.models.schemas import DetectionCategory, Message, Role
+from prompt_sentinel.providers.openai_provider import OpenAIProvider
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_openai_classify_public_api_parses_json():
+    config = {"api_key": "test", "model": "gpt-3.5"}
+
+    # Mock OpenAI client response with valid JSON content
+    mock_message = MagicMock()
+    mock_message.content = json.dumps(
+        {
+            "category": "prompt_leak",
+            "confidence": 0.72,
+            "explanation": "Possible prompt extraction",
+        }
+    )
+    mock_choice = MagicMock()
+    mock_choice.message = mock_message
+    mock_response = MagicMock()
+    mock_response.choices = [mock_choice]
+
+    with patch("prompt_sentinel.providers.openai_provider.AsyncOpenAI") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_client_cls.return_value = mock_client
+
+        provider = OpenAIProvider(config)
+        messages = [Message(role=Role.USER, content="Test message")]
+
+        category, confidence, explanation = await provider.classify(messages)
+
+        assert category == DetectionCategory.PROMPT_LEAK
+        assert confidence == 0.72
+        assert "prompt" in explanation.lower()

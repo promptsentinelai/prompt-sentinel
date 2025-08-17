@@ -203,6 +203,7 @@ markers = [
     "e2e: marks tests as end-to-end tests",
     "performance: marks tests as performance tests",
     "docker: marks tests that require Docker (deselect with '-m \"not docker\"')",
+    "experimental: marks tests that cover experimental/stub features",
 ]
 
 [tool.coverage.run]

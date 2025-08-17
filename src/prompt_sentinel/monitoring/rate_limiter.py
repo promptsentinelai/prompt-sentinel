@@ -209,17 +209,13 @@ class RateLimiter:
         self.total_requests += 1
         self.total_tokens += tokens
 
-        # Check priority-based allowance
-        if self.config.enable_priority and priority >= Priority.HIGH:
-            # High priority requests get reserved capacity
-            1 - self.config.priority_reserved_percentage
-        else:
-            pass
+        # Priority handling (reserved capacity concept placeholder for future policy module)
+        high_priority = self.config.enable_priority and priority >= Priority.HIGH
 
         # Check global request limit
         if not self.global_request_bucket.can_consume(1):
             wait_time = self.global_request_bucket.time_until_available(1)
-            if priority < Priority.HIGH or wait_time > 1.0:
+            if not high_priority or wait_time > 1.0:
                 self.rejected_requests += 1
                 logger.debug(
                     "Global request rate limit exceeded", client=client_id, wait_time=wait_time
@@ -229,7 +225,7 @@ class RateLimiter:
         # Check global token limit
         if tokens > 0 and not self.global_token_bucket.can_consume(tokens):
             wait_time = self.global_token_bucket.time_until_available(tokens)
-            if priority < Priority.HIGH or wait_time > 1.0:
+            if not high_priority or wait_time > 1.0:
                 self.rejected_requests += 1
                 logger.debug(
                     "Global token rate limit exceeded",

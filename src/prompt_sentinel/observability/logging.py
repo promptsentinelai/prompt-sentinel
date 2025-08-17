@@ -3,7 +3,14 @@
 # in compliance with the Elastic License 2.0. You may obtain a copy of the
 # License at https://www.elastic.co/licensing/elastic-license
 
-"""Structured logging for observability."""
+"""Structured logging for observability.
+
+Deprecated/Stub: This module provides a lightweight, in-memory logging
+implementation intended for tests and future expansion. For production
+logging and metrics, prefer the Prometheus-backed modules under
+`prompt_sentinel.monitoring`. Interfaces here may change or be removed
+as the observability roadmap is implemented.
+"""
 
 import asyncio
 import time

@@ -147,6 +147,7 @@ class TestUsageMetrics:
         assert metrics.current_month_cost == 150.0
 
 
+@pytest.mark.experimental
 class TestUsageTracker:
     """Test suite for UsageTracker."""
 

@@ -3,7 +3,12 @@
 # in compliance with the Elastic License 2.0. You may obtain a copy of the
 # License at https://www.elastic.co/licensing/elastic-license
 
-"""Multilingual detection capabilities."""
+"""Multilingual detection capabilities.
+
+Status: Contains stubbed helpers and placeholders for future i18n features
+such as translation-assisted detection and language-specific pattern sets.
+Production use should treat this as experimental.
+"""
 
 import re
 from typing import Any
@@ -374,124 +379,36 @@ class MultilingualDetector:
         Returns:
             Detection result with verdict, confidence, and reasons
         """
-        # Only check for mixed languages if no specific language was provided
+        # 1) Mixed language quick-path
         if language is None:
-            # Check for mixed languages (potential code-switching attack)
-            mixed_lang_result = await self.detect_mixed_languages(text)
+            mixed_result = await self.detect_mixed_languages(text)
+            if mixed_result["mixed"]:
+                mixed_detection = await self._analyze_mixed_languages(text, mixed_result)
+                if mixed_detection is not None:
+                    return mixed_detection
 
-            # If mixed languages detected, check each language for injections
-            if mixed_lang_result["mixed"]:
-                # Check all detected languages for injection patterns
-                max_confidence = 0.0
-                all_flags = ["multilingual"]  # Add the expected flag
-                all_reasons = []
-
-                for lang in mixed_lang_result["languages"]:
-                    # Check patterns for each detected language
-                    patterns = self.injection_patterns.get(lang, self.injection_patterns["en"])
-                    text_lower = text.lower()
-
-                    for keyword in patterns["keywords"]:
-                        if keyword.lower() in text_lower:
-                            max_confidence = max(max_confidence, 0.7)
-                            all_flags.append(f"mixed_lang:{lang}:{keyword}")
-                            all_reasons.append(f"Mixed language attack: {lang} keyword '{keyword}'")
-
-                    for phrase in patterns["phrases"]:
-                        if phrase.lower() in text_lower:
-                            max_confidence = max(max_confidence, 0.8)
-                            all_flags.append(f"mixed_lang:{lang}:{phrase}")
-                            all_reasons.append(f"Mixed language attack: {lang} phrase '{phrase}'")
-
-                if max_confidence > 0.6:
-                    return {
-                        "verdict": Verdict.BLOCK if max_confidence >= 0.7 else Verdict.FLAG,
-                        "confidence": max_confidence,
-                        "language": "mixed",
-                        "detected_language": "mixed",
-                        "language_confidence": 1.0,
-                        "reasons": all_reasons
-                        or ["Mixed language content detected - potential code-switching attack"],
-                        "flags": all_flags,
-                        "detection_methods": ["mixed_language"],
-                        "languages_detected": mixed_lang_result["languages"],
-                    }
-
-        # Auto-detect language if not provided
+        # 2) Language detection
+        lang_confidence = 1.0
         if language is None:
             lang_result = await self.detect_language(text)
             language = lang_result["language"]
             lang_confidence = lang_result["confidence"]
-        else:
-            lang_confidence = 1.0
 
-        # Normalize text based on language
-        # For non-Latin scripts, skip homoglyph conversion
-        if language in ["ru", "ar", "zh", "ja", "ko", "hi"]:
-            # For these languages, only do basic normalization
-            normalized_text = await self.normalize(text, convert_homoglyphs=False)
-        else:
-            # For Latin-based languages, do full normalization
-            normalized_text = await self.normalize(text, convert_homoglyphs=True)
+        # 3) Normalization strategy per language
+        normalized_text, fully_normalized_lower = await self._normalize_for_language(text, language)
 
-        # Also check with full homoglyph conversion for transliteration attacks
-        fully_normalized = await self.normalize(text, convert_homoglyphs=True)
-
-        # Get patterns for the detected language
-        patterns = self.injection_patterns.get(
-            language,
-            self.injection_patterns["en"],  # Fallback to English
+        # 4) Scan patterns (language-specific + transliteration fallback)
+        patterns = self.injection_patterns.get(language, self.injection_patterns["en"])
+        text_lower = normalized_text.lower()
+        confidence, reasons, flags = self._scan_patterns(
+            text_lower, fully_normalized_lower, patterns
         )
 
-        confidence = 0.0
-        reasons = []
-        flags = []
-
-        # Check keywords in both normalized versions
-        text_lower = normalized_text.lower()
-        fully_normalized_lower = fully_normalized.lower()
-
-        for keyword in patterns["keywords"]:
-            if keyword.lower() in text_lower or keyword.lower() in fully_normalized_lower:
-                confidence = max(confidence, 0.6)
-                flags.append(f"keyword:{keyword}")
-
-        # Also check English patterns on fully normalized text (for transliteration attacks)
-        en_patterns = self.injection_patterns["en"]
-        for keyword in en_patterns["keywords"]:
-            if keyword.lower() in fully_normalized_lower:
-                confidence = max(confidence, 0.7)
-                flags.append(f"transliteration:{keyword}")
-                reasons.append("Possible transliteration attack detected")
-
-        # Check phrases
-        for phrase in patterns["phrases"]:
-            if phrase.lower() in text_lower or phrase.lower() in fully_normalized_lower:
-                confidence = max(confidence, 0.8)
-                reasons.append(f"Detected injection phrase: '{phrase}'")
-                flags.append(f"phrase:{phrase}")
-
-        # Check regex patterns
-        for pattern in patterns.get("patterns", []):
-            if re.search(pattern, text_lower, re.IGNORECASE) or re.search(
-                pattern, fully_normalized_lower, re.IGNORECASE
-            ):
-                confidence = max(confidence, 0.9)
-                reasons.append("Matched injection pattern")
-                flags.append(f"pattern:{pattern}")
-
-        # Adjust confidence based on language detection confidence
+        # 5) Confidence adjustment and verdict
         confidence = confidence * (0.7 + 0.3 * lang_confidence)
+        verdict = self._verdict_from_confidence(confidence)
 
-        # Determine verdict
-        if confidence >= 0.7:
-            verdict = Verdict.BLOCK
-        elif confidence >= 0.4:
-            verdict = Verdict.FLAG
-        else:
-            verdict = Verdict.ALLOW
-
-        # Build detection methods list
+        # 6) Build detection methods
         detection_methods = []
         if any("keyword:" in f for f in flags):
             detection_methods.append("keyword")
@@ -506,12 +423,112 @@ class MultilingualDetector:
             "verdict": verdict,
             "confidence": confidence,
             "language": language,
-            "detected_language": language,  # For compatibility
+            "detected_language": language,
             "language_confidence": lang_confidence,
             "reasons": reasons,
             "flags": flags,
             "detection_methods": detection_methods,
         }
+
+    async def _analyze_mixed_languages(
+        self, text: str, mixed_lang_result: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Analyze code-switching content across detected languages and return detection if risky."""
+        text_lower = text.lower()
+        max_confidence = 0.0
+        all_flags: list[str] = ["multilingual"]
+        all_reasons: list[str] = []
+
+        for lang in mixed_lang_result["languages"]:
+            lang_patterns = self.injection_patterns.get(lang, self.injection_patterns["en"])
+            # Keywords
+            for keyword in lang_patterns["keywords"]:
+                if keyword.lower() in text_lower:
+                    max_confidence = max(max_confidence, 0.7)
+                    all_flags.append(f"mixed_lang:{lang}:{keyword}")
+                    all_reasons.append(f"Mixed language attack: {lang} keyword '{keyword}'")
+            # Phrases
+            for phrase in lang_patterns["phrases"]:
+                if phrase.lower() in text_lower:
+                    max_confidence = max(max_confidence, 0.8)
+                    all_flags.append(f"mixed_lang:{lang}:{phrase}")
+                    all_reasons.append(f"Mixed language attack: {lang} phrase '{phrase}'")
+
+        if max_confidence > 0.6:
+            return {
+                "verdict": Verdict.BLOCK if max_confidence >= 0.7 else Verdict.FLAG,
+                "confidence": max_confidence,
+                "language": "mixed",
+                "detected_language": "mixed",
+                "language_confidence": 1.0,
+                "reasons": all_reasons
+                or ["Mixed language content detected - potential code-switching attack"],
+                "flags": all_flags,
+                "detection_methods": ["mixed_language"],
+                "languages_detected": mixed_lang_result["languages"],
+            }
+        return None
+
+    async def _normalize_for_language(self, text: str, language: str) -> tuple[str, str]:
+        """Return normalized text and fully-normalized lowercase for transliteration checks."""
+        if language in ["ru", "ar", "zh", "ja", "ko", "hi"]:
+            normalized_text = await self.normalize(text, convert_homoglyphs=False)
+        else:
+            normalized_text = await self.normalize(text, convert_homoglyphs=True)
+        fully_normalized = await self.normalize(text, convert_homoglyphs=True)
+        return normalized_text, fully_normalized.lower()
+
+    def _scan_patterns(
+        self,
+        text_lower: str,
+        fully_normalized_lower: str,
+        patterns: dict[str, Any],
+    ) -> tuple[float, list[str], list[str]]:
+        """Scan keywords, phrases, and regex patterns. Include transliteration fallback."""
+        confidence = 0.0
+        reasons: list[str] = []
+        flags: list[str] = []
+
+        # Keywords
+        for keyword in patterns["keywords"]:
+            kw = keyword.lower()
+            if kw in text_lower or kw in fully_normalized_lower:
+                confidence = max(confidence, 0.6)
+                flags.append(f"keyword:{keyword}")
+
+        # English transliteration fallback
+        en_patterns = self.injection_patterns["en"]
+        for keyword in en_patterns["keywords"]:
+            if keyword.lower() in fully_normalized_lower:
+                confidence = max(confidence, 0.7)
+                flags.append(f"transliteration:{keyword}")
+                reasons.append("Possible transliteration attack detected")
+
+        # Phrases
+        for phrase in patterns["phrases"]:
+            ph = phrase.lower()
+            if ph in text_lower or ph in fully_normalized_lower:
+                confidence = max(confidence, 0.8)
+                reasons.append(f"Detected injection phrase: '{phrase}'")
+                flags.append(f"phrase:{phrase}")
+
+        # Regex patterns
+        for pattern in patterns.get("patterns", []):
+            if re.search(pattern, text_lower, re.IGNORECASE) or re.search(
+                pattern, fully_normalized_lower, re.IGNORECASE
+            ):
+                confidence = max(confidence, 0.9)
+                reasons.append("Matched injection pattern")
+                flags.append(f"pattern:{pattern}")
+
+        return confidence, reasons, flags
+
+    def _verdict_from_confidence(self, confidence: float) -> Verdict:
+        if confidence >= 0.7:
+            return Verdict.BLOCK
+        if confidence >= 0.4:
+            return Verdict.FLAG
+        return Verdict.ALLOW
 
     async def normalize(self, text: str, convert_homoglyphs: bool = True) -> str:
         """

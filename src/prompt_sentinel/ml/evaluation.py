@@ -76,7 +76,7 @@ class ModelEvaluator:
         return {k: v[:n_folds] for k, v in scores.items()}
 
     def roc_curve(
-        self, y_true: list[int], y_scores: list[float]
+        self, y_true: list[int], _y_scores: list[float]
     ) -> tuple[list[float], list[float], list[float]]:
         """Generate ROC curve data."""
         # Stub ROC curve

@@ -5,7 +5,12 @@
 # This source code is licensed under the Elastic License 2.0 found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Performance optimization middleware for FastAPI."""
+"""Performance optimization middleware for FastAPI.
+
+Status: Experimental/Stub. Not wired into the main app by default. Keep for
+future optimization work; production deployments should benchmark carefully
+before enabling. Some features are placeholders and may change.
+"""
 
 import time
 from collections.abc import Callable

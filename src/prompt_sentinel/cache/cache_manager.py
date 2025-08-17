@@ -21,7 +21,7 @@ import hashlib
 import json
 import logging
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any
 
 import redis.asyncio as redis
 from redis.exceptions import ConnectionError as RedisConnectionError
@@ -30,8 +30,6 @@ from redis.exceptions import RedisError
 from prompt_sentinel.config.settings import settings
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 
 class CacheManager:
@@ -210,7 +208,7 @@ class CacheManager:
 
         return result
 
-    async def get(self, key: str, ignore_expiry: bool = False) -> Any | None:
+    async def get(self, key: str, _ignore_expiry: bool = False) -> Any | None:
         """
         Get value from cache.
 

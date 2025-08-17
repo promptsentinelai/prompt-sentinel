@@ -15,9 +15,9 @@ from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 from pydantic import ValidationError
 
+from prompt_sentinel.api.analysis_service import AnalysisService
 from prompt_sentinel.detection.detector import PromptDetector
 from prompt_sentinel.models.schemas import (
-    DetectionResponse,
     Message,
 )
 from prompt_sentinel.monitoring.usage_tracker import UsageTracker
@@ -197,6 +197,7 @@ class StreamingDetector:
         self.detector = detector
         self.router = router
         self.usage_tracker = UsageTracker()
+        self.analysis_service = AnalysisService()
 
     async def process_detection(self, request_data: dict, client_id: str) -> dict:
         """Process a detection request from WebSocket.
@@ -274,15 +275,7 @@ class StreamingDetector:
             }
 
     async def process_analysis(self, request_data: dict, client_id: str) -> dict:
-        """Process an analysis request from WebSocket.
-
-        Args:
-            request_data: The analysis request data
-            client_id: Client identifier
-
-        Returns:
-            Analysis response data
-        """
+        """Process an analysis request from WebSocket."""
         try:
             # Extract messages from request
             messages = []
@@ -293,21 +286,8 @@ class StreamingDetector:
             # Perform detection
             detection_response = await self.detector.detect(messages=messages, check_format=True)
 
-            # Build analysis response
-            analysis_result = {
-                "verdict": detection_response.verdict,
-                "confidence": detection_response.confidence,
-                "reasons": [reason.model_dump() for reason in detection_response.reasons],
-                "processing_time_ms": detection_response.processing_time_ms,
-                "metadata": detection_response.metadata or {},
-                "overall_risk_assessment": {
-                    "threat_level": self._calculate_threat_level(detection_response),
-                    "confidence_breakdown": self._get_confidence_breakdown(detection_response),
-                    "mitigation_suggestions": self._get_mitigation_suggestions(detection_response),
-                },
-                "overall_risk_score": detection_response.confidence,
-                "recommendations": self._get_mitigation_suggestions(detection_response),
-            }
+            # Build analysis response using the service
+            analysis_result = self.analysis_service.build_analysis_response(detection_response)
 
             return {
                 "type": "analysis_result",
@@ -325,60 +305,6 @@ class StreamingDetector:
                 "timestamp": datetime.utcnow().isoformat(),
             }
 
-    def _calculate_threat_level(self, response: DetectionResponse) -> str:
-        """Calculate threat level from detection response."""
-        from prompt_sentinel.models.schemas import Verdict
-
-        if response.verdict == Verdict.BLOCK:
-            return "high"
-        elif response.verdict == Verdict.STRIP:
-            return "medium"
-        elif response.verdict == Verdict.FLAG:
-            return "low"
-        else:
-            return "none"
-
-    def _get_confidence_breakdown(self, response: DetectionResponse) -> dict:
-        """Get confidence breakdown by detection method."""
-        breakdown = {"overall": response.confidence}
-
-        source_confidences: dict[str, list] = {}
-        if response.reasons:
-            for reason in response.reasons:
-                source: str = reason.source  # Cast to str for dict key
-                if source not in source_confidences:
-                    source_confidences[source] = []
-                source_confidences[source].append(reason.confidence)
-
-        # Calculate average confidence per source
-        for source, confidences in source_confidences.items():
-            breakdown[source] = sum(confidences) / len(confidences) if confidences else 0.0  # type: ignore[assignment]
-
-        return breakdown
-
-    def _get_mitigation_suggestions(self, response: DetectionResponse) -> list:
-        """Get mitigation suggestions based on detection results."""
-        from prompt_sentinel.models.schemas import DetectionCategory
-
-        suggestions = []
-
-        # Check categories in reasons
-        reason_categories = (
-            [reason.category for reason in response.reasons] if response.reasons else []
-        )
-
-        if DetectionCategory.DIRECT_INJECTION in reason_categories:
-            suggestions.append("Use strict role separation between system and user messages")
-        if DetectionCategory.JAILBREAK in reason_categories:
-            suggestions.append("Implement additional context validation")
-        if DetectionCategory.PII_DETECTED in reason_categories:
-            suggestions.append("Enable automatic PII redaction before processing")
-
-        if not suggestions:
-            suggestions.append("Consider reviewing prompt content for security best practices")
-
-        return suggestions
-
 
 # Global connection manager instance
 connection_manager = ConnectionManager()
@@ -391,15 +317,7 @@ async def handle_websocket_connection(
     client: Any | None = None,
     client_id: str | None = None,
 ):
-    """Handle a WebSocket connection for streaming detection.
-
-    Args:
-        websocket: The WebSocket connection
-        detector: Prompt detector instance
-        router: Optional intelligent router
-        client: Optional authenticated client object
-        client_id: Optional client identifier
-    """
+    """Handle a WebSocket connection for streaming detection."""
     # Use provided client_id or generate one
     if not client_id:
         client_id = str(uuid.uuid4())
@@ -502,12 +420,7 @@ async def handle_websocket_connection(
 
 
 async def broadcast_system_message(message: str, level: str = "info"):
-    """Broadcast a system message to all connected clients.
-
-    Args:
-        message: The message to broadcast
-        level: Message level (info, warning, error)
-    """
+    """Broadcast a system message to all connected clients."""
     await connection_manager.broadcast(
         {
             "type": "system_message",

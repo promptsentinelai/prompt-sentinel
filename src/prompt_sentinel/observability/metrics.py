@@ -3,15 +3,93 @@
 # in compliance with the Elastic License 2.0. You may obtain a copy of the
 # License at https://www.elastic.co/licensing/elastic-license
 
-"""Metrics collection for observability."""
+"""Metrics collection for observability.
+
+Deprecated: Prefer Prometheus-backed metrics in `prompt_sentinel.monitoring.metrics`.
+This module remains for test and in-memory scenarios (no external deps).
+
+For compatibility, this module also re-exports Prometheus metrics and helpers
+from `prompt_sentinel.monitoring.metrics` when available, so existing imports
+like `from prompt_sentinel.observability.metrics import get_metrics` continue
+to work while the codebase migrates to the monitoring module.
+"""
 
 import time
 from collections import defaultdict
 from typing import Any
 
+# Re-export Prometheus-backed metrics and helpers for compatibility
+try:  # Best-effort shim; tests that rely on in-memory collector will still work
+    from prompt_sentinel.monitoring.metrics import (
+        ACTIVE_REQUESTS,
+        API_COST,
+        ATTACK_SEVERITY,
+        CACHE_EVICTIONS,
+        CACHE_HITS,
+        CACHE_MISSES,
+        CACHE_SIZE,
+        COST_PER_DETECTION,
+        DETECTION_CONFIDENCE,
+        DETECTION_COUNT,
+        DETECTION_DURATION,
+        ERROR_COUNT,
+        FEED_INDICATOR_COUNT,
+        FEED_UPDATE_COUNT,
+        LLM_REQUEST_COUNT,
+        LLM_REQUEST_DURATION,
+        PATTERN_MATCHES,
+        QUEUE_SIZE,
+        RATE_LIMIT_HITS,
+        REQUEST_COUNT,
+        REQUEST_DURATION,
+        SERVICE_INFO,
+        TOKEN_USAGE,
+        get_metrics,
+        initialize_metrics,
+        track_cache_metrics,
+        track_detection_metrics,
+        track_llm_metrics,
+    )
+
+    __all__ = [
+        # Prometheus symbols
+        "ACTIVE_REQUESTS",
+        "API_COST",
+        "ATTACK_SEVERITY",
+        "CACHE_EVICTIONS",
+        "CACHE_HITS",
+        "CACHE_MISSES",
+        "CACHE_SIZE",
+        "COST_PER_DETECTION",
+        "DETECTION_CONFIDENCE",
+        "DETECTION_COUNT",
+        "DETECTION_DURATION",
+        "ERROR_COUNT",
+        "FEED_INDICATOR_COUNT",
+        "FEED_UPDATE_COUNT",
+        "LLM_REQUEST_COUNT",
+        "LLM_REQUEST_DURATION",
+        "PATTERN_MATCHES",
+        "QUEUE_SIZE",
+        "RATE_LIMIT_HITS",
+        "REQUEST_COUNT",
+        "REQUEST_DURATION",
+        "SERVICE_INFO",
+        "TOKEN_USAGE",
+        "get_metrics",
+        "initialize_metrics",
+        "track_cache_metrics",
+        "track_detection_metrics",
+        "track_llm_metrics",
+        # In-memory collector (below)
+        "MetricsCollector",
+    ]
+except Exception:  # pragma: no cover - only triggered in constrained envs
+    __all__ = ["MetricsCollector"]
+
 
 class MetricsCollector:
-    """Collect and aggregate metrics."""
+    """Collect and aggregate metrics (test/in-memory use only)."""
 
     def __init__(self, namespace: str = "prompt_sentinel"):
         """Initialize metrics collector."""

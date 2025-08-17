@@ -11,10 +11,8 @@ requirements with performance by routing simple prompts through fast paths
 and complex prompts through comprehensive analysis.
 """
 
-import asyncio
 import time
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any
 
 import structlog
@@ -26,25 +24,16 @@ from prompt_sentinel.detection.detector import PromptDetector
 # Import experiment components
 from prompt_sentinel.experiments import ExperimentManager
 from prompt_sentinel.experiments.assignments import AssignmentContext
-from prompt_sentinel.models.schemas import (
-    DetectionResponse,
-    Message,
-    Verdict,
-)
+from prompt_sentinel.models.schemas import DetectionResponse, Message
 
 from .complexity_analyzer import ComplexityAnalyzer, ComplexityLevel, ComplexityScore
+from .execution import ExecutionEngine
+from .strategy import StrategySelector
 
 logger = structlog.get_logger()
 
 
-class DetectionStrategy(Enum):
-    """Detection strategies with different performance/accuracy tradeoffs."""
-
-    HEURISTIC_ONLY = "heuristic_only"  # Fastest, pattern matching only
-    HEURISTIC_CACHED = "heuristic_cached"  # Fast with cache lookup
-    HEURISTIC_LLM_CACHED = "heuristic_llm_cached"  # Balanced with cache
-    HEURISTIC_LLM_PII = "heuristic_llm_pii"  # Comprehensive
-    FULL_ANALYSIS = "full_analysis"  # Complete analysis, all methods
+from .types import DetectionStrategy
 
 
 @dataclass
@@ -103,20 +92,16 @@ class IntelligentRouter:
         """
         self.detector = detector or PromptDetector()
         self.analyzer = ComplexityAnalyzer()
+        self.selector = StrategySelector()
+        self.executor = ExecutionEngine(self.detector)
         self.metrics = RoutingMetrics()
         self.experiment_manager = experiment_manager
 
         # Strategy configuration
-        self.strategy_config = self._load_strategy_config()
+        self.strategy_config = self.selector.config
 
         # Performance targets (milliseconds)
-        self.latency_targets = {
-            DetectionStrategy.HEURISTIC_ONLY: 10,
-            DetectionStrategy.HEURISTIC_CACHED: 15,
-            DetectionStrategy.HEURISTIC_LLM_CACHED: 50,
-            DetectionStrategy.HEURISTIC_LLM_PII: 500,
-            DetectionStrategy.FULL_ANALYSIS: 2000,
-        }
+        self.latency_targets = self.selector.latency_targets
 
     async def route_detection(
         self,
@@ -273,47 +258,12 @@ class IntelligentRouter:
                     "Performance mode: high complexity requires analysis",
                 )
 
-        # Standard mode: map complexity to strategy
-        strategy_map = {
-            ComplexityLevel.TRIVIAL: DetectionStrategy.HEURISTIC_CACHED,
-            ComplexityLevel.SIMPLE: DetectionStrategy.HEURISTIC_CACHED,
-            ComplexityLevel.MODERATE: DetectionStrategy.HEURISTIC_LLM_CACHED,
-            ComplexityLevel.COMPLEX: DetectionStrategy.HEURISTIC_LLM_PII,
-            ComplexityLevel.CRITICAL: DetectionStrategy.FULL_ANALYSIS,
-        }
-
-        strategy = strategy_map[complexity_score.level]
-
-        # Override based on risk indicators
-        from .complexity_analyzer import RiskIndicator
-
-        critical_risks = [
-            RiskIndicator.INSTRUCTION_OVERRIDE,
-            RiskIndicator.CODE_INJECTION,
-            RiskIndicator.ROLE_MANIPULATION,
-        ]
-
-        if any(risk in critical_risks for risk in complexity_score.risk_indicators):
-            if strategy.value < DetectionStrategy.HEURISTIC_LLM_PII.value:
-                strategy = DetectionStrategy.HEURISTIC_LLM_PII
-                return strategy, f"Elevated to {strategy.value} due to critical risk indicators"
-
-        # Check if features are enabled
-        if not settings.llm_classification_enabled and strategy in [
-            DetectionStrategy.HEURISTIC_LLM_CACHED,
-            DetectionStrategy.HEURISTIC_LLM_PII,
-            DetectionStrategy.FULL_ANALYSIS,
-        ]:
-            strategy = DetectionStrategy.HEURISTIC_ONLY
-            return strategy, "LLM classification disabled, using heuristic only"
-
-        if not settings.pii_detection_enabled and strategy == DetectionStrategy.HEURISTIC_LLM_PII:
-            strategy = DetectionStrategy.HEURISTIC_LLM_CACHED
-            return strategy, "PII detection disabled, using cached LLM strategy"
-
-        return (
-            strategy,
-            f"Standard routing: {complexity_score.level.value} complexity → {strategy.value}",
+        # Delegate to selector to determine strategy
+        return self.selector.determine_strategy(
+            complexity_score,
+            performance_mode,
+            settings.llm_classification_enabled,
+            settings.pii_detection_enabled,
         )
 
     def _is_cache_eligible(
@@ -328,26 +278,13 @@ class IntelligentRouter:
         Returns:
             True if result can be cached
         """
-        # Don't cache if caching is disabled
-        if not settings.redis_enabled or not cache_manager.connected:
-            return False
-
-        # Don't cache trivial heuristic-only detections (too fast anyway)
-        if strategy == DetectionStrategy.HEURISTIC_ONLY:
-            return False
-
-        # Don't cache if there are encoding indicators (might be dynamic)
-        from .complexity_analyzer import RiskIndicator
-
-        if RiskIndicator.ENCODING in complexity_score.risk_indicators:
-            return False
-
-        # Cache strategies that benefit from it
-        return strategy in [
-            DetectionStrategy.HEURISTIC_CACHED,
-            DetectionStrategy.HEURISTIC_LLM_CACHED,
-            DetectionStrategy.HEURISTIC_LLM_PII,
-        ]
+        # Delegate to selector for cache eligibility
+        return self.selector.is_cache_eligible(
+            strategy,
+            complexity_score,
+            settings.redis_enabled,
+            cache_manager.connected,
+        )
 
     async def _execute_strategy(
         self, messages: list[Message], strategy: DetectionStrategy, use_cache: bool
@@ -368,135 +305,30 @@ class IntelligentRouter:
             content = " ".join(msg.content for msg in messages)
             cache_key = f"route_{strategy.value}_{hash(content)}"
 
-            # Try cache lookup
-            cached_result = await cache_manager.get(cache_key)
-            if cached_result:
-                logger.debug("Cache hit for routed detection", strategy=strategy.value)
-                # Convert cached dict to DetectionResponse
-                return DetectionResponse(**cached_result)
-
-        # Execute detection based on strategy
-        if strategy == DetectionStrategy.HEURISTIC_ONLY:
-            response = await self._execute_heuristic_only(messages)
-
-        elif strategy == DetectionStrategy.HEURISTIC_CACHED:
-            response = await self._execute_heuristic_only(messages)
-
-        elif strategy == DetectionStrategy.HEURISTIC_LLM_CACHED:
-            response = await self._execute_heuristic_llm(messages)
-
-        elif strategy == DetectionStrategy.HEURISTIC_LLM_PII:
-            response = await self._execute_comprehensive(messages, include_pii=True)
-
-        elif strategy == DetectionStrategy.FULL_ANALYSIS:
-            response = await self._execute_full_analysis(messages)
-
-        else:
-            # Fallback to standard detection
-            response = await self.detector.detect(messages)
-
-        # Cache result if eligible
-        if use_cache and cache_key:
-            await cache_manager.set(cache_key, response.dict(), ttl=settings.cache_ttl_detection)
-
-        return response
+        # Delegate to execution engine
+        return await self.executor.execute_strategy(
+            messages,
+            strategy,
+            use_cache,
+            cache_key=cache_key,
+            cache_get=cache_manager.get,
+            cache_set=cache_manager.set,
+        )
 
     async def _execute_heuristic_only(self, messages: list[Message]) -> DetectionResponse:
-        """Execute heuristic detection only.
-
-        Args:
-            messages: Messages to analyze
-
-        Returns:
-            Detection response
-        """
-        # Use detector with LLM disabled
-        return await self.detector.detect(
-            messages, use_heuristics=True, use_llm=False, check_pii=False
-        )
+        # Backward compatibility: delegate
+        return await self.executor._execute_heuristic_only(messages)
 
     async def _execute_heuristic_llm(self, messages: list[Message]) -> DetectionResponse:
-        """Execute heuristic + LLM detection.
-
-        Args:
-            messages: Messages to analyze
-
-        Returns:
-            Detection response
-        """
-        return await self.detector.detect(
-            messages, use_heuristics=True, use_llm=True, check_pii=False
-        )
+        return await self.executor._execute_heuristic_llm(messages)
 
     async def _execute_comprehensive(
         self, messages: list[Message], include_pii: bool = True
     ) -> DetectionResponse:
-        """Execute comprehensive detection.
-
-        Args:
-            messages: Messages to analyze
-            include_pii: Whether to include PII detection
-
-        Returns:
-            Detection response
-        """
-        return await self.detector.detect(
-            messages, use_heuristics=True, use_llm=True, check_pii=include_pii
-        )
+        return await self.executor._execute_comprehensive(messages, include_pii=include_pii)
 
     async def _execute_full_analysis(self, messages: list[Message]) -> DetectionResponse:
-        """Execute full analysis with all detection methods.
-
-        Args:
-            messages: Messages to analyze
-
-        Returns:
-            Detection response with comprehensive analysis
-        """
-        # Run all detection methods in parallel for speed
-        tasks = [
-            self.detector.detect(messages, use_heuristics=True, use_llm=False, check_pii=False),
-            self.detector.detect(messages, use_heuristics=False, use_llm=True, check_pii=False),
-            self.detector.detect(messages, use_heuristics=False, use_llm=False, check_pii=True),
-        ]
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        # Combine results
-        all_reasons: list[Any] = []
-        max_confidence = 0.0
-        most_severe_verdict = Verdict.ALLOW
-
-        for result in results:
-            if isinstance(result, Exception | BaseException):
-                logger.error("Detection method failed", error=str(result))
-                continue
-
-            if hasattr(result, "reasons"):
-                all_reasons.extend(result.reasons)
-            if hasattr(result, "confidence"):
-                max_confidence = max(max_confidence, result.confidence)
-
-            # Update verdict to most severe
-            if hasattr(result, "verdict"):
-                if result.verdict == Verdict.BLOCK:
-                    most_severe_verdict = Verdict.BLOCK
-                elif result.verdict == Verdict.FLAG and most_severe_verdict != Verdict.BLOCK:
-                    most_severe_verdict = Verdict.FLAG
-
-        # Create comprehensive response
-        response = DetectionResponse(
-            verdict=most_severe_verdict,
-            confidence=max_confidence,
-            reasons=all_reasons,
-            processing_time_ms=sum(
-                float(r.processing_time_ms)
-                for r in results
-                if not isinstance(r, Exception) and hasattr(r, "processing_time_ms")
-            ),
-        )
-
-        return response
+        return await self.executor._execute_full_analysis(messages)
 
     def _update_metrics(
         self,
@@ -558,22 +390,8 @@ class IntelligentRouter:
         }
 
     def _load_strategy_config(self) -> dict:
-        """Load strategy configuration from settings.
-
-        Returns:
-            Strategy configuration dictionary
-        """
-        # This could be extended to load from a config file or database
-        return {
-            "performance_thresholds": {
-                "low_latency": 50,  # ms
-                "medium_latency": 500,  # ms
-                "high_latency": 2000,  # ms
-            },
-            "complexity_overrides": {
-                # Map specific patterns to strategies
-            },
-        }
+        """Deprecated: use StrategySelector.config instead."""
+        return self.selector.config
 
     async def _check_experiments(
         self,

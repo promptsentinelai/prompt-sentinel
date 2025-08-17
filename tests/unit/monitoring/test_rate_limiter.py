@@ -183,6 +183,7 @@ class TestTokenBucket:
         assert wait_time == pytest.approx(1.0, rel=0.1)  # ~1 second for 10 tokens
 
 
+@pytest.mark.experimental
 class TestRateLimiter:
     """Test suite for RateLimiter."""
 

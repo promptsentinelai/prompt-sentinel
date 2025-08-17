@@ -6,125 +6,25 @@
 """Rate limiting for API requests.
 
 This module provides rate limiting functionality including:
-- Token bucket algorithm for smooth rate limiting
-- Per-client and global rate limits
+- Token bucket algorithm for smooth rate limiting (via `monitoring.token_bucket`)
+- Per-client and global rate limits (client buckets via `monitoring.client_store`)
 - Adaptive rate limiting based on load
-- Priority-based request handling
+- Priority-based request handling (policy in `monitoring.policy`)
 """
 
 import asyncio
 import time
 from collections import defaultdict
-from dataclasses import dataclass
-from enum import IntEnum
 
 import structlog
 
+from prompt_sentinel.monitoring.client_store import ClientBucketStore
+
+# Re-export policy types for backwards compatibility with imports
+from prompt_sentinel.monitoring.policy import Priority, RateLimitConfig, is_high_priority
+from prompt_sentinel.monitoring.token_bucket import TokenBucket
+
 logger = structlog.get_logger()
-
-
-class Priority(IntEnum):
-    """Request priority levels."""
-
-    LOW = 0
-    NORMAL = 1
-    HIGH = 2
-    CRITICAL = 3
-
-
-@dataclass
-class RateLimitConfig:
-    """Rate limit configuration."""
-
-    # Global limits
-    requests_per_minute: int = 60
-    requests_per_hour: int = 1000
-    tokens_per_minute: int = 10000
-    tokens_per_hour: int = 100000
-
-    # Per-client limits
-    client_requests_per_minute: int = 20
-    client_tokens_per_minute: int = 5000
-
-    # Burst allowance (percentage above limit)
-    burst_multiplier: float = 1.5
-
-    # Adaptive limiting
-    enable_adaptive: bool = True
-    min_rate_percentage: float = 0.5  # Minimum 50% of configured rate
-    max_rate_percentage: float = 1.5  # Maximum 150% of configured rate
-
-    # Priority handling
-    enable_priority: bool = True
-    priority_reserved_percentage: float = 0.2  # Reserve 20% for high priority
-
-
-@dataclass
-class TokenBucket:
-    """Token bucket for rate limiting."""
-
-    capacity: float
-    tokens: float
-    refill_rate: float
-    last_refill: float
-
-    def consume(self, tokens: int = 1) -> bool:
-        """Try to consume tokens from bucket.
-
-        Args:
-            tokens: Number of tokens to consume
-
-        Returns:
-            True if tokens were consumed, False if insufficient
-        """
-        # Refill bucket
-        now = time.time()
-        elapsed = now - self.last_refill
-        self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
-        self.last_refill = now
-
-        # Try to consume
-        if self.tokens >= tokens:
-            self.tokens -= tokens
-            return True
-        return False
-
-    def can_consume(self, tokens: int = 1) -> bool:
-        """Check if tokens can be consumed without consuming.
-
-        Args:
-            tokens: Number of tokens to check
-
-        Returns:
-            True if tokens are available
-        """
-        # Calculate current tokens without updating
-        now = time.time()
-        elapsed = now - self.last_refill
-        current_tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
-        return current_tokens >= tokens
-
-    def time_until_available(self, tokens: int = 1) -> float:
-        """Calculate time until tokens are available.
-
-        Args:
-            tokens: Number of tokens needed
-
-        Returns:
-            Seconds until tokens available (0 if available now)
-        """
-        # Refill to current state
-        now = time.time()
-        elapsed = now - self.last_refill
-        current_tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
-
-        if current_tokens >= tokens:
-            return 0.0
-
-        # Calculate time needed
-        tokens_needed = tokens - current_tokens
-        time_needed = tokens_needed / self.refill_rate
-        return time_needed
 
 
 class RateLimiter:
@@ -161,8 +61,7 @@ class RateLimiter:
         )
 
         # Per-client buckets
-        self.client_request_buckets: dict[str, TokenBucket] = {}
-        self.client_token_buckets: dict[str, TokenBucket] = {}
+        self.client_store = ClientBucketStore(config)
 
         # Metrics
         self.total_requests = 0
@@ -209,8 +108,8 @@ class RateLimiter:
         self.total_requests += 1
         self.total_tokens += tokens
 
-        # Priority handling (reserved capacity concept placeholder for future policy module)
-        high_priority = self.config.enable_priority and priority >= Priority.HIGH
+        # Priority handling via policy helper
+        high_priority = is_high_priority(self.config, priority)
 
         # Check global request limit
         if not self.global_request_bucket.can_consume(1):
@@ -237,25 +136,8 @@ class RateLimiter:
 
         # Check per-client limits
         if client_id:
-            # Get or create client buckets
-            if client_id not in self.client_request_buckets:
-                self.client_request_buckets[client_id] = TokenBucket(
-                    capacity=self.config.client_requests_per_minute * self.config.burst_multiplier,
-                    tokens=self.config.client_requests_per_minute,
-                    refill_rate=self.config.client_requests_per_minute / 60,
-                    last_refill=time.time(),
-                )
-
-            if client_id not in self.client_token_buckets:
-                self.client_token_buckets[client_id] = TokenBucket(
-                    capacity=self.config.client_tokens_per_minute * self.config.burst_multiplier,
-                    tokens=self.config.client_tokens_per_minute,
-                    refill_rate=self.config.client_tokens_per_minute / 60,
-                    last_refill=time.time(),
-                )
-
             # Check client request limit
-            client_request_bucket = self.client_request_buckets[client_id]
+            client_request_bucket = self.client_store.get_request_bucket(client_id)
             if not client_request_bucket.can_consume(1):
                 wait_time = client_request_bucket.time_until_available(1)
                 self.rejected_requests += 1
@@ -266,7 +148,7 @@ class RateLimiter:
 
             # Check client token limit
             if tokens > 0:
-                client_token_bucket = self.client_token_buckets[client_id]
+                client_token_bucket = self.client_store.get_token_bucket(client_id)
                 if not client_token_bucket.can_consume(tokens):
                     wait_time = client_token_bucket.time_until_available(tokens)
                     self.rejected_requests += 1
@@ -303,21 +185,30 @@ class RateLimiter:
 
         # Consume from client buckets
         if client_id:
-            if client_id in self.client_request_buckets:
-                if not self.client_request_buckets[client_id].consume(1):
+            # Request bucket consumption
+            try:
+                client_request_bucket = self.client_store.get_request_bucket(client_id)
+                if not client_request_bucket.consume(1):
                     # Rollback global consumption
                     self.global_request_bucket.tokens += 1
                     if tokens > 0:
                         self.global_token_bucket.tokens += tokens
                     return False
+            except Exception:
+                # Defensive: if store fails, rollback
+                self.global_request_bucket.tokens += 1
+                if tokens > 0:
+                    self.global_token_bucket.tokens += tokens
+                return False
 
-            if tokens > 0 and client_id in self.client_token_buckets:
-                if not self.client_token_buckets[client_id].consume(tokens):
+            # Token bucket consumption
+            if tokens > 0:
+                client_token_bucket = self.client_store.get_token_bucket(client_id)
+                if not client_token_bucket.consume(tokens):
                     # Rollback all consumption
                     self.global_request_bucket.tokens += 1
                     self.global_token_bucket.tokens += tokens
-                    if client_id in self.client_request_buckets:
-                        self.client_request_buckets[client_id].tokens += 1
+                    client_request_bucket.tokens += 1
                     return False
 
         # Update load metrics
@@ -372,14 +263,10 @@ class RateLimiter:
 
                 # Clean up inactive clients
                 inactive_clients = []
-                for client_id, bucket in self.client_request_buckets.items():
+                for client_id, bucket in list(self.client_store.request_buckets.items()):
                     if now - bucket.last_refill > inactive_threshold:
                         inactive_clients.append(client_id)
-
-                for client_id in inactive_clients:
-                    del self.client_request_buckets[client_id]
-                    if client_id in self.client_token_buckets:
-                        del self.client_token_buckets[client_id]
+                        self.client_store.reset_client(client_id)
 
                 if inactive_clients:
                     logger.debug(f"Cleaned up {len(inactive_clients)} inactive clients")
@@ -447,7 +334,7 @@ class RateLimiter:
             "acceptance_rate": acceptance_rate,
             "total_tokens": self.total_tokens,
             "current_load": self.current_load,
-            "active_clients": len(self.client_request_buckets),
+            "active_clients": len(self.client_store.request_buckets),
             "global_tokens_available": self.global_request_bucket.tokens,
             "config": {
                 "requests_per_minute": self.config.requests_per_minute,
@@ -462,9 +349,15 @@ class RateLimiter:
         Args:
             client_id: Client identifier to reset
         """
-        if client_id in self.client_request_buckets:
-            del self.client_request_buckets[client_id]
-        if client_id in self.client_token_buckets:
-            del self.client_token_buckets[client_id]
+        self.client_store.reset_client(client_id)
 
         logger.info("Reset rate limits for client", client=client_id)
+
+    # Backwards-compatible accessors for tests expecting old attributes
+    @property
+    def client_request_buckets(self) -> dict[str, TokenBucket]:
+        return self.client_store.request_buckets
+
+    @property
+    def client_token_buckets(self) -> dict[str, TokenBucket]:
+        return self.client_store.token_buckets

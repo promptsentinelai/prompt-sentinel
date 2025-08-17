@@ -241,9 +241,48 @@ docker-test-clean: ## Clean up Docker test artifacts
 	@echo "$(YELLOW)Cleaning up Docker test artifacts...$(NC)"
 	@docker ps -a | grep "test-container-" | awk '{print $$1}' | xargs -r docker rm -f 2>/dev/null || true
 	@docker ps -a | grep "prompt-sentinel-test" | awk '{print $$1}' | xargs -r docker rm -f 2>/dev/null || true
+	@docker ps -a --format '{{.Names}}' | grep -E '^prompt-sentinel-(net1|net2|port-test-)' | xargs -r docker rm -f 2>/dev/null || true
 	@docker images | grep "prompt-sentinel:.*-test" | awk '{print $$3}' | xargs -r docker rmi -f 2>/dev/null || true
 	@docker network ls | grep "test-network" | awk '{print $$1}' | xargs -r docker network rm 2>/dev/null || true
 	@echo "$(GREEN)✓ Docker test artifacts cleaned$(NC)"
+
+# ----------------------------------------------------------------------------
+# Docker Cleanup (manual maintenance)
+# ----------------------------------------------------------------------------
+
+.PHONY: docker-clean-volumes
+docker-clean-volumes: ## Remove dangling Docker volumes
+	@echo "$(YELLOW)Removing dangling volumes...$(NC)"
+	@docker volume ls -qf dangling=true | xargs -r docker volume rm
+	@echo "$(GREEN)✓ Dangling volumes removed$(NC)"
+
+.PHONY: docker-clean-images
+docker-clean-images: ## Remove dangling Docker images
+	@echo "$(YELLOW)Pruning dangling images...$(NC)"
+	@docker image prune -f
+	@echo "$(GREEN)✓ Image prune complete$(NC)"
+
+.PHONY: docker-clean-builder
+docker-clean-builder: ## Remove unused Docker builder cache
+	@echo "$(YELLOW)Pruning builder cache...$(NC)"
+	@docker builder prune -f
+	@echo "$(GREEN)✓ Builder cache pruned$(NC)"
+
+.PHONY: docker-clean-networks
+docker-clean-networks: ## Remove unused Docker networks
+	@echo "$(YELLOW)Pruning unused networks...$(NC)"
+	@docker network prune -f
+	@echo "$(GREEN)✓ Network prune complete$(NC)"
+
+.PHONY: docker-clean-system
+docker-clean-system: ## General cleanup of unused Docker data (use with care)
+	@echo "$(YELLOW)Running system prune (containers, images, networks, cache)...$(NC)"
+	@docker system prune -f
+	@echo "$(GREEN)✓ System prune complete$(NC)"
+
+.PHONY: docker-clean
+docker-clean: docker-test-clean docker-clean-volumes docker-clean-images docker-clean-builder docker-clean-networks ## Run all cleanup tasks
+	@echo "$(GREEN)✓ All Docker cleanup tasks completed$(NC)"
 
 # ============================================================================
 # Code Quality

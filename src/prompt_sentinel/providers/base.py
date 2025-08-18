@@ -104,6 +104,24 @@ def parse_llm_json_payload(payload: str) -> tuple[DetectionCategory, float, str]
             "Response parsing error: invalid confidence value",
         )
 
+    # Validate confidence is finite and in [0,1]
+    try:
+        import math
+
+        if math.isnan(confidence) or math.isinf(confidence) or confidence < 0.0 or confidence > 1.0:
+            return (
+                DetectionCategory.BENIGN,
+                0.0,
+                "Response parsing error: invalid confidence value",
+            )
+    except Exception:
+        # Defensive: if validation fails, fall back safely
+        return (
+            DetectionCategory.BENIGN,
+            0.0,
+            "Response parsing error: invalid confidence value",
+        )
+
     explanation = str(data.get("explanation", ""))
 
     # Unknown categories are mapped to BENIGN but keep confidence

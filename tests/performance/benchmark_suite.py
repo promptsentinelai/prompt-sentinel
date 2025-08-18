@@ -329,42 +329,13 @@ class TestRealisticWorkloads:
 
         benchmark.save_results()
 
+    @pytest.mark.experimental
     @pytest.mark.asyncio
     async def test_rate_limiting_impact(self, benchmark):
-        """Test rate limiting performance impact."""
-        # TODO: Implement when RateLimitMiddleware is available
+        """Test rate limiting performance impact (experimental/stub)."""
+        # Stub: Implement when RateLimitMiddleware (or equivalent) is available
         # rate_limiter = RateLimitMiddleware(requests_per_minute=60)
         pass
-
-        # async def limited_operation():
-        #     """Simulate rate-limited operation."""
-        #     if not await rate_limiter.check_rate_limit("test_client"):
-        #         raise Exception("Rate limited")
-        #     await asyncio.sleep(0.01)  # Simulate work
-        #     return "success"
-
-        # # Test at different request rates
-        # for rps in [1, 5, 10]:
-        #     request_count = rps * 10
-        #     delay = 1.0 / rps
-        #
-        #     async with benchmark.async_timer(f"rate_limit_{rps}rps"):
-        #         tasks = []
-        #         for i in range(request_count):
-        #             tasks.append(limited_operation())
-        #             if i < request_count - 1:
-        #                 await asyncio.sleep(delay)
-        #
-        #         results = await asyncio.gather(*tasks, return_exceptions=True)
-        #
-        #         success_count = sum(1 for r in results if r == "success")
-        #         limited_count = sum(1 for r in results if isinstance(r, Exception))
-        #
-        #         print(f"\nRate Limiting at {rps} RPS:")
-        #         print(f"  Successful: {success_count}")
-        #         print(f"  Rate Limited: {limited_count}")
-
-        # benchmark.save_results()
 
     def test_regex_compilation_overhead(self, benchmark):
         """Measure regex compilation and caching impact."""

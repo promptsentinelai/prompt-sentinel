@@ -213,7 +213,7 @@ class ExperimentDatabase:
                         config.description,
                         config.type.value,
                         config.status.value,
-                        json.dumps(config.dict()),
+                        json.dumps(config.model_dump()),
                         config.created_at,
                         config.updated_at,
                         config.start_time,

@@ -295,6 +295,19 @@ class TestBatchDetectionAPI:
         assert data["valid"] is False
         assert "Duplicate item IDs" in str(data["errors"])
 
+        # Invalid request - wrong item shape
+        bad_shape_request = {
+            "items": [
+                {"id": "1", "input": {"not": "supported"}},  # invalid input type
+            ]
+        }
+
+        response = client.post("/api/v1/detect/batch/validate", json=bad_shape_request)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["valid"] is False
+        assert "Invalid item" in str(data["errors"]) or data["errors"]
+
     def test_batch_size_limits(self, client):
         """Test batch size validation."""
         # Create request exceeding max size

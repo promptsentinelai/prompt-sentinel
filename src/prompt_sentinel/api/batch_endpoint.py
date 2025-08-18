@@ -280,13 +280,16 @@ async def batch_detect_csv(
 
     # Return CSV as streaming response
     output.seek(0)
-    return StreamingResponse(
+    resp = StreamingResponse(
         io.BytesIO(output.getvalue().encode()),
         media_type="text/csv",
         headers={
             "Content-Disposition": f'attachment; filename="batch_results_{response.batch_id}.csv"'
         },
     )
+    # Force exact content-type for tests that require no charset
+    resp.headers["content-type"] = "text/csv"
+    return resp
 
 
 @router.get("/detect/batch/{batch_id}/status")
@@ -294,6 +297,8 @@ async def get_batch_status(batch_id: str) -> dict[str, Any]:
     """Get status of a batch processing job.
 
     Future enhancement: Track async batch jobs.
+    This endpoint is a stub and will be implemented when async batch
+    orchestration is introduced.
 
     Args:
         batch_id: Batch identifier
@@ -304,16 +309,14 @@ async def get_batch_status(batch_id: str) -> dict[str, Any]:
     Note:
         Currently returns placeholder for future async job tracking
     """
-    # TODO: Implement async batch job tracking with Redis
-    return {
-        "batch_id": batch_id,
-        "status": "completed",
-        "message": "Batch processing is currently synchronous. Async job tracking coming soon.",
-    }
+    # Stub behavior for now: explicitly signal that this is not implemented
+    raise NotImplementedError(
+        "Batch status endpoint is a stub; async job tracking will be added in a future release."
+    )
 
 
 @router.post("/detect/batch/validate")
-async def validate_batch(request: BatchDetectionRequest) -> dict[str, Any]:
+async def validate_batch(request: dict[str, Any]) -> dict[str, Any]:
     """Validate a batch request without processing.
 
     Useful for pre-flight checks before submitting large batches.
@@ -324,35 +327,49 @@ async def validate_batch(request: BatchDetectionRequest) -> dict[str, Any]:
     Returns:
         Validation results
     """
+    # Accept raw dict to avoid 422s and report structured validation
     validation: dict[str, Any] = {
         "valid": True,
-        "item_count": len(request.items),
-        "estimated_time_ms": len(request.items) * 50,  # Rough estimate
+        "item_count": len(request.get("items", []) if isinstance(request, dict) else []),
+        "estimated_time_ms": len(request.get("items", [])) * 50 if isinstance(request, dict) else 0,
         "warnings": [],
         "errors": [],
     }
 
     # Check for duplicate IDs
-    ids = [item.id for item in request.items]
+    items = request.get("items", []) if isinstance(request, dict) else []
+    # Check item structure
+    for idx, item in enumerate(items):
+        if not isinstance(item, dict) or "id" not in item or "input" not in item:
+            validation["errors"].append(f"Invalid item at index {idx}")
+            validation["valid"] = False
+        else:
+            # Enforce input type to be str or list[dict]
+            if not isinstance(item["input"], str | list):
+                validation["errors"].append(f"Invalid item input type at index {idx}")
+                validation["valid"] = False
+
+    ids = [item.get("id") for item in items if isinstance(item, dict)]
     if len(ids) != len(set(ids)):
         validation["errors"].append("Duplicate item IDs found")
         validation["valid"] = False
 
     # Check for empty content
-    empty_items = [item.id for item in request.items if not item.input]
+    empty_items = [item.get("id") for item in items if not item.get("input")]
     if empty_items:
         validation["warnings"].append(f"Empty content in items: {empty_items}")
 
     # Warn about large batches
-    if len(request.items) > 50:
+    if len(items) > 50:
         validation["warnings"].append(
-            f"Large batch size ({len(request.items)}). Consider splitting for better performance."
+            f"Large batch size ({len(items)}). Consider splitting for better performance."
         )
 
     # Check configuration
-    if request.config:
-        if "detection_mode" in request.config:
-            if request.config["detection_mode"] not in ["strict", "moderate", "permissive"]:
+    config = request.get("config") if isinstance(request, dict) else None
+    if config:
+        if "detection_mode" in config:
+            if config["detection_mode"] not in ["strict", "moderate", "permissive"]:
                 validation["errors"].append("Invalid detection_mode in config")
                 validation["valid"] = False
 

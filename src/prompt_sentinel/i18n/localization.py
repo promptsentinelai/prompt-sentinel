@@ -3,7 +3,12 @@
 # in compliance with the Elastic License 2.0. You may obtain a copy of the
 # License at https://www.elastic.co/licensing/elastic-license
 
-"""Localization manager for internationalization."""
+"""Localization manager for internationalization.
+
+Experimental/Stub: Minimal localization utilities used by tests and examples.
+Not wired into critical production paths. For production features, prefer
+formatting via response formatters and avoid relying on this module.
+"""
 
 
 class LocalizationManager:

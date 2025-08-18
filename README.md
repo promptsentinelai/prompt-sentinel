@@ -45,6 +45,7 @@ A production-ready defensive security microservice for detecting and mitigating 
 - [Performance](#-performance)
 - [Security](#-security)
 - [Roadmap](#-roadmap)
+ - [Stubs and Experimental Modules](#-stubs-and-experimental-modules)
 
 ## 🚀 Quick Start
 
@@ -1207,6 +1208,17 @@ We chose the Elastic License 2.0 to ensure PromptSentinel remains free for compa
   - Observability (tracing, logging, alerting) maturation
   - Cloud-native integrations (Lambda, Cloud Functions, Azure Functions)
   - Enterprise features (SAML/SSO, audit logging, compliance)
+
+## 🧪 Stubs and Experimental Modules
+
+Some modules are provided as scaffolding for future features and for tests. They are not wired into production flows by default:
+
+- `prompt_sentinel.observability.*` (logging, tracing, pipeline): in-memory/test stubs. Prefer `prompt_sentinel.monitoring.metrics` (Prometheus-backed) in production. See `docs/ROADMAP.md`.
+- `prompt_sentinel.api.performance_middleware`: experimental; disabled by default.
+- `prompt_sentinel.i18n.*` (localization, translator, detector helpers): experimental; minimal functionality intended for tests/examples.
+- Batch async status endpoint in `api/batch_endpoint.py`: stubbed (NotImplementedError) until async orchestration is introduced.
+
+Refer to `docs/ROADMAP.md` for the status and planned milestones of these modules.
 
 ---
 

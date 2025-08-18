@@ -3,7 +3,12 @@
 # in compliance with the Elastic License 2.0. You may obtain a copy of the
 # License at https://www.elastic.co/licensing/elastic-license
 
-"""Message translation utilities."""
+"""Message translation utilities.
+
+Experimental/Stub: This is a lightweight in-memory translator intended for
+tests and examples. It does not perform real translation. Production systems
+should integrate with a translation service when needed.
+"""
 
 from typing import Any
 

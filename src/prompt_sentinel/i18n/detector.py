@@ -291,20 +291,65 @@ class MultilingualDetector:
         Returns:
             Dictionary with language code and confidence
         """
+        # First, check for mixed-language signals to preserve back-compat keys
+        mixed_result = await self.detect_mixed_languages(text)
+
         # First check with our fallback for non-Latin scripts (more reliable)
         # Check Japanese first (more specific than Chinese)
         if re.search(r"[\u3040-\u309f\u30a0-\u30ff]", text):  # Japanese (Hiragana or Katakana)
-            return await self._fallback_detection(text)
+            base = await self._fallback_detection(text)
+            base.update(
+                {
+                    "mixed_languages": mixed_result.get("mixed", False),
+                    "languages_detected": mixed_result.get("languages", []),
+                }
+            )
+            return base
         elif re.search(r"[\u0400-\u04ff]", text):  # Cyrillic
-            return await self._fallback_detection(text)
+            base = await self._fallback_detection(text)
+            base.update(
+                {
+                    "mixed_languages": mixed_result.get("mixed", False),
+                    "languages_detected": mixed_result.get("languages", []),
+                }
+            )
+            return base
         elif re.search(r"[\u4e00-\u9fff]", text):  # Chinese (Kanji also used in Japanese)
-            return await self._fallback_detection(text)
+            base = await self._fallback_detection(text)
+            base.update(
+                {
+                    "mixed_languages": mixed_result.get("mixed", False),
+                    "languages_detected": mixed_result.get("languages", []),
+                }
+            )
+            return base
         elif re.search(r"[\uac00-\ud7af]", text):  # Korean
-            return await self._fallback_detection(text)
+            base = await self._fallback_detection(text)
+            base.update(
+                {
+                    "mixed_languages": mixed_result.get("mixed", False),
+                    "languages_detected": mixed_result.get("languages", []),
+                }
+            )
+            return base
         elif re.search(r"[\u0600-\u06ff]", text):  # Arabic
-            return await self._fallback_detection(text)
+            base = await self._fallback_detection(text)
+            base.update(
+                {
+                    "mixed_languages": mixed_result.get("mixed", False),
+                    "languages_detected": mixed_result.get("languages", []),
+                }
+            )
+            return base
         elif re.search(r"[\u0900-\u097f]", text):  # Hindi
-            return await self._fallback_detection(text)
+            base = await self._fallback_detection(text)
+            base.update(
+                {
+                    "mixed_languages": mixed_result.get("mixed", False),
+                    "languages_detected": mixed_result.get("languages", []),
+                }
+            )
+            return base
 
         try:
             # For Latin-based scripts, use langdetect
@@ -327,20 +372,36 @@ class MultilingualDetector:
                         "confidence": 0.5,
                         "detected": lang_code,
                         "supported": False,
+                        "mixed_languages": mixed_result.get("mixed", False),
+                        "languages_detected": mixed_result.get("languages", []),
                     }
 
                 return {
                     "language": lang_code,
                     "confidence": best_match.prob,
                     "all_detected": [{"lang": d.lang, "prob": d.prob} for d in detected[:3]],
+                    "mixed_languages": mixed_result.get("mixed", False),
+                    "languages_detected": mixed_result.get("languages", []),
                 }
 
         except LangDetectException:
             # If detection fails, try simple heuristics
-            return await self._fallback_detection(text)
+            base = await self._fallback_detection(text)
+            base.update(
+                {
+                    "mixed_languages": mixed_result.get("mixed", False),
+                    "languages_detected": mixed_result.get("languages", []),
+                }
+            )
+            return base
 
         # Default to English if all else fails
-        return {"language": "en", "confidence": 0.3}
+        return {
+            "language": "en",
+            "confidence": 0.3,
+            "mixed_languages": mixed_result.get("mixed", False),
+            "languages_detected": mixed_result.get("languages", []),
+        }
 
     async def _fallback_detection(self, text: str) -> dict[str, Any]:
         """Fallback language detection using simple heuristics."""
@@ -710,6 +771,9 @@ class MultilingualDetector:
             "languages": list(languages_found),
             "entropy": entropy,
             "suspicious": mixed and entropy > 0.5,
+            # Back-compat keys expected by some tests
+            "mixed_languages": mixed,
+            "languages_detected": list(languages_found),
         }
 
     async def translate_for_detection(self, text: str, target_lang: str = "en") -> str:

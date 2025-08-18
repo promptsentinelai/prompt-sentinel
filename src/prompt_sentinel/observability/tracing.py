@@ -3,7 +3,12 @@
 # in compliance with the Elastic License 2.0. You may obtain a copy of the
 # License at https://www.elastic.co/licensing/elastic-license
 
-"""Distributed tracing for observability."""
+"""Distributed tracing for observability.
+
+Deprecated/Stub: Minimal in-memory tracing utilities for tests. For production
+use, prefer OpenTelemetry integration under `prompt_sentinel.monitoring` and
+external tracing backends. Not wired by default.
+"""
 
 import asyncio
 import time
@@ -83,7 +88,7 @@ class Tracer:
                 self.span = self.tracer.start_span(self.name)
                 return self.span
 
-            async def __aexit__(self, exc_type, exc_val, exc_tb):
+            async def __aexit__(self, exc_type, _exc_val, _exc_tb):
                 if self.span:
                     if exc_type:
                         self.span.set_status("error")

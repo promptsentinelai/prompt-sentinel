@@ -130,10 +130,20 @@ test-unit: ## Run only unit tests (no integration/e2e)
 	@echo "$(GREEN)Running unit tests...$(NC)"
 	$(UV) run pytest tests/unit/ -v
 
+.PHONY: test-unit-no-exp
+test-unit-no-exp: ## Run unit tests excluding experimental, in parallel
+	@echo "$(GREEN)Running unit tests (no experimental)...$(NC)"
+	$(UV) run pytest -q tests/unit -n auto -m "not experimental"
+
 .PHONY: test-integration
 test-integration: ## Run only integration tests
 	@echo "$(GREEN)Running integration tests...$(NC)"
 	$(UV) run pytest tests/integration/ -v
+
+.PHONY: test-integration-fast
+test-integration-fast: ## Run integration tests excluding slow/experimental
+	@echo "$(GREEN)Running integration tests (fast)...$(NC)"
+	$(UV) run pytest -q tests/integration -m "not slow and not experimental"
 
 .PHONY: test-e2e
 test-e2e: ## Run only end-to-end tests
@@ -340,6 +350,19 @@ fix: ## Auto-fix formatting and linting issues
 	$(UV) run ruff check --fix $(SRC_DIR) $(TEST_DIR)
 	@echo "$(GREEN)✓ Code issues fixed$(NC)"
 
+.PHONY: qa-scan
+qa-scan: ## Run static analysis scans (vulture, radon, ruff-unused, jscpd)
+	@echo "$(GREEN)Running Vulture (dead code)...$(NC)"
+	$(UV) run vulture $(SRC_DIR) --min-confidence 70 || true
+	@echo "$(GREEN)Running Radon (complexity & maintainability)...$(NC)"
+	$(UV) run radon cc -s -a $(SRC_DIR) || true
+	$(UV) run radon mi $(SRC_DIR) || true
+	@echo "$(GREEN)Running Ruff unused checks (F401,F841)...$(NC)"
+	$(UV) run ruff check $(SRC_DIR) --select F401,F841 || true
+	@echo "$(GREEN)Running jscpd (duplication)...$(NC)"
+	$(UV) run jscpd --silent --no-progress --pattern "**/*.py" --threshold 2 || true
+	@echo "$(GREEN)✓ QA scan complete$(NC)"
+
 # ============================================================================
 # Docker & Deployment
 # ============================================================================
@@ -430,7 +453,7 @@ docs: ## Generate API documentation
 .PHONY: corpus-update
 corpus-update: ## Update attack corpus
 	@echo "$(GREEN)Updating attack corpus...$(NC)"
-	@echo "$(YELLOW)TODO: Implement corpus update logic$(NC)"
+	@echo "$(YELLOW)Stub: corpus update logic not yet implemented$(NC)"
 	@echo "$(GREEN)✓ Corpus update complete$(NC)"
 
 # ============================================================================

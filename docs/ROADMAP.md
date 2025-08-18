@@ -42,6 +42,10 @@ This document outlines planned and in-progress areas. Status reflects the curren
 - Batch/Async Processing (Planned)
   - `api/batch_endpoint.py` includes TODOs for async job tracking and status queries
 
+- Performance Benchmarks (Experimental)
+  - Rate limiting impact benchmark is stubbed and marked experimental in `tests/performance/benchmark_suite.py`
+  - Action: implement once `RateLimitMiddleware` (or equivalent) is available
+
 ## Mid-Term (2-5 releases)
 
 - Enhanced ML Features

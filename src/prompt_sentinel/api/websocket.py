@@ -199,6 +199,16 @@ class StreamingDetector:
         self.usage_tracker = UsageTracker()
         self.analysis_service = AnalysisService()
 
+    # Back-compat shims for tests that used to call internal helpers
+    def _calculate_threat_level(self, response):
+        return self.analysis_service._calculate_threat_level(response)
+
+    def _get_confidence_breakdown(self, response):
+        return self.analysis_service._get_confidence_breakdown(response)
+
+    def _get_mitigation_suggestions(self, response):
+        return self.analysis_service._get_mitigation_suggestions(response)
+
     async def process_detection(self, request_data: dict, client_id: str) -> dict:
         """Process a detection request from WebSocket.
 

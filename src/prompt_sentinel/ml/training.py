@@ -69,7 +69,7 @@ class TrainingPipeline:
         return self.model
 
     def tune_hyperparameters(
-        self, X: np.ndarray, y: list[int], param_grid: dict[str, list[Any]]
+        self, X: np.ndarray, y: list[int], _param_grid: dict[str, list[Any]]
     ) -> dict[str, Any]:
         """Tune hyperparameters."""
         # Stub hyperparameter tuning

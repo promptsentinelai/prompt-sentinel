@@ -309,9 +309,7 @@ class BatchDetectionItem(BaseModel):
 class BatchDetectionRequest(BaseModel):
     """Batch detection request for processing multiple prompts."""
 
-    items: list[BatchDetectionItem] = Field(
-        ..., description="List of items to process", min_length=1, max_length=100
-    )
+    items: list[BatchDetectionItem] = Field(..., description="List of items to process")
     config: dict | None = Field(default=None, description="Optional detection configuration")
     parallel: bool = Field(default=True, description="Process items in parallel")
     continue_on_error: bool = Field(

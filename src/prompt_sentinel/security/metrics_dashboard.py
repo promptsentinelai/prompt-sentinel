@@ -310,7 +310,7 @@ class SecurityMetricsDashboard:
             threshold_value=config["threshold"],
             actual_value=actual_value,
             recommended_action=config.get("action", "Review security logs"),
-            metadata={"threshold_config": config, "triggering_metric": metric.dict()},
+            metadata={"threshold_config": config, "triggering_metric": metric.model_dump()},
         )
 
         # Add to alert history
@@ -458,7 +458,7 @@ class SecurityMetricsDashboard:
         metrics = list(self.metrics_buffer)
 
         if format == "json":
-            return json.dumps([m.dict() for m in metrics], default=str, indent=2)
+            return json.dumps([m.model_dump() for m in metrics], default=str, indent=2)
 
         elif format == "prometheus":
             # Prometheus format

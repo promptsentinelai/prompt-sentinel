@@ -3,7 +3,13 @@
 # in compliance with the Elastic License 2.0. You may obtain a copy of the
 # License at https://www.elastic.co/licensing/elastic-license
 
-"""Observability pipeline for monitoring and telemetry."""
+"""Observability pipeline for monitoring and telemetry.
+
+Deprecated/Stub: This module provides minimal test scaffolding for an in-memory
+observability pipeline. Prefer using `prompt_sentinel.monitoring.metrics` for
+production metrics and external tracing/logging solutions. Not wired into the
+main application by default.
+"""
 
 import asyncio
 import time
@@ -128,7 +134,7 @@ class ObservabilityPipeline:
                 self.span = self.pipeline.start_trace(self.name)
                 return self
 
-            async def __aexit__(self, exc_type, exc_val, exc_tb):
+            async def __aexit__(self, exc_type, _exc_val, _exc_tb):
                 if self.span:
                     if exc_type:
                         self.span.set_status(Status(StatusCode.ERROR))

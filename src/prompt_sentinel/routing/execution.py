@@ -67,7 +67,7 @@ class ExecutionEngine:
         # Cache store
         if use_cache and cache_key and cache_set:
             try:
-                await cache_set(cache_key, response.dict(), settings.cache_ttl_detection)
+                await cache_set(cache_key, response.model_dump(), settings.cache_ttl_detection)
             except Exception as e:  # Best-effort
                 logger.debug("Failed to cache routed detection result", error=str(e))
 

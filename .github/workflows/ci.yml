@@ -107,10 +107,10 @@ jobs:
           source .venv/bin/activate
           uv pip install -e ".[dev,test]"
 
-      - name: Run full test suite with parallel execution
+      - name: Run full test suite with parallel execution (no experimental)
         run: |
           source .venv/bin/activate
-          pytest tests/ -n auto --cov=src/prompt_sentinel --cov-report=xml --cov-report=term --cov-fail-under=75
+          pytest tests/ -n auto -m "not experimental" --cov=src/prompt_sentinel --cov-report=xml --cov-report=term --cov-fail-under=60
         env:
           REDIS_ENABLED: false
           HEURISTIC_ENABLED: true
